@@ -273,7 +273,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         <section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
           <div
             style={{
-              width: '420px',
+              width: '280px',
               border: `1px solid ${theme.borderColor}`,
               borderRadius: '24px',
               padding: '20px',

@@ -13,7 +13,7 @@ export const PartyDetailsCard = ({ title, party, showIban = false }: Props) => {
         {title}
       </div>
 
-      <div className="space-y-1 text-sm leading-6 text-slate-700">
+      <div className="space-y-1 text-sm  text-slate-700">
         <div className="font-semibold text-slate-900">{party.name}</div>
         <div>{party.address}</div>
         <div>{party.cityCountry}</div>
