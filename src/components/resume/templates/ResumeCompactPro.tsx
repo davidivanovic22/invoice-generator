@@ -1,13 +1,20 @@
 import { ResumeData } from "../../../types/resume";
 import { resumePaperClassName, resumePaperStyle } from "./shared";
 import {
+  ResumeAchievementsList,
+  ResumeCertificatesList,
   ResumeContactList,
+  ResumeCoursesList,
   ResumeEducationList,
   ResumeExperienceList,
+  ResumeFooterText,
+  ResumeInternshipsList,
   ResumeLanguageList,
   ResumePhoto,
+  ResumeReferencesList,
   ResumeSectionTitle,
   ResumeSkillGrid,
+  ResumeStringSection,
   ResumeSummary
 } from "./ResumeBlocks";
 
@@ -76,10 +83,30 @@ export const ResumeCompactPro = ({ resume, isPdf = false }: Props) => {
             />
           </div>
 
+          {resume.enabledSections.qualities && resume.qualities.length > 0 && (
+            <div className="mt-6">
+              <ResumeStringSection
+                title="Qualities"
+                items={resume.qualities}
+                accent={accent}
+              />
+            </div>
+          )}
+
           <div className="mt-6">
             <ResumeSectionTitle accent={accent}>Languages</ResumeSectionTitle>
             <ResumeLanguageList resume={resume} />
           </div>
+
+          {resume.enabledSections.signature && resume.signature && (
+            <div className="mt-6">
+              <ResumeFooterText
+                title="Signature"
+                value={resume.signature}
+                accent={accent}
+              />
+            </div>
+          )}
         </aside>
 
         <main className="p-6 text-slate-800">
@@ -90,12 +117,64 @@ export const ResumeCompactPro = ({ resume, isPdf = false }: Props) => {
               resume={resume}
               accent={accent}
               compact
+              isPdf={isPdf}
             />
           </div>
 
-          <div className="mt-6 grid grid-cols-[1fr] gap-6">
-            <ResumeEducationList resume={resume} accent={accent} />
+          {resume.enabledSections.internships && resume.internships.length > 0 && (
+            <div className="mt-6">
+              <ResumeInternshipsList resume={resume} accent={accent} />
+            </div>
+          )}
+
+          <div className="mt-6 grid grid-cols-2 gap-8">
+            <div>
+              <ResumeEducationList resume={resume} accent={accent} />
+
+              {resume.enabledSections.courses && resume.courses.length > 0 && (
+                <div className="mt-6">
+                  <ResumeCoursesList resume={resume} accent={accent} />
+                </div>
+              )}
+
+              {resume.enabledSections.references && resume.references.length > 0 && (
+                <div className="mt-6">
+                  <ResumeReferencesList resume={resume} accent={accent} />
+                </div>
+              )}
+            </div>
+
+            <div>
+              {resume.enabledSections.certificates && resume.certificates.length > 0 && (
+                <div>
+                  <ResumeCertificatesList resume={resume} accent={accent} />
+                </div>
+              )}
+
+              {resume.enabledSections.achievements && resume.achievements.length > 0 && (
+                <div className="mt-6">
+                  <ResumeAchievementsList resume={resume} accent={accent} />
+                </div>
+              )}
+
+              {resume.enabledSections.extracurricularActivities &&
+                resume.extracurricularActivities.length > 0 && (
+                  <div className="mt-6">
+                    <ResumeStringSection
+                      title="Extracurricular Activities"
+                      items={resume.extracurricularActivities}
+                      accent={accent}
+                    />
+                  </div>
+                )}
+            </div>
           </div>
+
+          {resume.enabledSections.footer && resume.footer && (
+            <div className="mt-6">
+              <ResumeFooterText title="Footer" value={resume.footer} accent={accent} />
+            </div>
+          )}
         </main>
       </div>
     </div>

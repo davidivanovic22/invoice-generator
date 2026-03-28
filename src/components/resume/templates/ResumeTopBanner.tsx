@@ -1,66 +1,167 @@
 import { ResumeData } from "../../../types/resume";
 import { resumePaperClassName, resumePaperStyle } from "./shared";
 import {
+  ResumeAchievementsList,
+  ResumeCertificatesList,
+  ResumeContactList,
+  ResumeCoursesList,
   ResumeEducationList,
   ResumeExperienceList,
+  ResumeFooterText,
+  ResumeInternshipsList,
   ResumeLanguageList,
   ResumePhoto,
+  ResumeReferencesList,
   ResumeSectionTitle,
   ResumeSkillGrid,
+  ResumeStringSection,
   ResumeSummary
 } from "./ResumeBlocks";
 
-export const ResumeTopBanner = ({ resume, isPdf = false }: { resume: ResumeData, isPdf?: boolean }) => {
+type Props = {
+  resume: ResumeData;
+  isPdf?: boolean;
+};
+
+export const ResumeTopBanner = ({ resume, isPdf = false }: Props) => {
   const accent = resume.editorSettings.accentColor;
 
   return (
     <div
-      className={`${resumePaperClassName} rounded-none`}
-      style={{ ...resumePaperStyle, fontSize: `${resume.editorSettings.baseFontSize}px` }}
+      className={`${resumePaperClassName} rounded-none overflow-hidden`}
+      style={{
+        ...resumePaperStyle,
+        fontSize: `${resume.editorSettings.baseFontSize}px`
+      }}
     >
-      <div className="border-b px-10 py-8" style={{ borderColor: `${accent}33`, background: `${accent}10` }}>
+      <header
+        className="px-10 py-8 text-white"
+        style={{ background: accent }}
+      >
         <div className="flex items-center gap-6">
           <ResumePhoto
             photo={resume.personal.photo}
             alt={resume.personal.fullName}
+            light
             sizeClassName="h-24 w-24"
             rounded="rounded-full"
           />
 
           <div className="flex-1">
-            <h1 className="text-[34px] font-bold text-slate-900">{resume.personal.fullName}</h1>
-            <p className="mt-1 text-[18px]" style={{ color: accent }}>
+            <h1 className="text-[32px] font-bold leading-tight">
+              {resume.personal.fullName}
+            </h1>
+            <p className="mt-2 text-[18px] text-white/90">
               {resume.personal.title}
             </p>
-            <div className="mt-3 text-sm text-slate-500">
-              {resume.personal.email} • {resume.personal.phone} • {resume.personal.address}
+            <div className="mt-3 text-sm text-white/85">
+              {resume.personal.email} • {resume.personal.phone}
+            </div>
+            <div className="mt-1 text-sm text-white/85">
+              {resume.personal.address}
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-[1.2fr_0.8fr] items-start gap-10 p-10">
+      <main className="grid grid-cols-[1.35fr_0.65fr] gap-8 p-10 text-slate-800">
         <div>
           <ResumeSummary resume={resume} accent={accent} />
+
           <div className="mt-8">
-            <ResumeExperienceList resume={resume} accent={accent} isPdf={isPdf} />
+            <ResumeExperienceList
+              resume={resume}
+              accent={accent}
+              isPdf={isPdf}
+            />
           </div>
+
+          {resume.enabledSections.internships && resume.internships.length > 0 && (
+            <div className="mt-8">
+              <ResumeInternshipsList resume={resume} accent={accent} />
+            </div>
+          )}
+
+          {resume.enabledSections.extracurricularActivities &&
+            resume.extracurricularActivities.length > 0 && (
+              <div className="mt-8">
+                <ResumeStringSection
+                  title="Extracurricular Activities"
+                  items={resume.extracurricularActivities}
+                  accent={accent}
+                />
+              </div>
+            )}
         </div>
 
         <div>
-          <ResumeSectionTitle accent={accent}>Skills</ResumeSectionTitle>
-          <ResumeSkillGrid skills={resume.skills} accent={accent} isPdf={isPdf} />
+          <ResumeSectionTitle accent={accent}>Contact</ResumeSectionTitle>
+          <ResumeContactList resume={resume} />
+
+          <div className="mt-8">
+            <ResumeSectionTitle accent={accent}>Skills</ResumeSectionTitle>
+            <ResumeSkillGrid
+              skills={resume.skills}
+              accent={accent}
+              isPdf={isPdf}
+            />
+          </div>
 
           <div className="mt-8">
             <ResumeEducationList resume={resume} accent={accent} />
           </div>
 
+          {resume.enabledSections.courses && resume.courses.length > 0 && (
+            <div className="mt-8">
+              <ResumeCoursesList resume={resume} accent={accent} />
+            </div>
+          )}
+
           <div className="mt-8">
             <ResumeSectionTitle accent={accent}>Languages</ResumeSectionTitle>
             <ResumeLanguageList resume={resume} />
           </div>
+
+          {resume.enabledSections.qualities && resume.qualities.length > 0 && (
+            <div className="mt-8">
+              <ResumeStringSection
+                title="Qualities"
+                items={resume.qualities}
+                accent={accent}
+              />
+            </div>
+          )}
+
+          {resume.enabledSections.certificates && resume.certificates.length > 0 && (
+            <div className="mt-8">
+              <ResumeCertificatesList resume={resume} accent={accent} />
+            </div>
+          )}
+
+          {resume.enabledSections.references && resume.references.length > 0 && (
+            <div className="mt-8">
+              <ResumeReferencesList resume={resume} accent={accent} />
+            </div>
+          )}
         </div>
-      </div>
+      </main>
+
+      {(resume.enabledSections.achievements && resume.achievements.length > 0) ||
+      (resume.enabledSections.footer && resume.footer) ? (
+        <div className="px-10 pb-10">
+          {resume.enabledSections.achievements && resume.achievements.length > 0 && (
+            <div className="mt-2">
+              <ResumeAchievementsList resume={resume} accent={accent} />
+            </div>
+          )}
+
+          {resume.enabledSections.footer && resume.footer && (
+            <div className="mt-8">
+              <ResumeFooterText title="Footer" value={resume.footer} accent={accent} />
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 };

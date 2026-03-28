@@ -1,12 +1,20 @@
 import { ResumeData } from "../../../types/resume";
 import { resumePaperClassName, resumePaperStyle } from "./shared";
 import {
+  ResumeAchievementsList,
+  ResumeCertificatesList,
+  ResumeContactList,
+  ResumeCoursesList,
   ResumeEducationList,
   ResumeExperienceList,
+  ResumeFooterText,
+  ResumeInternshipsList,
   ResumeLanguageList,
   ResumePhoto,
+  ResumeReferencesList,
   ResumeSectionTitle,
   ResumeSkillGrid,
+  ResumeStringSection,
   ResumeSummary
 } from "./ResumeBlocks";
 
@@ -58,28 +66,13 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
             <ResumeSectionTitle accent={accent} light>
               Contact
             </ResumeSectionTitle>
-
-            <div className="space-y-2 text-[13px] text-white/90">
-              <div>{resume.personal.phone}</div>
-              <div className="break-all">{resume.personal.email}</div>
-              <div>{resume.personal.address}</div>
-              {resume.personal.linkedin ? (
-                <div className="break-all">{resume.personal.linkedin}</div>
-              ) : null}
-              {resume.personal.github ? (
-                <div className="break-all">{resume.personal.github}</div>
-              ) : null}
-              {resume.personal.website ? (
-                <div className="break-all">{resume.personal.website}</div>
-              ) : null}
-            </div>
+            <ResumeContactList resume={resume} light />
           </div>
 
           <div className="mt-6">
             <ResumeSectionTitle accent={accent} light>
               Skills
             </ResumeSectionTitle>
-
             <ResumeSkillGrid
               skills={resume.skills}
               accent={accent}
@@ -88,13 +81,34 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
             />
           </div>
 
+          {resume.enabledSections.qualities && resume.qualities.length > 0 && (
+            <div className="mt-6">
+              <ResumeStringSection
+                title="Qualities"
+                items={resume.qualities}
+                accent={accent}
+                light
+              />
+            </div>
+          )}
+
           <div className="mt-6">
             <ResumeSectionTitle accent={accent} light>
               Languages
             </ResumeSectionTitle>
-
             <ResumeLanguageList resume={resume} light />
           </div>
+
+          {resume.enabledSections.signature && resume.signature && (
+            <div className="mt-6">
+              <ResumeFooterText
+                title="Signature"
+                value={resume.signature}
+                accent={accent}
+                light
+              />
+            </div>
+          )}
         </aside>
 
         <main className="p-8 text-white">
@@ -109,9 +123,66 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
             />
           </div>
 
-          <div className="mt-8">
-            <ResumeEducationList resume={resume} accent={accent} light />
+          {resume.enabledSections.internships && resume.internships.length > 0 && (
+            <div className="mt-8">
+              <ResumeInternshipsList resume={resume} accent={accent} light />
+            </div>
+          )}
+
+          <div className="mt-8 grid grid-cols-2 gap-8">
+            <div>
+              <ResumeEducationList resume={resume} accent={accent} light />
+
+              {resume.enabledSections.courses && resume.courses.length > 0 && (
+                <div className="mt-8">
+                  <ResumeCoursesList resume={resume} accent={accent} light />
+                </div>
+              )}
+
+              {resume.enabledSections.references && resume.references.length > 0 && (
+                <div className="mt-8">
+                  <ResumeReferencesList resume={resume} accent={accent} light />
+                </div>
+              )}
+            </div>
+
+            <div>
+              {resume.enabledSections.certificates && resume.certificates.length > 0 && (
+                <div>
+                  <ResumeCertificatesList resume={resume} accent={accent} light />
+                </div>
+              )}
+
+              {resume.enabledSections.achievements && resume.achievements.length > 0 && (
+                <div className="mt-8">
+                  <ResumeAchievementsList resume={resume} accent={accent} light />
+                </div>
+              )}
+
+              {resume.enabledSections.extracurricularActivities &&
+                resume.extracurricularActivities.length > 0 && (
+                  <div className="mt-8">
+                    <ResumeStringSection
+                      title="Extracurricular Activities"
+                      items={resume.extracurricularActivities}
+                      accent={accent}
+                      light
+                    />
+                  </div>
+                )}
+            </div>
           </div>
+
+          {resume.enabledSections.footer && resume.footer && (
+            <div className="mt-8">
+              <ResumeFooterText
+                title="Footer"
+                value={resume.footer}
+                accent={accent}
+                light
+              />
+            </div>
+          )}
         </main>
       </div>
     </div>

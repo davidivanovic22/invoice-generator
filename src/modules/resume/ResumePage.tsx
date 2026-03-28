@@ -1,9 +1,21 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useResumes } from '../../hooks/useResumes';
 import { downloadDocumentPdf, previewDocumentPdf } from '../../utils/pdf';
 import { ResumeEditorPreview } from '../../components/resume/ResumeEditorPreview';
 import { ResumePrintPreview } from '../../components/resume/ResumePrintPreview';
 import { ResumeThemeRail } from '../../components/resume/ResumeThemeRail';
+import { ResumePersonalSection } from '../../components/resume/editors/ResumePersonalSection';
+import { ResumeAdditionalSectionsPanel } from '../../components/resume/editors/ResumeAdditionalSectionsPanel';
+import { ResumeStringListEditor } from '../../components/resume/editors/ResumeStringListEditor';
+import { ResumeCoursesEditor } from '../../components/resume/editors/ResumeCoursesEditor';
+import { ResumeInternshipsEditor } from '../../components/resume/editors/ResumeInternshipsEditor';
+import { ResumeReferencesEditor } from '../../components/resume/editors/ResumeReferencesEditor';
+import { ResumeCertificatesEditor } from '../../components/resume/editors/ResumeCertificatesEditor';
+import { ResumeAchievementsEditor } from '../../components/resume/editors/ResumeAchievementsEditor';
+import { ResumeTextAreaSection } from '../../components/resume/editors/ResumeTextAreaSection';
+import { ResumeExperienceEditor } from '../../components/resume/editors/ResumeExperienceEditor';
+import { ResumeEducationEditor } from '../../components/resume/editors/ResumeEducationEditor';
+import { AccordionSection } from '../../components/common/AcordionSection';
 import { ActionPanel } from '../../components/sidebar/ActionPanel';
 import { ImportExportPanel } from '../../components/sidebar/ImportExportPanel';
 
@@ -18,13 +30,45 @@ export const ResumePage = () => {
         selectResume,
         updateResume,
         updatePersonalField,
+        updateExperienceItem,
+        addExperienceItem,
+        removeExperienceItem,
+        updateEducationItem,
+        addEducationItem,
+        removeEducationItem,
         exportCurrentResume,
         exportAllResumes,
-        importFromJson
+        importFromJson,
+        enablePersonalField,
+        enableSection,
+        updateSimpleStringArray,
+        addSimpleStringArrayItem,
+        removeSimpleStringArrayItem,
+        updateCourseItem,
+        addCourseItem,
+        removeCourseItem,
+        updateInternshipItem,
+        addInternshipItem,
+        removeInternshipItem,
+        updateReferenceItem,
+        addReferenceItem,
+        removeReferenceItem,
+        updateCertificateItem,
+        addCertificateItem,
+        removeCertificateItem,
+        updateAchievementItem,
+        addAchievementItem,
+        removeAchievementItem
     } = useResumes();
 
     const printPreviewRef = useRef<HTMLDivElement | null>(null);
     const fileReaderRef = useRef<FileReader | null>(null);
+
+    const [openSection, setOpenSection] = useState<string>('personal');
+
+    const handleToggleSection = (sectionId: string) => {
+        setOpenSection((current) => (current === sectionId ? '' : sectionId));
+    };
 
     if (!activeResume) {
         return (
@@ -105,11 +149,26 @@ export const ResumePage = () => {
                         onDownloadPdf={handleDownloadPdf}
                     />
 
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-                        <div className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-slate-500">
-                            Resume list
-                        </div>
+                    <ImportExportPanel
+                        onExportCurrent={exportCurrentResume}
+                        onExportAll={exportAllResumes}
+                        onResetCurrent={resetActiveResume}
+                        onImport={handleImport}
+                    />
 
+                    <AccordionSection
+                        id="resume-list"
+                        title="Resume list"
+                        isOpen={openSection === 'resume-list'}
+                        onToggle={handleToggleSection}
+                        badge={
+                            state.resumes.length ? (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                    {state.resumes.length}
+                                </span>
+                            ) : null
+                        }
+                    >
                         <div className="space-y-2">
                             {state.resumes.map((resume) => {
                                 const isActive = resume.id === state.activeResumeId;
@@ -120,8 +179,8 @@ export const ResumePage = () => {
                                         type="button"
                                         onClick={() => selectResume(resume.id)}
                                         className={`w-full rounded-[18px] border px-4 py-3 text-left transition ${isActive
-                                                ? 'border-slate-900 bg-slate-50'
-                                                : 'border-slate-200 bg-white hover:border-slate-400'
+                                            ? 'border-slate-900 bg-slate-50'
+                                            : 'border-slate-200 bg-white hover:border-slate-400'
                                             }`}
                                     >
                                         <div className="font-semibold text-slate-900">
@@ -134,20 +193,14 @@ export const ResumePage = () => {
                                 );
                             })}
                         </div>
-                    </div>
+                    </AccordionSection>
 
-                    <ImportExportPanel
-                        onExportCurrent={exportCurrentResume}
-                        onExportAll={exportAllResumes}
-                        onResetCurrent={resetActiveResume}
-                        onImport={handleImport}
-                    />
-
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-slate-500">
-                            Photo
-                        </div>
-
+                    <AccordionSection
+                        id="photo"
+                        title="Photo"
+                        isOpen={openSection === 'photo'}
+                        onToggle={handleToggleSection}
+                    >
                         <div className="space-y-3">
                             {activeResume.personal.photo ? (
                                 <img
@@ -186,70 +239,206 @@ export const ResumePage = () => {
                                 </button>
                             ) : null}
                         </div>
-                    </div>
+                    </AccordionSection>
 
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-                        <div className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-slate-500">
-                            Personal info
+                    <AccordionSection
+                        id="personal"
+                        title="Personal info"
+                        isOpen={openSection === 'personal'}
+                        onToggle={handleToggleSection}
+                    >
+                        <ResumePersonalSection
+                            resume={activeResume}
+                            onChangeField={updatePersonalField}
+                            onEnableField={enablePersonalField}
+                        />
+                    </AccordionSection>
+
+                    <ResumeExperienceEditor
+                        items={activeResume.experience}
+                        onAdd={addExperienceItem}
+                        onChange={updateExperienceItem}
+                        onRemove={removeExperienceItem}
+                        isOpen={openSection === 'employment'}
+                        onToggle={handleToggleSection}
+                    />
+
+                    <ResumeEducationEditor
+                        items={activeResume.education}
+                        onAdd={addEducationItem}
+                        onChange={updateEducationItem}
+                        onRemove={removeEducationItem}
+                        isOpen={openSection === 'education'}
+                        onToggle={handleToggleSection}
+                    />
+
+                    <ResumeStringListEditor
+                        id="skills"
+                        title="Skills"
+                        items={activeResume.skills}
+                        placeholder="Skill"
+                        onAdd={() => addSimpleStringArrayItem('skills')}
+                        onChange={(index, value) =>
+                            updateSimpleStringArray('skills', index, value)
+                        }
+                        onRemove={(index) => removeSimpleStringArrayItem('skills', index)}
+                        isOpen={openSection === 'skills'}
+                        onToggle={handleToggleSection}
+                    />
+
+                    <AccordionSection
+                        id="languages"
+                        title="Languages"
+                        isOpen={openSection === 'languages'}
+                        onToggle={handleToggleSection}
+                        badge={
+                            activeResume.languages.length ? (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                    {activeResume.languages.length}
+                                </span>
+                            ) : null
+                        }
+                    >
+                        <div className="text-sm text-slate-500">
+                            Add language editor here next if you want full CRUD for languages too.
                         </div>
+                    </AccordionSection>
 
-                        <div className="grid gap-3">
-                            <input
-                                value={activeResume.personal.fullName}
-                                onChange={(e) => updatePersonalField('fullName', e.target.value)}
-                                placeholder="Full name"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.title}
-                                onChange={(e) => updatePersonalField('title', e.target.value)}
-                                placeholder="Professional title"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.phone}
-                                onChange={(e) => updatePersonalField('phone', e.target.value)}
-                                placeholder="Phone"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.email}
-                                onChange={(e) => updatePersonalField('email', e.target.value)}
-                                placeholder="Email"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.address}
-                                onChange={(e) => updatePersonalField('address', e.target.value)}
-                                placeholder="Address"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.linkedin ?? ''}
-                                onChange={(e) => updatePersonalField('linkedin', e.target.value)}
-                                placeholder="LinkedIn"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.github ?? ''}
-                                onChange={(e) => updatePersonalField('github', e.target.value)}
-                                placeholder="GitHub"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                            <input
-                                value={activeResume.personal.website ?? ''}
-                                onChange={(e) => updatePersonalField('website', e.target.value)}
-                                placeholder="Website"
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                            />
-                        </div>
-                    </div>
+                    <AccordionSection
+                        id="additional-sections"
+                        title="Additional sections"
+                        isOpen={openSection === 'additional-sections'}
+                        onToggle={handleToggleSection}
+                    >
+                        <ResumeAdditionalSectionsPanel
+                            resume={activeResume}
+                            onEnableSection={enableSection}
+                        />
+                    </AccordionSection>
 
-                    <div className="rounded-[22px] border border-slate-200 bg-white p-4">
-                        <div className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-slate-500">
-                            Accent color
-                        </div>
+                    {activeResume.enabledSections.qualities && (
+                        <ResumeStringListEditor
+                            id="qualities"
+                            title="Qualities"
+                            items={activeResume.qualities}
+                            placeholder="Quality"
+                            onAdd={() => addSimpleStringArrayItem('qualities')}
+                            onChange={(index, value) =>
+                                updateSimpleStringArray('qualities', index, value)
+                            }
+                            onRemove={(index) => removeSimpleStringArrayItem('qualities', index)}
+                            isOpen={openSection === 'qualities'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
 
+                    {activeResume.enabledSections.extracurricularActivities && (
+                        <ResumeStringListEditor
+                            id="extracurricular"
+                            title="Extracurricular activities"
+                            items={activeResume.extracurricularActivities}
+                            placeholder="Activity"
+                            onAdd={() => addSimpleStringArrayItem('extracurricularActivities')}
+                            onChange={(index, value) =>
+                                updateSimpleStringArray(
+                                    'extracurricularActivities',
+                                    index,
+                                    value
+                                )
+                            }
+                            onRemove={(index) =>
+                                removeSimpleStringArrayItem('extracurricularActivities', index)
+                            }
+                            isOpen={openSection === 'extracurricular'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.courses && (
+                        <ResumeCoursesEditor
+                            items={activeResume.courses}
+                            onAdd={addCourseItem}
+                            onChange={updateCourseItem}
+                            onRemove={removeCourseItem}
+                            isOpen={openSection === 'courses'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.internships && (
+                        <ResumeInternshipsEditor
+                            items={activeResume.internships}
+                            onAdd={addInternshipItem}
+                            onChange={updateInternshipItem}
+                            onRemove={removeInternshipItem}
+                            isOpen={openSection === 'internships'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.references && (
+                        <ResumeReferencesEditor
+                            items={activeResume.references}
+                            onAdd={addReferenceItem}
+                            onChange={updateReferenceItem}
+                            onRemove={removeReferenceItem}
+                            isOpen={openSection === 'references'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.certificates && (
+                        <ResumeCertificatesEditor
+                            items={activeResume.certificates}
+                            onAdd={addCertificateItem}
+                            onChange={updateCertificateItem}
+                            onRemove={removeCertificateItem}
+                            isOpen={openSection === 'certificates'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.achievements && (
+                        <ResumeAchievementsEditor
+                            items={activeResume.achievements}
+                            onAdd={addAchievementItem}
+                            onChange={updateAchievementItem}
+                            onRemove={removeAchievementItem}
+                            isOpen={openSection === 'achievements'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.footer && (
+                        <ResumeTextAreaSection
+                            id="footer"
+                            title="Footer"
+                            value={activeResume.footer ?? ''}
+                            placeholder="Footer text"
+                            onChange={(value) => updateResume({ footer: value })}
+                            isOpen={openSection === 'footer'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    {activeResume.enabledSections.signature && (
+                        <ResumeTextAreaSection
+                            id="signature"
+                            title="Signature"
+                            value={activeResume.signature ?? ''}
+                            placeholder="Signature / closing text"
+                            onChange={(value) => updateResume({ signature: value })}
+                            isOpen={openSection === 'signature'}
+                            onToggle={handleToggleSection}
+                        />
+                    )}
+
+                    <AccordionSection
+                        id="accent"
+                        title="Accent color"
+                        isOpen={openSection === 'accent'}
+                        onToggle={handleToggleSection}
+                    >
                         <input
                             type="color"
                             value={activeResume.editorSettings.accentColor}
@@ -263,7 +452,7 @@ export const ResumePage = () => {
                             }
                             className="h-11 w-full rounded-xl border border-slate-200 p-1"
                         />
-                    </div>
+                    </AccordionSection>
                 </div>
             </div>
 

@@ -66,7 +66,7 @@ export const ResumePhoto = ({
 };
 
 /* =========================
-   CONTACT
+   CONTACT + EXTRA PERSONAL FIELDS
 ========================= */
 
 export const ResumeContactList = ({
@@ -78,24 +78,28 @@ export const ResumeContactList = ({
 }) => {
   const textColor = light ? "text-white/85" : "text-slate-700";
 
+  const rows = [
+    resume.personal.phone,
+    resume.personal.email,
+    resume.personal.address,
+    resume.enabledPersonalFields.dateOfBirth ? resume.personal.dateOfBirth : undefined,
+    resume.enabledPersonalFields.birthPlace ? resume.personal.birthPlace : undefined,
+    resume.enabledPersonalFields.gender ? resume.personal.gender : undefined,
+    resume.enabledPersonalFields.nationality ? resume.personal.nationality : undefined,
+    resume.enabledPersonalFields.civilStatus ? resume.personal.civilStatus : undefined,
+    resume.enabledPersonalFields.driverLicense ? resume.personal.driverLicense : undefined,
+    resume.enabledPersonalFields.linkedin ? resume.personal.linkedin : undefined,
+    resume.enabledPersonalFields.github ? resume.personal.github : undefined,
+    resume.enabledPersonalFields.website ? resume.personal.website : undefined
+  ].filter(Boolean);
+
   return (
     <div className={`space-y-1 ${textColor}`}>
-      {[resume.personal.phone,
-      resume.personal.email,
-      resume.personal.address,
-      resume.personal.linkedin,
-      resume.personal.github,
-      resume.personal.website
-      ]
-        .filter(Boolean)
-        .map((item, i) => (
-          <div
-            key={i}
-            className="text-[13px] leading-7 break-words"
-          >
-            {item}
-          </div>
-        ))}
+      {rows.map((item, i) => (
+        <div key={i} className="text-[13px] leading-7 break-words">
+          {item}
+        </div>
+      ))}
     </div>
   );
 };
@@ -198,15 +202,14 @@ export const ResumeSummary = ({
 );
 
 /* =========================
-   EXPERIENCE (FIXED BULLETS)
+   EXPERIENCE
 ========================= */
 
 export const ResumeExperienceList = ({
   resume,
   accent,
   light = false,
-  compact = false,
-  isPdf = false
+  compact = false
 }: {
   resume: ResumeData;
   accent: string;
@@ -261,9 +264,7 @@ export const ResumeExperienceList = ({
                     className="mt-[6px] block h-[4px] w-[4px] min-w-[4px] rounded-full"
                     style={{ backgroundColor: accent }}
                   />
-                  <span className={`${textBody} leading-[1.5]`}>
-                    {b}
-                  </span>
+                  <span className={`${textBody} leading-[1.5]`}>{b}</span>
                 </div>
               ))}
             </div>
@@ -312,6 +313,283 @@ export const ResumeEducationList = ({
             </div>
           </article>
         ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   GENERIC STRING SECTION
+========================= */
+
+export const ResumeStringSection = ({
+  title,
+  items,
+  accent,
+  light = false
+}: {
+  title: string;
+  items: string[];
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!items.length) return null;
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        {title}
+      </ResumeSectionTitle>
+
+      <div className={`space-y-2 text-[13px] ${light ? "text-white/85" : "text-slate-700"}`}>
+        {items.map((item, index) => (
+          <div key={index}>• {item}</div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   COURSES
+========================= */
+
+export const ResumeCoursesList = ({
+  resume,
+  accent,
+  light = false
+}: {
+  resume: ResumeData;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!resume.enabledSections.courses || !resume.courses.length) return null;
+
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Courses
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.courses.map((item) => (
+          <article key={item.id}>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>
+              {item.title}
+            </div>
+            {(item.provider || item.year) && (
+              <div className={`mt-1 text-[13px] ${textSecondary}`}>
+                {[item.provider, item.year].filter(Boolean).join(" • ")}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   INTERNSHIPS
+========================= */
+
+export const ResumeInternshipsList = ({
+  resume,
+  accent,
+  light = false
+}: {
+  resume: ResumeData;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!resume.enabledSections.internships || !resume.internships.length) return null;
+
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textBody = light ? "text-white/85" : "text-slate-700";
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Internships
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.internships.map((item) => (
+          <article key={item.id}>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>
+              {[item.role, item.company].filter(Boolean).join(" - ")}
+            </div>
+            {(item.start || item.end) && (
+              <div className={`mt-1 text-[13px] ${textSecondary}`}>
+                {[item.start, item.end].filter(Boolean).join(" - ")}
+              </div>
+            )}
+            {item.description ? (
+              <div className={`mt-2 text-[13px] ${textBody}`}>
+                {item.description}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   REFERENCES
+========================= */
+
+export const ResumeReferencesList = ({
+  resume,
+  accent,
+  light = false
+}: {
+  resume: ResumeData;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!resume.enabledSections.references || !resume.references.length) return null;
+
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        References
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.references.map((item) => (
+          <article key={item.id}>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>
+              {item.name}
+            </div>
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {[item.role, item.company].filter(Boolean).join(" • ")}
+            </div>
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {[item.email, item.phone].filter(Boolean).join(" • ")}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   CERTIFICATES
+========================= */
+
+export const ResumeCertificatesList = ({
+  resume,
+  accent,
+  light = false
+}: {
+  resume: ResumeData;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!resume.enabledSections.certificates || !resume.certificates.length) return null;
+
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Certificates
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.certificates.map((item) => (
+          <article key={item.id}>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>
+              {item.name}
+            </div>
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {[item.issuer, item.year].filter(Boolean).join(" • ")}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   ACHIEVEMENTS
+========================= */
+
+export const ResumeAchievementsList = ({
+  resume,
+  accent,
+  light = false
+}: {
+  resume: ResumeData;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!resume.enabledSections.achievements || !resume.achievements.length) return null;
+
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textBody = light ? "text-white/85" : "text-slate-700";
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Achievements
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.achievements.map((item) => (
+          <article key={item.id}>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>
+              {item.title}
+            </div>
+            {item.description ? (
+              <div className={`mt-1 text-[13px] ${textBody}`}>
+                {item.description}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   FOOTER / SIGNATURE
+========================= */
+
+export const ResumeFooterText = ({
+  title,
+  value,
+  accent,
+  light = false
+}: {
+  title: string;
+  value?: string;
+  accent: string;
+  light?: boolean;
+}) => {
+  if (!value) return null;
+
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        {title}
+      </ResumeSectionTitle>
+
+      <div className={`text-[13px] leading-6 ${light ? "text-white/85" : "text-slate-700"}`}>
+        {value}
       </div>
     </section>
   );
