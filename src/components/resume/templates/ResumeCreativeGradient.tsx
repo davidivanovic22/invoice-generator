@@ -1,21 +1,21 @@
 import { ResumeData } from "../../../types/resume";
-import { resumePaperClassName, resumePaperStyle } from "./shared";
+import { ResumeLanguageListBlock } from "../blocks/ResumeLanguageListBlock";
+import { ResumePhotoBlock } from "../blocks/ResumePhotoBlock";
+import { ResumeSectionTitleBlock } from "../blocks/ResumeSectionTitleBlock";
 import {
-  ResumeAchievementsList,
-  ResumeCertificatesList,
-  ResumeCoursesList,
-  ResumeEducationList,
-  ResumeExperienceList,
-  ResumeFooterText,
-  ResumeInternshipsList,
-  ResumeLanguageList,
-  ResumePhoto,
-  ResumeReferencesList,
-  ResumeSectionTitle,
-  ResumeSkillGrid,
-  ResumeStringSection,
-  ResumeSummary
+    ResumeAchievementsList,
+    ResumeCertificatesList,
+    ResumeCoursesList,
+    ResumeDotPercentageRatings,
+    ResumeEducationList,
+    ResumeExperienceList,
+    ResumeFooterText,
+    ResumeInternshipsList,
+    ResumeReferencesList,
+    ResumeSkillGrid,
+    ResumeSummary
 } from "./ResumeBlocks";
+import { resumePaperClassName, resumePaperStyle } from "./shared";
 
 type Props = {
   resume: ResumeData;
@@ -40,7 +40,7 @@ export const ResumeCreativeGradient = ({ resume, isPdf = false }: Props) => {
         }}
       >
         <div className="flex items-start gap-6">
-          <ResumePhoto
+          <ResumePhotoBlock
             photo={resume.personal.photo}
             alt={resume.personal.fullName}
             light
@@ -94,7 +94,7 @@ export const ResumeCreativeGradient = ({ resume, isPdf = false }: Props) => {
         </div>
 
         <div>
-          <ResumeSectionTitle accent={accent}>Skills</ResumeSectionTitle>
+          <ResumeSectionTitleBlock accent={accent}>Skills</ResumeSectionTitleBlock>
           <ResumeSkillGrid
             skills={resume.skills}
             accent={accent}
@@ -106,14 +106,13 @@ export const ResumeCreativeGradient = ({ resume, isPdf = false }: Props) => {
           </div>
 
           <div className="mt-8">
-            <ResumeSectionTitle accent={accent}>Languages</ResumeSectionTitle>
-            <ResumeLanguageList resume={resume} />
+            <ResumeSectionTitleBlock accent={accent}>Languages</ResumeSectionTitleBlock>
+            <ResumeLanguageListBlock resume={resume} ></ResumeLanguageListBlock>
           </div>
 
           {resume.enabledSections.qualities && resume.qualities.length > 0 && (
             <div className="mt-8">
-              <ResumeStringSection
-                title="Qualities"
+              <ResumeDotPercentageRatings
                 items={resume.qualities}
                 accent={accent}
               />

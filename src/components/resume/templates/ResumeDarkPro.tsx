@@ -1,22 +1,23 @@
 import { ResumeData } from "../../../types/resume";
-import { resumePaperClassName, resumePaperStyle } from "./shared";
+import { ResumeContactListBlock } from "../blocks/ResumeContactListBlock";
+import { ResumeLanguageListBlock } from "../blocks/ResumeLanguageListBlock";
+import { ResumePhotoBlock } from "../blocks/ResumePhotoBlock";
+import { ResumeSectionTitleBlock } from "../blocks/ResumeSectionTitleBlock";
 import {
   ResumeAchievementsList,
   ResumeCertificatesList,
-  ResumeContactList,
   ResumeCoursesList,
+  ResumeDotPercentageRatings,
   ResumeEducationList,
   ResumeExperienceList,
   ResumeFooterText,
   ResumeInternshipsList,
-  ResumeLanguageList,
-  ResumePhoto,
   ResumeReferencesList,
-  ResumeSectionTitle,
   ResumeSkillGrid,
   ResumeStringSection,
   ResumeSummary
 } from "./ResumeBlocks";
+import { resumePaperClassName, resumePaperStyle } from "./shared";
 
 type Props = {
   resume: ResumeData;
@@ -45,7 +46,7 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
           }}
         >
           <div className="flex flex-col items-center border-b border-white/20 pb-6">
-            <ResumePhoto
+            <ResumePhotoBlock
               photo={resume.personal.photo}
               alt={resume.personal.fullName}
               light
@@ -63,16 +64,16 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
           </div>
 
           <div className="mt-6">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Contact
-            </ResumeSectionTitle>
-            <ResumeContactList resume={resume} light />
+            </ResumeSectionTitleBlock>
+            <ResumeContactListBlock  resume={resume} light ></ResumeContactListBlock>
           </div>
 
           <div className="mt-6">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Skills
-            </ResumeSectionTitle>
+            </ResumeSectionTitleBlock>
             <ResumeSkillGrid
               skills={resume.skills}
               accent={accent}
@@ -83,8 +84,7 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
 
           {resume.enabledSections.qualities && resume.qualities.length > 0 && (
             <div className="mt-6">
-              <ResumeStringSection
-                title="Qualities"
+              <ResumeDotPercentageRatings
                 items={resume.qualities}
                 accent={accent}
                 light
@@ -93,10 +93,10 @@ export const ResumeDarkPro = ({ resume, isPdf = false }: Props) => {
           )}
 
           <div className="mt-6">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Languages
-            </ResumeSectionTitle>
-            <ResumeLanguageList resume={resume} light />
+            </ResumeSectionTitleBlock>
+            <ResumeLanguageListBlock resume={resume} light ></ResumeLanguageListBlock>
           </div>
 
           {resume.enabledSections.signature && resume.signature && (

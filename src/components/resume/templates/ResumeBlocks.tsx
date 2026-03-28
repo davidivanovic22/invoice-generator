@@ -1,175 +1,116 @@
-import { ResumeData } from "../../../types/resume";
+import { ResumeData, PercentageItem } from '../../../types/resume';
+import { ResumeSectionTitleBlock } from '../blocks/ResumeSectionTitleBlock';
 
 /* =========================
-   SECTION TITLE
+   HELPERS
 ========================= */
 
-type SectionTitleProps = {
-  children: React.ReactNode;
-  accent: string;
-  light?: boolean;
-};
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
-export const ResumeSectionTitle = ({
-  children,
-  accent,
-  light = false
-}: SectionTitleProps) => (
-  <h2
-    className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em]"
-    style={{ color: light ? "rgba(255,255,255,0.75)" : accent }}
-  >
-    {children}
-  </h2>
-);
+const normalizeSkillPercent = (percent: number) =>
+  clamp(Number.isFinite(percent) ? percent : 0, 0, 100);
 
-/* =========================
-   PHOTO
-========================= */
+const getSkillLabel = (skill: string | PercentageItem) =>
+  typeof skill === 'string' ? skill : skill.name;
 
-type PhotoProps = {
-  photo?: string;
-  alt: string;
-  rounded?: string;
-  light?: boolean;
-  sizeClassName?: string;
-};
-
-export const ResumePhoto = ({
-  photo,
-  alt,
-  rounded = "rounded-2xl",
-  light = false,
-  sizeClassName = "h-24 w-24"
-}: PhotoProps) => {
-  if (photo) {
-    return (
-      <img
-        src={photo}
-        alt={alt}
-        className={`${sizeClassName} ${rounded} object-cover border ${light ? "border-white/20" : "border-slate-200"
-          }`}
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`flex ${sizeClassName} items-center justify-center ${rounded} border border-dashed text-xs ${light
-          ? "border-white/30 text-white/70"
-          : "border-slate-300 text-slate-400"
-        }`}
-    >
-      PHOTO
-    </div>
-  );
-};
-
-/* =========================
-   CONTACT + EXTRA PERSONAL FIELDS
-========================= */
-
-export const ResumeContactList = ({
-  resume,
-  light = false
-}: {
-  resume: ResumeData;
-  light?: boolean;
-}) => {
-  const textColor = light ? "text-white/85" : "text-slate-700";
-
-  const rows = [
-    resume.personal.phone,
-    resume.personal.email,
-    resume.personal.address,
-    resume.enabledPersonalFields.dateOfBirth ? resume.personal.dateOfBirth : undefined,
-    resume.enabledPersonalFields.birthPlace ? resume.personal.birthPlace : undefined,
-    resume.enabledPersonalFields.gender ? resume.personal.gender : undefined,
-    resume.enabledPersonalFields.nationality ? resume.personal.nationality : undefined,
-    resume.enabledPersonalFields.civilStatus ? resume.personal.civilStatus : undefined,
-    resume.enabledPersonalFields.driverLicense ? resume.personal.driverLicense : undefined,
-    resume.enabledPersonalFields.linkedin ? resume.personal.linkedin : undefined,
-    resume.enabledPersonalFields.github ? resume.personal.github : undefined,
-    resume.enabledPersonalFields.website ? resume.personal.website : undefined
-  ].filter(Boolean);
-
-  return (
-    <div className={`space-y-1 ${textColor}`}>
-      {rows.map((item, i) => (
-        <div key={i} className="text-[13px] leading-7 break-words">
-          {item}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-/* =========================
-   LANGUAGES
-========================= */
-
-export const ResumeLanguageList = ({
-  resume,
-  light = false
-}: {
-  resume: ResumeData;
-  light?: boolean;
-}) => (
-  <div
-    className={`space-y-3 text-[13px] ${light ? "text-white" : "text-slate-700"
-      }`}
-  >
-    {resume.languages.map((lang) => (
-      <div key={lang.id}>
-        <div className="font-medium">{lang.name}</div>
-        <div className={light ? "text-white/70" : "text-slate-500"}>
-          {lang.level}
-        </div>
-      </div>
-    ))}
-  </div>
-);
+const getSkillPercent = (skill: string | PercentageItem) =>
+  typeof skill === 'string' ? 0 : normalizeSkillPercent(skill.percent);
 
 /* =========================
    SKILLS
 ========================= */
 
 type ResumeSkillGridProps = {
-  skills: string[];
+  skills: PercentageItem[];
   accent: string;
   light?: boolean;
   isPdf?: boolean;
+  showPercent?: boolean;
 };
 
 export const ResumeSkillGrid = ({
   skills,
   accent,
   light = false,
-  isPdf = false
+  isPdf = false,
+  showPercent = false
 }: ResumeSkillGridProps) => {
+  if (!skills.length) return null;
+
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {skills.map((skill) => (
-        <div
-          key={skill}
-          className={`
-            flex items-center justify-center
-            min-h-[34px]
-            rounded-full
-            px-2
-            text-center
-            text-[11px]
-          `}
-          style={{
-            paddingBottom: isPdf ? '14px' : undefined,
-            border: `1px solid ${light ? "rgba(255,255,255,0.22)" : `${accent}55`
-              }`,
-            color: light ? "#fff" : accent
-          }}
-        >
-          <span className="leading-[1.2]">{skill}</span>
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+      {skills.map((skill, index) => {
+        const label = getSkillLabel(skill);
+        const percent = getSkillPercent(skill);
+
+        return (
+          <div
+            key={skill.id || `grid-skill-${index}`}
+            className="flex min-h-[40px] flex-col items-center justify-center rounded-2xl px-3 py-2 text-center"
+            style={{
+              paddingBottom: isPdf ? '14px' : undefined,
+              border: `1px solid ${light ? 'rgba(255,255,255,0.22)' : `${accent}55`}`,
+              color: light ? '#fff' : accent
+            }}
+          >
+            <span className="text-[11px] font-semibold leading-[1.2]">{label}</span>
+            {showPercent ? (
+              <span className={`mt-1 text-[10px] ${light ? 'text-white/80' : 'text-slate-500'}`}>
+                {percent}%
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+type ResumeSkillBarsProps = {
+  skills: PercentageItem[];
+  accent: string;
+  light?: boolean;
+};
+
+export const ResumeSkillBars = ({
+  skills,
+  accent,
+  light = false
+}: ResumeSkillBarsProps) => {
+  if (!skills.length) return null;
+
+  return (
+    <div className="space-y-3">
+      {skills.map((skill, index) => {
+        const percent = normalizeSkillPercent(skill.percent);
+
+        return (
+          <div key={skill.id || `bar-skill-${index}`}>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <span className={`text-[13px] font-medium ${light ? 'text-white' : 'text-slate-800'}`}>
+                {skill.name}
+              </span>
+              <span className={`text-[11px] ${light ? 'text-white/75' : 'text-slate-500'}`}>
+                {percent}%
+              </span>
+            </div>
+
+            <div
+              className={`h-2 overflow-hidden rounded-full ${light ? 'bg-white/20' : 'bg-slate-200'
+                }`}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${percent}%`,
+                  backgroundColor: accent
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -188,14 +129,11 @@ export const ResumeSummary = ({
   light?: boolean;
 }) => (
   <section>
-    <ResumeSectionTitle accent={accent} light={light}>
+    <ResumeSectionTitleBlock accent={accent} light={light}>
       Professional Summary
-    </ResumeSectionTitle>
+    </ResumeSectionTitleBlock>
 
-    <p
-      className={`text-[14px] leading-7 ${light ? "text-white/90" : "text-slate-700"
-        }`}
-    >
+    <p className={`text-[14px] leading-7 ${light ? 'text-white/90' : 'text-slate-700'}`}>
       {resume.professionalSummary}
     </p>
   </section>
@@ -209,7 +147,8 @@ export const ResumeExperienceList = ({
   resume,
   accent,
   light = false,
-  compact = false
+  compact = false,
+  isPdf = false
 }: {
   resume: ResumeData;
   accent: string;
@@ -217,40 +156,35 @@ export const ResumeExperienceList = ({
   compact?: boolean;
   isPdf?: boolean;
 }) => {
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
-  const textBody = light ? "text-white/85" : "text-slate-700";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
+  const textBody = light ? 'text-white/85' : 'text-slate-700';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Experience
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
-      <div className={compact ? "space-y-6" : "space-y-8"}>
+      <div className={compact ? 'space-y-6' : 'space-y-8'}>
         {resume.experience.map((exp) => (
           <article key={exp.id}>
             <div className="grid grid-cols-[1fr_auto] items-start gap-4">
               <div className="min-w-0">
                 <div
-                  className={`font-semibold leading-tight ${compact ? "text-[15px]" : "text-[18px]"
+                  className={`font-semibold leading-tight ${compact ? 'text-[15px]' : 'text-[18px]'
                     } ${textPrimary}`}
                 >
                   {exp.role}
                 </div>
 
-                <div
-                  className={`mt-1 ${compact ? "text-[13px]" : "text-sm"
-                    } ${textSecondary}`}
-                >
-                  {[exp.company, exp.project, exp.location]
-                    .filter(Boolean)
-                    .join(" • ")}
+                <div className={`mt-1 ${compact ? 'text-[13px]' : 'text-sm'} ${textSecondary}`}>
+                  {[exp.company, exp.project, exp.location].filter(Boolean).join(' • ')}
                 </div>
               </div>
 
               <div
-                className={`shrink-0 text-right ${compact ? "text-[13px]" : "text-sm"
+                className={`shrink-0 text-right ${compact ? 'text-[13px]' : 'text-sm'
                   } ${textSecondary}`}
               >
                 {exp.start} - {exp.end}
@@ -259,10 +193,13 @@ export const ResumeExperienceList = ({
 
             <div className="mt-3 space-y-2 text-[13px]">
               {exp.bullets.map((b, i) => (
-                <div key={i} className="flex items-start gap-2">
+                <div key={i} className="flex items-center gap-2">
                   <span
-                    className="mt-[6px] block h-[4px] w-[4px] min-w-[4px] rounded-full"
-                    style={{ backgroundColor: accent }}
+                    className="block h-[4px] w-[4px] min-w-[4px] rounded-full"
+                    style={{
+                      marginTop: isPdf ? '16px' : undefined,
+                      backgroundColor: accent
+                    }}
                   />
                   <span className={`${textBody} leading-[1.5]`}>{b}</span>
                 </div>
@@ -288,26 +225,20 @@ export const ResumeEducationList = ({
   accent: string;
   light?: boolean;
 }) => {
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Education
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.education.map((edu) => (
           <article key={edu.id}>
-            <div className={`text-[15px] font-semibold ${textPrimary}`}>
-              {edu.degree}
-            </div>
-
-            <div className={`mt-1 text-[13px] ${textSecondary}`}>
-              {edu.school}
-            </div>
-
+            <div className={`text-[15px] font-semibold ${textPrimary}`}>{edu.degree}</div>
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>{edu.school}</div>
             <div className={`mt-1 text-[13px] ${textSecondary}`}>
               {edu.start} - {edu.end}
             </div>
@@ -337,11 +268,11 @@ export const ResumeStringSection = ({
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         {title}
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
-      <div className={`space-y-2 text-[13px] ${light ? "text-white/85" : "text-slate-700"}`}>
+      <div className={`space-y-2 text-[13px] ${light ? 'text-white/85' : 'text-slate-700'}`}>
         {items.map((item, index) => (
           <div key={index}>• {item}</div>
         ))}
@@ -365,24 +296,22 @@ export const ResumeCoursesList = ({
 }) => {
   if (!resume.enabledSections.courses || !resume.courses.length) return null;
 
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Courses
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.courses.map((item) => (
           <article key={item.id}>
-            <div className={`text-[14px] font-semibold ${textPrimary}`}>
-              {item.title}
-            </div>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>{item.title}</div>
             {(item.provider || item.year) && (
               <div className={`mt-1 text-[13px] ${textSecondary}`}>
-                {[item.provider, item.year].filter(Boolean).join(" • ")}
+                {[item.provider, item.year].filter(Boolean).join(' • ')}
               </div>
             )}
           </article>
@@ -407,31 +336,29 @@ export const ResumeInternshipsList = ({
 }) => {
   if (!resume.enabledSections.internships || !resume.internships.length) return null;
 
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
-  const textBody = light ? "text-white/85" : "text-slate-700";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
+  const textBody = light ? 'text-white/85' : 'text-slate-700';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Internships
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.internships.map((item) => (
           <article key={item.id}>
             <div className={`text-[14px] font-semibold ${textPrimary}`}>
-              {[item.role, item.company].filter(Boolean).join(" - ")}
+              {[item.role, item.company].filter(Boolean).join(' - ')}
             </div>
             {(item.start || item.end) && (
               <div className={`mt-1 text-[13px] ${textSecondary}`}>
-                {[item.start, item.end].filter(Boolean).join(" - ")}
+                {[item.start, item.end].filter(Boolean).join(' - ')}
               </div>
             )}
             {item.description ? (
-              <div className={`mt-2 text-[13px] ${textBody}`}>
-                {item.description}
-              </div>
+              <div className={`mt-2 text-[13px] ${textBody}`}>{item.description}</div>
             ) : null}
           </article>
         ))}
@@ -455,26 +382,24 @@ export const ResumeReferencesList = ({
 }) => {
   if (!resume.enabledSections.references || !resume.references.length) return null;
 
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         References
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.references.map((item) => (
           <article key={item.id}>
-            <div className={`text-[14px] font-semibold ${textPrimary}`}>
-              {item.name}
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>{item.name}</div>
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {[item.role, item.company].filter(Boolean).join(' • ')}
             </div>
             <div className={`mt-1 text-[13px] ${textSecondary}`}>
-              {[item.role, item.company].filter(Boolean).join(" • ")}
-            </div>
-            <div className={`mt-1 text-[13px] ${textSecondary}`}>
-              {[item.email, item.phone].filter(Boolean).join(" • ")}
+              {[item.email, item.phone].filter(Boolean).join(' • ')}
             </div>
           </article>
         ))}
@@ -498,23 +423,21 @@ export const ResumeCertificatesList = ({
 }) => {
   if (!resume.enabledSections.certificates || !resume.certificates.length) return null;
 
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textSecondary = light ? 'text-white/70' : 'text-slate-500';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Certificates
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.certificates.map((item) => (
           <article key={item.id}>
-            <div className={`text-[14px] font-semibold ${textPrimary}`}>
-              {item.name}
-            </div>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>{item.name}</div>
             <div className={`mt-1 text-[13px] ${textSecondary}`}>
-              {[item.issuer, item.year].filter(Boolean).join(" • ")}
+              {[item.issuer, item.year].filter(Boolean).join(' • ')}
             </div>
           </article>
         ))}
@@ -538,25 +461,21 @@ export const ResumeAchievementsList = ({
 }) => {
   if (!resume.enabledSections.achievements || !resume.achievements.length) return null;
 
-  const textPrimary = light ? "text-white" : "text-slate-900";
-  const textBody = light ? "text-white/85" : "text-slate-700";
+  const textPrimary = light ? 'text-white' : 'text-slate-900';
+  const textBody = light ? 'text-white/85' : 'text-slate-700';
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         Achievements
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
       <div className="space-y-4">
         {resume.achievements.map((item) => (
           <article key={item.id}>
-            <div className={`text-[14px] font-semibold ${textPrimary}`}>
-              {item.title}
-            </div>
+            <div className={`text-[14px] font-semibold ${textPrimary}`}>{item.title}</div>
             {item.description ? (
-              <div className={`mt-1 text-[13px] ${textBody}`}>
-                {item.description}
-              </div>
+              <div className={`mt-1 text-[13px] ${textBody}`}>{item.description}</div>
             ) : null}
           </article>
         ))}
@@ -584,12 +503,446 @@ export const ResumeFooterText = ({
 
   return (
     <section>
-      <ResumeSectionTitle accent={accent} light={light}>
+      <ResumeSectionTitleBlock accent={accent} light={light}>
         {title}
-      </ResumeSectionTitle>
+      </ResumeSectionTitleBlock>
 
-      <div className={`text-[13px] leading-6 ${light ? "text-white/85" : "text-slate-700"}`}>
+      <div className={`text-[13px] leading-6 ${light ? 'text-white/85' : 'text-slate-700'}`}>
         {value}
+      </div>
+    </section>
+  );
+};
+
+/* =========================
+   INFOGRAPHIC BUBBLES + DOTS
+========================= */
+
+/* =========================
+   INFOGRAPHIC BUBBLES + DOTS
+========================= */
+
+type CleanPercentageItem = {
+  id: string;
+  name: string;
+  percent: number;
+};
+
+const normalizePercent = (value: number) =>
+  clamp(Number.isFinite(value) ? value : 0, 0, 100);
+
+const getRenderablePercentageItems = (
+  items: PercentageItem[]
+): CleanPercentageItem[] =>
+  items
+    .map((item, index) => ({
+      id:
+        typeof item.id === 'string' && item.id.trim()
+          ? item.id
+          : `percentage-item-${index}`,
+      name: (item.name ?? '').trim(),
+      percent: normalizePercent(item.percent)
+    }))
+    .filter((item) => item.name.length > 0 && item.percent > 0)
+    .sort((a, b) => b.percent - a.percent);
+
+const bubblePalette = [
+  '#17324d',
+  '#6fa0d1',
+  '#2f6ea5',
+  '#ff4949',
+  '#7ea9d6',
+  '#4b86c7',
+  '#264d73',
+  '#84b3df'
+];
+
+const getBubbleDiameter = (percent: number, index: number) => {
+  const safe = normalizePercent(percent);
+
+  if (index === 0) return 132;
+  return 54 + (safe / 100) * 42;
+};
+
+const getBubbleName = (name: string, size: number) => {
+  const trimmed = name.trim();
+
+  if (size < 56 && trimmed.length > 4) return `${trimmed.slice(0, 3)}...`;
+  if (size < 72 && trimmed.length > 6) return `${trimmed.slice(0, 5)}...`;
+  if (size < 90 && trimmed.length > 9) return `${trimmed.slice(0, 8)}...`;
+  if (size < 108 && trimmed.length > 12) return `${trimmed.slice(0, 11)}...`;
+
+  return trimmed;
+};
+
+const getBubbleFontSize = (size: number) => {
+  if (size >= 120) return 16;
+  if (size >= 96) return 13;
+  if (size >= 72) return 11;
+  if (size >= 58) return 10;
+  return 9;
+};
+
+const getBubblePercentFontSize = (size: number) => {
+  if (size >= 120) return 14;
+  if (size >= 96) return 12;
+  if (size >= 72) return 11;
+  if (size >= 58) return 10;
+  return 9;
+};
+
+type BubbleNode = {
+  item: CleanPercentageItem;
+  diameter: number;
+  radius: number;
+  x: number;
+  y: number;
+  color: string;
+};
+
+const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+  Math.hypot(a.x - b.x, a.y - b.y);
+
+const circlesOverlap = (
+  x: number,
+  y: number,
+  radius: number,
+  placed: BubbleNode[],
+  gap: number
+) => {
+  return placed.some((node) => {
+    const minDistance = radius + node.radius + gap;
+    return distance({ x, y }, node) < minDistance;
+  });
+};
+
+const buildDynamicBubbleLayout = (
+  items: CleanPercentageItem[],
+  accent: string
+): BubbleNode[] => {
+  if (!items.length) return [];
+
+  const placed: BubbleNode[] = [];
+  const diameters = items.map((item, index) => getBubbleDiameter(item.percent, index));
+
+  const centerX = 260;
+  const centerY = 220;
+  const gap = -10;
+
+  items.forEach((item, index) => {
+    const diameter = diameters[index];
+    const radius = diameter / 2;
+    const color = index === 3 ? accent : bubblePalette[index % bubblePalette.length];
+
+    if (index === 0) {
+      placed.push({
+        item,
+        diameter,
+        radius,
+        x: centerX,
+        y: centerY,
+        color
+      });
+      return;
+    }
+
+    let angle = -Math.PI / 2;
+    let ring = 1;
+    let found = false;
+
+    while (!found && ring < 40) {
+      const orbitRadius =
+        placed[0].radius +
+        radius +
+        12 +
+        (ring - 1) * Math.max(34, radius * 0.85);
+
+      const steps = Math.max(18, Math.floor((2 * Math.PI * orbitRadius) / 18));
+
+      for (let step = 0; step < steps; step += 1) {
+        const theta = angle + (step / steps) * Math.PI * 2;
+        const x = centerX + Math.cos(theta) * orbitRadius;
+        const y = centerY + Math.sin(theta) * orbitRadius;
+
+        if (!circlesOverlap(x, y, radius, placed, gap)) {
+          placed.push({
+            item,
+            diameter,
+            radius,
+            x,
+            y,
+            color
+          });
+          found = true;
+          break;
+        }
+      }
+
+      ring += 1;
+      angle += 0.45;
+    }
+
+    if (!found) {
+      placed.push({
+        item,
+        diameter,
+        radius,
+        x: centerX,
+        y: centerY + ring * 40,
+        color
+      });
+    }
+  });
+
+  return placed;
+};
+
+const getBubbleBounds = (nodes: BubbleNode[]) => {
+  const minX = Math.min(...nodes.map((node) => node.x - node.radius));
+  const maxX = Math.max(...nodes.map((node) => node.x + node.radius));
+  const minY = Math.min(...nodes.map((node) => node.y - node.radius));
+  const maxY = Math.max(...nodes.map((node) => node.y + node.radius));
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+};
+
+export const ResumeProfessionalSkillsBubbles = ({
+  skills,
+  accent,
+  isPdf = false
+}: {
+  skills: PercentageItem[];
+  accent: string;
+  isPdf?: boolean;
+}) => {
+  const visibleSkills = getRenderablePercentageItems(skills);
+
+  if (!visibleSkills.length) return null;
+
+  const rawNodes = buildDynamicBubbleLayout(visibleSkills, accent);
+  const bounds = getBubbleBounds(rawNodes);
+
+  const basePadding = isPdf ? 24 : 16;
+  const rawWidth = bounds.width + basePadding * 2;
+  const rawHeight = bounds.height + basePadding * 2;
+
+  const maxWidth = isPdf ? 340 : 420;
+  const maxHeight = isPdf ? 280 : 340;
+
+  const scale = Math.min(
+    1,
+    maxWidth / rawWidth,
+    maxHeight / rawHeight
+  );
+
+  const containerWidth = rawWidth * scale;
+  const containerHeight = rawHeight * scale;
+
+  const nodes = rawNodes.map((node) => ({
+    ...node,
+    left: node.x - node.radius - bounds.minX + basePadding,
+    top: node.y - node.radius - bounds.minY + basePadding
+  }));
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-4">
+        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-900">
+          Professional Skill
+        </div>
+        <div
+          className="h-px flex-1"
+          style={{ backgroundColor: `${accent}66` }}
+        />
+      </div>
+
+      <div className="flex justify-center">
+        <div
+          className="relative"
+          style={{
+            width: `${containerWidth}px`,
+            height: `${containerHeight}px`,
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            style={{
+              width: `${rawWidth}px`,
+              height: `${rawHeight}px`,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left'
+            }}
+          >
+            <div
+              className="relative"
+              style={{
+                width: `${rawWidth}px`,
+                height: `${rawHeight}px`
+              }}
+            >
+              {nodes.map((node, index) => {
+                const displayName = getBubbleName(node.item.name, node.diameter);
+
+                return (
+                  <div
+                    key={node.item.id || `bubble-${index}`}
+                    className="absolute flex items-center justify-center rounded-full text-center text-white shadow-sm"
+                    style={{
+                      width: `${node.diameter}px`,
+                      height: `${node.diameter}px`,
+                      left: `${node.left}px`,
+                      top: `${node.top}px`,
+                      backgroundColor: node.color,
+                      zIndex: index === 0 ? 3 : 2,
+                      padding: '10px'
+                    }}
+                    title={`${node.item.name} - ${node.item.percent}%`}
+                  >
+                    <div className="max-w-[82%] leading-tight">
+                      <div
+                        className="font-bold"
+                        style={{
+                          fontSize: `${getBubbleFontSize(node.diameter)}px`,
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {displayName}
+                      </div>
+
+                      <div
+                        className="mt-1 font-semibold opacity-95"
+                        style={{ fontSize: `${getBubblePercentFontSize(node.diameter)}px` }}
+                      >
+                        {node.item.percent}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export const ResumeDotPercentageRatings = ({
+  items,
+  accent,
+  darkAccent = '#17324d',
+  light = false
+}: {
+  items: PercentageItem[];
+  accent: string;
+  darkAccent?: string;
+  light?: boolean;
+}) => {
+  const visibleItems = getRenderablePercentageItems(items);
+
+  if (!visibleItems.length) return null;
+
+  const filledDotColor = light ? '#ffffff' : accent;
+  const emptyDotColor = light
+    ? 'rgba(255,255,255,0.3)'
+    : darkAccent;
+
+  return (
+    <div className="space-y-3">
+      {visibleItems.map((item, index) => {
+        const filledDots = clamp(Math.round(item.percent / 10), 0, 10);
+
+        return (
+          <div
+            key={item.id || `dot-rating-${index}`}
+            className="grid grid-cols-[1fr_auto] items-center gap-4"
+          >
+            {/* TEXT */}
+            <div>
+              <div
+                className="text-[13px] font-medium"
+                style={{ color: light ? '#fff' : accent }}
+              >
+                {item.name}
+              </div>
+
+              <div
+                className="text-[11px]"
+                style={{ color: light ? '#fff' : accent }}
+              >
+                {item.percent}%
+              </div>
+            </div>
+
+            {/* DOTS */}
+            <div className="flex gap-[6px]">
+              {Array.from({ length: 10 }).map((_, dotIndex) => (
+                <span
+                  key={`${item.id || index}-dot-${dotIndex}`}
+                  className="h-[8px] w-[8px] rounded-full"
+                  style={{
+                    backgroundColor:
+                      dotIndex < filledDots
+                        ? filledDotColor
+                        : emptyDotColor
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+
+export const ResumeCompactReferences = ({
+  resume,
+  accent
+}: {
+  resume: ResumeData;
+  accent: string;
+}) => {
+  if (!resume.references.length) return null;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-4">
+        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-900">
+          Reference
+        </div>
+        <div className="h-px flex-1" style={{ backgroundColor: `${accent}66` }} />
+      </div>
+
+      <div className="space-y-4">
+        {resume.references.slice(0, 3).map((reference) => (
+          <div key={reference.id} className="border-b border-slate-200 pb-3 last:border-b-0">
+            <div className="text-[13px] font-bold" style={{ color: accent }}>
+              {reference.name}
+            </div>
+            {reference.role ? (
+              <div className="text-[12px] text-slate-700">{reference.role}</div>
+            ) : null}
+            {reference.company ? (
+              <div className="text-[12px] text-slate-600">{reference.company}</div>
+            ) : null}
+            {reference.email ? (
+              <div className="text-[11px] text-slate-500">{reference.email}</div>
+            ) : null}
+            {reference.phone ? (
+              <div className="text-[11px] text-slate-500">{reference.phone}</div>
+            ) : null}
+          </div>
+        ))}
       </div>
     </section>
   );

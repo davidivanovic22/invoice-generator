@@ -1,22 +1,23 @@
 import { ResumeData } from "../../../types/resume";
-import { resumePaperClassName, resumePaperStyle } from "./shared";
+import { ResumeContactListBlock } from "../blocks/ResumeContactListBlock";
+import { ResumeLanguageListBlock } from "../blocks/ResumeLanguageListBlock";
+import { ResumePhotoBlock } from "../blocks/ResumePhotoBlock";
+import { ResumeSectionTitleBlock } from "../blocks/ResumeSectionTitleBlock";
 import {
-  ResumeAchievementsList,
-  ResumeCertificatesList,
-  ResumeContactList,
-  ResumeCoursesList,
-  ResumeEducationList,
-  ResumeExperienceList,
-  ResumeFooterText,
-  ResumeInternshipsList,
-  ResumeLanguageList,
-  ResumePhoto,
-  ResumeReferencesList,
-  ResumeSectionTitle,
-  ResumeSkillGrid,
-  ResumeStringSection,
-  ResumeSummary
+    ResumeAchievementsList,
+    ResumeCertificatesList,
+    ResumeCoursesList,
+    ResumeDotPercentageRatings,
+    ResumeEducationList,
+    ResumeExperienceList,
+    ResumeFooterText,
+    ResumeInternshipsList,
+    ResumeReferencesList,
+    ResumeSkillGrid,
+    ResumeStringSection,
+    ResumeSummary
 } from "./ResumeBlocks";
+import { resumePaperClassName, resumePaperStyle } from "./shared";
 
 type Props = {
   resume: ResumeData;
@@ -37,7 +38,7 @@ export const ResumeExecutiveSplit = ({ resume, isPdf = false }: Props) => {
       <div
         className="grid h-full"
         style={{
-          gridTemplateColumns: "255px 1fr",
+          gridTemplateColumns: "290px 1fr",
           minHeight: resumePaperStyle.minHeight
         }}
       >
@@ -46,7 +47,7 @@ export const ResumeExecutiveSplit = ({ resume, isPdf = false }: Props) => {
           style={{ background: accent, minHeight: resumePaperStyle.minHeight }}
         >
           <div className="flex flex-col items-center border-b border-white/20 pb-6">
-            <ResumePhoto
+            <ResumePhotoBlock
               photo={resume.personal.photo}
               alt={resume.personal.fullName}
               light
@@ -63,16 +64,16 @@ export const ResumeExecutiveSplit = ({ resume, isPdf = false }: Props) => {
           </div>
 
           <section className="mt-6">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Contact
-            </ResumeSectionTitle>
-            <ResumeContactList resume={resume} light />
+            </ResumeSectionTitleBlock>
+            <ResumeContactListBlock  resume={resume} light ></ResumeContactListBlock>
           </section>
 
           <section className="mt-7">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Skills
-            </ResumeSectionTitle>
+            </ResumeSectionTitleBlock>
             <ResumeSkillGrid
               skills={resume.skills}
               accent={accent}
@@ -83,8 +84,7 @@ export const ResumeExecutiveSplit = ({ resume, isPdf = false }: Props) => {
 
           {resume.enabledSections.qualities && resume.qualities.length > 0 && (
             <section className="mt-7">
-              <ResumeStringSection
-                title="Qualities"
+              <ResumeDotPercentageRatings
                 items={resume.qualities}
                 accent={accent}
                 light
@@ -99,10 +99,10 @@ export const ResumeExecutiveSplit = ({ resume, isPdf = false }: Props) => {
           )}
 
           <section className="mt-7">
-            <ResumeSectionTitle accent={accent} light>
+            <ResumeSectionTitleBlock accent={accent} light>
               Languages
-            </ResumeSectionTitle>
-            <ResumeLanguageList resume={resume} light />
+            </ResumeSectionTitleBlock>
+            <ResumeLanguageListBlock resume={resume} light ></ResumeLanguageListBlock>
           </section>
 
           {resume.enabledSections.signature && resume.signature && (

@@ -10,7 +10,10 @@ export type ResumeTemplateKey =
   | 'dark-pro'
   | 'creative-gradient'
   | 'tech-clean'
-  | 'compact-pro';
+  | 'compact-pro'
+  | 'cv-curve-sidebar'
+  | 'cv-infographic-split'
+  | 'cv-arched-profile';
 
 export type ResumePersonalExtraFieldKey =
   | 'birthPlace'
@@ -53,6 +56,13 @@ export type ResumePersonalInfo = {
   driverLicense?: string;
   dateOfBirth?: string;
 };
+
+export type PercentageItem = {
+  id: string;
+  name: string;
+  percent: number;
+};
+
 
 export type ResumeExperienceItem = {
   id: string;
@@ -159,9 +169,9 @@ export type ResumeData = {
   id: string;
   personal: ResumePersonalInfo;
   professionalSummary: string;
-  skills: string[];
+  skills: PercentageItem[];
   hobbies: string[];
-  qualities: string[];
+  qualities: PercentageItem[];
   courses: ResumeCourseItem[];
   internships: ResumeInternshipItem[];
   extracurricularActivities: string[];

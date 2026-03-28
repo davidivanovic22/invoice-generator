@@ -7,6 +7,7 @@ import { ResumeThemeRail } from '../../components/resume/ResumeThemeRail';
 import { ResumePersonalSection } from '../../components/resume/editors/ResumePersonalSection';
 import { ResumeAdditionalSectionsPanel } from '../../components/resume/editors/ResumeAdditionalSectionsPanel';
 import { ResumeStringListEditor } from '../../components/resume/editors/ResumeStringListEditor';
+import { ResumePercentageListEditor } from '../../components/resume/editors/ResumePercentageListEditor';
 import { ResumeCoursesEditor } from '../../components/resume/editors/ResumeCoursesEditor';
 import { ResumeInternshipsEditor } from '../../components/resume/editors/ResumeInternshipsEditor';
 import { ResumeReferencesEditor } from '../../components/resume/editors/ResumeReferencesEditor';
@@ -36,6 +37,12 @@ export const ResumePage = () => {
         updateEducationItem,
         addEducationItem,
         removeEducationItem,
+        updateSkillItem,
+        addSkillItem,
+        addQualityItem,
+        updateQualityItem,
+        removeQualityItem,
+        removeSkillItem,
         exportCurrentResume,
         exportAllResumes,
         importFromJson,
@@ -272,19 +279,19 @@ export const ResumePage = () => {
                         onToggle={handleToggleSection}
                     />
 
-                    <ResumeStringListEditor
-                        id="skills"
-                        title="Skills"
+                    <ResumePercentageListEditor
+                        id={'skills'}
+                        title={'Skills'}
+                        itemLabel={'Skill'}
+                        namePlaceholder="React"
+                        addButtonLabel="Add skill"
+                        emptyStateText="No skills added yet."
                         items={activeResume.skills}
-                        placeholder="Skill"
-                        onAdd={() => addSimpleStringArrayItem('skills')}
-                        onChange={(index, value) =>
-                            updateSimpleStringArray('skills', index, value)
-                        }
-                        onRemove={(index) => removeSimpleStringArrayItem('skills', index)}
+                        onAdd={addSkillItem}
+                        onChange={updateSkillItem}
+                        onRemove={removeSkillItem}
                         isOpen={openSection === 'skills'}
-                        onToggle={handleToggleSection}
-                    />
+                        onToggle={handleToggleSection} />
 
                     <AccordionSection
                         id="languages"
@@ -317,16 +324,17 @@ export const ResumePage = () => {
                     </AccordionSection>
 
                     {activeResume.enabledSections.qualities && (
-                        <ResumeStringListEditor
-                            id="qualities"
-                            title="Qualities"
+                        <ResumePercentageListEditor
+                            id={'qualities'}
+                            title={'Qualities'}
+                            itemLabel="Quality"
+                            namePlaceholder="Leadership"
+                            addButtonLabel="Add quality"
+                            emptyStateText="No qualities added yet."
                             items={activeResume.qualities}
-                            placeholder="Quality"
-                            onAdd={() => addSimpleStringArrayItem('qualities')}
-                            onChange={(index, value) =>
-                                updateSimpleStringArray('qualities', index, value)
-                            }
-                            onRemove={(index) => removeSimpleStringArrayItem('qualities', index)}
+                            onAdd={addQualityItem}
+                            onChange={updateQualityItem}
+                            onRemove={removeQualityItem}
                             isOpen={openSection === 'qualities'}
                             onToggle={handleToggleSection}
                         />
@@ -340,11 +348,7 @@ export const ResumePage = () => {
                             placeholder="Activity"
                             onAdd={() => addSimpleStringArrayItem('extracurricularActivities')}
                             onChange={(index, value) =>
-                                updateSimpleStringArray(
-                                    'extracurricularActivities',
-                                    index,
-                                    value
-                                )
+                                updateSimpleStringArray('extracurricularActivities', index, value)
                             }
                             onRemove={(index) =>
                                 removeSimpleStringArrayItem('extracurricularActivities', index)

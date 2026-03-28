@@ -1,22 +1,23 @@
 import { ResumeData } from "../../../types/resume";
-import { resumePaperClassName, resumePaperStyle } from "./shared";
+import { ResumeContactListBlock } from "../blocks/ResumeContactListBlock";
+import { ResumeLanguageListBlock } from "../blocks/ResumeLanguageListBlock";
+import { ResumePhotoBlock } from "../blocks/ResumePhotoBlock";
+import { ResumeSectionTitleBlock } from "../blocks/ResumeSectionTitleBlock";
 import {
-  ResumeAchievementsList,
-  ResumeCertificatesList,
-  ResumeContactList,
-  ResumeCoursesList,
-  ResumeEducationList,
-  ResumeExperienceList,
-  ResumeFooterText,
-  ResumeInternshipsList,
-  ResumeLanguageList,
-  ResumePhoto,
-  ResumeReferencesList,
-  ResumeSectionTitle,
-  ResumeSkillGrid,
-  ResumeStringSection,
-  ResumeSummary
+    ResumeAchievementsList,
+    ResumeCertificatesList,
+    ResumeCoursesList,
+    ResumeDotPercentageRatings,
+    ResumeEducationList,
+    ResumeExperienceList,
+    ResumeFooterText,
+    ResumeInternshipsList,
+    ResumeReferencesList,
+    ResumeSkillGrid,
+    ResumeStringSection,
+    ResumeSummary
 } from "./ResumeBlocks";
+import { resumePaperClassName, resumePaperStyle } from "./shared";
 
 type Props = {
   resume: ResumeData;
@@ -73,7 +74,7 @@ export const ResumeEditorialColumns = ({ resume, isPdf = false }: Props) => {
             </div>
 
             <div>
-              <ResumeSectionTitle accent={accent}>Skills</ResumeSectionTitle>
+              <ResumeSectionTitleBlock accent={accent}>Skills</ResumeSectionTitleBlock>
               <ResumeSkillGrid
                 skills={resume.skills}
                 accent={accent}
@@ -104,7 +105,7 @@ export const ResumeEditorialColumns = ({ resume, isPdf = false }: Props) => {
           }}
         >
           <div className="flex flex-col items-center">
-            <ResumePhoto
+            <ResumePhotoBlock
               photo={resume.personal.photo}
               alt={resume.personal.fullName}
               sizeClassName="h-24 w-24"
@@ -113,19 +114,18 @@ export const ResumeEditorialColumns = ({ resume, isPdf = false }: Props) => {
           </div>
 
           <div className="mt-8">
-            <ResumeSectionTitle accent={accent}>Contact</ResumeSectionTitle>
-            <ResumeContactList resume={resume} />
+            <ResumeSectionTitleBlock accent={accent}>Contact</ResumeSectionTitleBlock>
+            <ResumeContactListBlock  resume={resume} ></ResumeContactListBlock>
           </div>
 
           <div className="mt-8">
-            <ResumeSectionTitle accent={accent}>Languages</ResumeSectionTitle>
-            <ResumeLanguageList resume={resume} />
+            <ResumeSectionTitleBlock accent={accent}>Languages</ResumeSectionTitleBlock>
+            <ResumeLanguageListBlock resume={resume} ></ResumeLanguageListBlock>
           </div>
 
           {resume.enabledSections.qualities && resume.qualities.length > 0 && (
             <div className="mt-8">
-              <ResumeStringSection
-                title="Qualities"
+              <ResumeDotPercentageRatings
                 items={resume.qualities}
                 accent={accent}
               />
