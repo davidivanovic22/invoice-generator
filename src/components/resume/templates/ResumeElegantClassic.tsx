@@ -1,119 +1,92 @@
 import { ResumeData } from "../../../types/resume";
 import { resumePaperClassName, resumePaperStyle } from "./shared";
+import {
+  ResumeEducationList,
+  ResumeExperienceList,
+  ResumeLanguageList,
+  ResumePhoto,
+  ResumeSectionTitle,
+  ResumeSkillGrid,
+  ResumeSummary
+} from "./ResumeBlocks";
 
-export const ResumeElegantClassic = ({ resume }: { resume: ResumeData }) => {
+type Props = {
+  resume: ResumeData;
+  isPdf?: boolean;
+};
+
+export const ResumeElegantClassic = ({ resume, isPdf = false }: Props) => {
   const accent = resume.editorSettings.accentColor;
 
   return (
     <div
-      className={`${resumePaperClassName} rounded-none border p-12 text-black`}
+      className={`${resumePaperClassName} rounded-none border p-12 font-serif text-slate-900`}
       style={{
         ...resumePaperStyle,
         fontSize: `${resume.editorSettings.baseFontSize}px`
       }}
     >
-      <div className="flex items-start gap-6">
-        {resume.personal.photo ? (
-          <img
-            src={resume.personal.photo}
+      <header className="mb-8 text-center">
+        <div className="flex flex-col items-center">
+          <ResumePhoto
+            photo={resume.personal.photo}
             alt={resume.personal.fullName}
-            className="h-24 w-24 rounded-md border border-slate-200 object-cover"
+            sizeClassName="h-24 w-24"
+            rounded="rounded-md"
           />
-        ) : (
-          <div className="flex h-24 w-24 items-center justify-center border border-dashed border-slate-300 text-xs text-slate-400">
-            PHOTO
-          </div>
-        )}
 
-        <div className="flex-1">
-          <h1 className="text-3xl font-serif">{resume.personal.fullName}</h1>
-          <div className="mt-2 text-sm text-slate-600">
-            {resume.personal.title} • {resume.personal.email} • {resume.personal.phone}
+          <h1 className="mt-5 text-[32px] font-semibold leading-tight">
+            {resume.personal.fullName}
+          </h1>
+
+          <p className="mt-2 text-[15px]" style={{ color: accent }}>
+            {resume.personal.title}
+          </p>
+
+          <div className="mt-3 text-sm text-slate-600">
+            {resume.personal.email} • {resume.personal.phone}
           </div>
-          <div className="mt-1 text-sm text-slate-600">{resume.personal.address}</div>
+
+          <div className="mt-1 text-sm text-slate-600">
+            {resume.personal.address}
+          </div>
         </div>
+      </header>
+
+      <div
+        className="mb-8 border-t"
+        style={{ borderColor: `${accent}55` }}
+      />
+
+      <ResumeSummary resume={resume} accent={accent} />
+
+      <div className="mt-8">
+        <ResumeExperienceList
+          resume={resume}
+          accent={accent}
+          isPdf={isPdf}
+        />
       </div>
 
-      <hr className="my-6" style={{ borderColor: `${accent}55` }} />
-
-      <section className="mb-8">
-        <h2 className="mb-2 uppercase text-sm tracking-[0.24em]" style={{ color: accent }}>
-          Summary
-        </h2>
-        <p className="">{resume.professionalSummary}</p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="mb-3 uppercase text-sm tracking-[0.24em]" style={{ color: accent }}>
-          Experience
-        </h2>
-
-        {resume.experience.map((exp) => (
-          <div key={exp.id} className="mb-6">
-            <div className="font-semibold leading-tight">
-              {exp.role} - {exp.company}
-            </div>
-            <div className="mt-1 text-sm italic  text-slate-500">
-              {[exp.project, exp.location].filter(Boolean).join(" • ")}
-              {exp.project || exp.location ? " • " : ""}
-              {exp.start} – {exp.end}
-            </div>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm ">
-              {exp.bullets.map((b, i) => (
-                <li key={i}>{b}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </section>
-
-      <section className="grid grid-cols-[1fr_1fr] items-start gap-10">
+      <div className="mt-8 grid grid-cols-[1fr_1fr] items-start gap-10">
         <div>
-          <h2 className="mb-3 uppercase text-sm tracking-[0.24em]" style={{ color: accent }}>
-            Education
-          </h2>
-
-          {resume.education.map((edu) => (
-            <div key={edu.id} className="mb-4">
-              <div className="font-semibold leading-tight">{edu.degree}</div>
-              <div className="mt-1 text-sm  text-slate-600">{edu.school}</div>
-              <div className="mt-1 text-sm  text-slate-500">
-                {edu.start} - {edu.end}
-              </div>
-            </div>
-          ))}
+          <ResumeEducationList resume={resume} accent={accent} />
         </div>
 
         <div>
-          <h2 className="mb-3 uppercase text-sm tracking-[0.24em]" style={{ color: accent }}>
-            Skills
-          </h2>
+          <ResumeSectionTitle accent={accent}>Skills</ResumeSectionTitle>
+          <ResumeSkillGrid
+            skills={resume.skills}
+            accent={accent}
+            isPdf={isPdf}
+          />
 
-          <div className="flex flex-wrap gap-3">
-            {resume.skills.map((skill) => (
-              <span
-                key={skill}
-                className="inline-flex min-h-[34px] items-center justify-center rounded-full border px-4 py-1.5 text-xs leading-none"
-                style={{ borderColor: `${accent}55`, color: accent }}
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-
-          <h2 className="mb-3 mt-8 uppercase text-sm tracking-[0.24em]" style={{ color: accent }}>
-            Languages
-          </h2>
-
-          <div className="space-y-2 text-sm">
-            {resume.languages.map((lang) => (
-              <div key={lang.id}>
-                {lang.name} — {lang.level}
-              </div>
-            ))}
+          <div className="mt-8">
+            <ResumeSectionTitle accent={accent}>Languages</ResumeSectionTitle>
+            <ResumeLanguageList resume={resume} />
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

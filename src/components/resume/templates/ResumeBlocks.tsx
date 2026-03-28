@@ -1,5 +1,9 @@
 import { ResumeData } from "../../../types/resume";
 
+/* =========================
+   SECTION TITLE
+========================= */
+
 type SectionTitleProps = {
   children: React.ReactNode;
   accent: string;
@@ -18,6 +22,10 @@ export const ResumeSectionTitle = ({
     {children}
   </h2>
 );
+
+/* =========================
+   PHOTO
+========================= */
 
 type PhotoProps = {
   photo?: string;
@@ -48,14 +56,18 @@ export const ResumePhoto = ({
   return (
     <div
       className={`flex ${sizeClassName} items-center justify-center ${rounded} border border-dashed text-xs ${light
-        ? "border-white/30 text-white/70"
-        : "border-slate-300 text-slate-400"
+          ? "border-white/30 text-white/70"
+          : "border-slate-300 text-slate-400"
         }`}
     >
       PHOTO
     </div>
   );
 };
+
+/* =========================
+   CONTACT
+========================= */
 
 export const ResumeContactList = ({
   resume,
@@ -64,28 +76,33 @@ export const ResumeContactList = ({
   resume: ResumeData;
   light?: boolean;
 }) => {
-  const secondary = light ? "text-white/85" : "text-slate-700";
-
-  const lineClass =
-    "text-[13px] leading-7 break-words [overflow-wrap:anywhere]";
+  const textColor = light ? "text-white/85" : "text-slate-700";
 
   return (
-    <div className={`space-y-1 ${secondary}`}>
-      <div className={lineClass}>{resume.personal.phone}</div>
-      <div className={lineClass}>{resume.personal.email}</div>
-      <div className={lineClass}>{resume.personal.address}</div>
-      {resume.personal.linkedin ? (
-        <div className={lineClass}>{resume.personal.linkedin}</div>
-      ) : null}
-      {resume.personal.github ? (
-        <div className={lineClass}>{resume.personal.github}</div>
-      ) : null}
-      {resume.personal.website ? (
-        <div className={lineClass}>{resume.personal.website}</div>
-      ) : null}
+    <div className={`space-y-1 ${textColor}`}>
+      {[resume.personal.phone,
+      resume.personal.email,
+      resume.personal.address,
+      resume.personal.linkedin,
+      resume.personal.github,
+      resume.personal.website
+      ]
+        .filter(Boolean)
+        .map((item, i) => (
+          <div
+            key={i}
+            className="text-[13px] leading-7 break-words"
+          >
+            {item}
+          </div>
+        ))}
     </div>
   );
 };
+
+/* =========================
+   LANGUAGES
+========================= */
 
 export const ResumeLanguageList = ({
   resume,
@@ -94,11 +111,14 @@ export const ResumeLanguageList = ({
   resume: ResumeData;
   light?: boolean;
 }) => (
-  <div className={`space-y-3 text-[13px] ${light ? "text-white" : "text-slate-700"}`}>
+  <div
+    className={`space-y-3 text-[13px] ${light ? "text-white" : "text-slate-700"
+      }`}
+  >
     {resume.languages.map((lang) => (
       <div key={lang.id}>
-        <div className="font-medium ">{lang.name}</div>
-        <div className={light ? "text-white/75 " : "text-slate-500 "}>
+        <div className="font-medium">{lang.name}</div>
+        <div className={light ? "text-white/70" : "text-slate-500"}>
           {lang.level}
         </div>
       </div>
@@ -106,7 +126,11 @@ export const ResumeLanguageList = ({
   </div>
 );
 
-type Props = {
+/* =========================
+   SKILLS
+========================= */
+
+type ResumeSkillGridProps = {
   skills: string[];
   accent: string;
   light?: boolean;
@@ -118,14 +142,14 @@ export const ResumeSkillGrid = ({
   accent,
   light = false,
   isPdf = false
-}: Props) => {
+}: ResumeSkillGridProps) => {
   return (
     <div className="grid grid-cols-3 gap-2">
       {skills.map((skill) => (
         <div
           key={skill}
           className={`
-            ${isPdf ? 'grid place-items-center' : 'flex items-center justify-center'}
+            flex items-center justify-center
             min-h-[34px]
             rounded-full
             px-2
@@ -134,9 +158,8 @@ export const ResumeSkillGrid = ({
           `}
           style={{
             paddingBottom: isPdf ? '14px' : undefined,
-            border: `1px solid ${
-              light ? "rgba(255,255,255,0.22)" : `${accent}55`
-            }`,
+            border: `1px solid ${light ? "rgba(255,255,255,0.22)" : `${accent}55`
+              }`,
             color: light ? "#fff" : accent
           }}
         >
@@ -146,6 +169,10 @@ export const ResumeSkillGrid = ({
     </div>
   );
 };
+
+/* =========================
+   SUMMARY
+========================= */
 
 export const ResumeSummary = ({
   resume,
@@ -161,11 +188,18 @@ export const ResumeSummary = ({
       Professional Summary
     </ResumeSectionTitle>
 
-    <p className={`text-[14px] leading-7 ${light ? "text-white/90" : "text-slate-700"}`}>
+    <p
+      className={`text-[14px] leading-7 ${light ? "text-white/90" : "text-slate-700"
+        }`}
+    >
       {resume.professionalSummary}
     </p>
   </section>
 );
+
+/* =========================
+   EXPERIENCE (FIXED BULLETS)
+========================= */
 
 export const ResumeExperienceList = ({
   resume,
@@ -179,56 +213,70 @@ export const ResumeExperienceList = ({
   light?: boolean;
   compact?: boolean;
   isPdf?: boolean;
-}) => (
-  <section>
-    <ResumeSectionTitle accent={accent} light={light}>
-      Experience
-    </ResumeSectionTitle>
+}) => {
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
+  const textBody = light ? "text-white/85" : "text-slate-700";
 
-    <div className={compact ? "space-y-6" : "space-y-8"}>
-      {resume.experience.map((exp) => (
-        <article key={exp.id}>
-          <div className="grid grid-cols-[1fr_auto] items-start gap-4">
-            <div className="min-w-0">
-              <div
-                className={`font-semibold leading-tight ${compact ? "text-[15px]" : "text-[18px]"
-                  } ${light ? "text-white" : "text-slate-900"}`}
-              >
-                {exp.role}
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Experience
+      </ResumeSectionTitle>
+
+      <div className={compact ? "space-y-6" : "space-y-8"}>
+        {resume.experience.map((exp) => (
+          <article key={exp.id}>
+            <div className="grid grid-cols-[1fr_auto] items-start gap-4">
+              <div className="min-w-0">
+                <div
+                  className={`font-semibold leading-tight ${compact ? "text-[15px]" : "text-[18px]"
+                    } ${textPrimary}`}
+                >
+                  {exp.role}
+                </div>
+
+                <div
+                  className={`mt-1 ${compact ? "text-[13px]" : "text-sm"
+                    } ${textSecondary}`}
+                >
+                  {[exp.company, exp.project, exp.location]
+                    .filter(Boolean)
+                    .join(" • ")}
+                </div>
               </div>
 
               <div
-                className={`mt-1 ${compact ? "text-[13px]" : "text-sm"
-                  }  ${light ? "text-white/75" : "text-slate-500"}`}
+                className={`shrink-0 text-right ${compact ? "text-[13px]" : "text-sm"
+                  } ${textSecondary}`}
               >
-                {[exp.company, exp.project, exp.location].filter(Boolean).join(" • ")}
+                {exp.start} - {exp.end}
               </div>
             </div>
 
-            <div
-              className={`shrink-0 text-right ${compact ? "text-[13px]" : "text-sm"
-                }  ${light ? "text-white/75" : "text-slate-500"}`}
-            >
-              {exp.start} - {exp.end}
+            <div className="mt-3 space-y-2 text-[13px]">
+              {exp.bullets.map((b, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span
+                    className="mt-[6px] block h-[4px] w-[4px] min-w-[4px] rounded-full"
+                    style={{ backgroundColor: accent }}
+                  />
+                  <span className={`${textBody} leading-[1.5]`}>
+                    {b}
+                  </span>
+                </div>
+              ))}
             </div>
-          </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
 
-          <div className="mt-3 space-y-2 text-[13px]  text-slate-700">
-            {exp.bullets.map((b, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span
-                  className="mt-[14px] block h-[4px] w-[4px] min-w-[4px] rounded-full"
-                  style={{ backgroundColor: resume.editorSettings.accentColor }}
-                />
-                <span className={`${!isPdf ? 'mt-3' : undefined} block`}>{b}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
-);
+/* =========================
+   EDUCATION
+========================= */
 
 export const ResumeEducationList = ({
   resume,
@@ -238,26 +286,33 @@ export const ResumeEducationList = ({
   resume: ResumeData;
   accent: string;
   light?: boolean;
-}) => (
-  <section>
-    <ResumeSectionTitle accent={accent} light={light}>
-      Education
-    </ResumeSectionTitle>
+}) => {
+  const textPrimary = light ? "text-white" : "text-slate-900";
+  const textSecondary = light ? "text-white/70" : "text-slate-500";
 
-    <div className="space-y-4">
-      {resume.education.map((edu) => (
-        <article key={edu.id}>
-          <div className={`text-[15px] font-semibold leading-tight ${light ? "text-white" : "text-slate-900"}`}>
-            {edu.degree}
-          </div>
-          <div className={`mt-1 text-[13px]  ${light ? "text-white/80" : "text-slate-600"}`}>
-            {edu.school}
-          </div>
-          <div className={`mt-1 text-[13px]  ${light ? "text-white/70" : "text-slate-500"}`}>
-            {edu.start} - {edu.end}
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
-);
+  return (
+    <section>
+      <ResumeSectionTitle accent={accent} light={light}>
+        Education
+      </ResumeSectionTitle>
+
+      <div className="space-y-4">
+        {resume.education.map((edu) => (
+          <article key={edu.id}>
+            <div className={`text-[15px] font-semibold ${textPrimary}`}>
+              {edu.degree}
+            </div>
+
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {edu.school}
+            </div>
+
+            <div className={`mt-1 text-[13px] ${textSecondary}`}>
+              {edu.start} - {edu.end}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};

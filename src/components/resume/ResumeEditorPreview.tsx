@@ -10,7 +10,7 @@ export const ResumeEditorPreview = forwardRef<HTMLDivElement, Props>(
   ({ resume }, ref) => {
     return (
       <div ref={ref} className="w-full">
-        <div className="mx-auto flex w-full justify-center p-6">
+        <div className="mx-auto flex w-full justify-center">
           <ResumeTemplateRenderer resume={resume} />
         </div>
       </div>

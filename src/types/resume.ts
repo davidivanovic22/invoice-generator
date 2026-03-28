@@ -4,7 +4,13 @@ export type ResumeTemplateKey =
   | 'top-banner'
   | 'editorial-columns'
   | 'centered-profile'
-  | 'soft-accent-grid';
+  | 'soft-accent-grid'
+  | 'modern-minimal'
+  | 'elegant-classic'
+  | 'dark-pro'
+  | 'creative-gradient'
+  | 'tech-clean'
+  | 'compact-pro';
 
 export type ResumePersonalInfo = {
   fullName: string;

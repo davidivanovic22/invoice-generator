@@ -11,7 +11,7 @@ import {
     ResumeSummary
 } from "./ResumeBlocks";
 
-export const ResumeSidebarStacked = ({ resume }: { resume: ResumeData }) => {
+export const ResumeSidebarStacked = ({ resume, isPdf = false }: { resume: ResumeData; isPdf?: boolean }) => {
     const accent = resume.editorSettings.accentColor;
 
     return (
@@ -49,6 +49,7 @@ export const ResumeSidebarStacked = ({ resume }: { resume: ResumeData }) => {
                             skills={resume.skills}
                             accent={accent}
                             light
+                            isPdf={isPdf}
                         />
                     </div>
 
@@ -63,7 +64,8 @@ export const ResumeSidebarStacked = ({ resume }: { resume: ResumeData }) => {
                 <main className="p-8">
                     <ResumeSummary resume={resume} accent={accent} />
                     <div className="mt-8">
-                        <ResumeExperienceList resume={resume} accent={accent} compact />
+                        <ResumeExperienceList resume={resume} accent={accent}
+                            isPdf={isPdf} compact />
                     </div>
                     <div className="mt-8">
                         <ResumeEducationList resume={resume} accent={accent} />
