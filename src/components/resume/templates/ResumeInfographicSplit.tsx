@@ -6,6 +6,7 @@ import {
     ResumeAchievementsList,
     ResumeCompactReferences,
     ResumeDotPercentageRatings,
+    ResumeExperienceList,
     ResumeProfessionalSkillsBubbles,
     ResumeSummary
 } from './ResumeBlocks';
@@ -109,42 +110,12 @@ export const ResumeInfographicSplit = ({ resume, isPdf = false }: Props) => {
         </aside>
 
         <main className="bg-white px-8 py-8">
-          <ResumeSectionTitleBlock accent={accent}>Experience</ResumeSectionTitleBlock>
-
           <div className="space-y-6">
-            {resume.experience.map((exp) => (
-              <article key={exp.id}>
-                <div className="grid gap-4">
-                  <div className="text-[13px] font-semibold" style={{ color: accent }}>
-                    {exp.start} - {exp.end}
-                  </div>
-
-                  <div>
-                    <div className="text-[16px] font-bold text-slate-900">
-                      {exp.role}
-                    </div>
-
-                    <div className="text-[13px] text-slate-500">
-                      {[exp.company, exp.project, exp.location]
-                        .filter(Boolean)
-                        .join(' • ')}
-                    </div>
-
-                    <div className="mt-2 space-y-2 text-[13px] text-slate-700">
-                      {exp.bullets.map((bullet, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <span
-                            className="mt-[7px] block h-[4px] w-[4px] rounded-full"
-                            style={{ backgroundColor: accent }}
-                          />
-                          <span>{bullet}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
+               <ResumeExperienceList
+                       resume={resume}
+                       accent={accent}
+                       isPdf={isPdf}
+                     />
           </div>
 
           {resume.enabledSections.qualities && topQualities.length > 0 && (
