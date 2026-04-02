@@ -11,11 +11,12 @@ const waitForAssets = async (element: HTMLElement) => {
 
   await Promise.all(
     images.map((img) => {
-      if (img.complete) return Promise.resolve();
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
 
       return new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
+        const done = () => resolve();
+        img.onload = done;
+        img.onerror = done;
       });
     })
   );
@@ -27,6 +28,9 @@ const waitForAssets = async (element: HTMLElement) => {
       // ignore
     }
   }
+
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 };
 
 const renderPdf = async (
@@ -34,6 +38,14 @@ const renderPdf = async (
   mode: 'preview' | 'download'
 ) => {
   await waitForAssets(element);
+
+  const pages = Array.from(
+    element.querySelectorAll<HTMLElement>('[data-pdf-page="true"]')
+  );
+
+  if (pages.length === 0) {
+    throw new Error('No pages found for PDF export.');
+  }
 
   const pdf = new jsPDF({
     orientation: 'p',
@@ -45,50 +57,41 @@ const renderPdf = async (
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
 
-  const margin = 20;
-  const contentWidth = pdfWidth - margin * 2;
-  const contentHeight = pdfHeight - margin * 2;
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
 
-  const rect = element.getBoundingClientRect();
-  const targetWidth = Math.round(rect.width);
-  const targetHeight = Math.round(rect.height);
+    await waitForAssets(page);
 
-  const canvas = await html2canvas(element, {
-    scale: 3,
-    useCORS: true,
-    allowTaint: false,
-    backgroundColor: '#ffffff',
-    logging: false,
-    width: targetWidth,
-    height: targetHeight,
-    windowWidth: targetWidth,
-    windowHeight: targetHeight
-  });
+    const canvas = await html2canvas(page, {
+      scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: page.scrollWidth,
+      windowHeight: page.scrollHeight
+    });
 
-  if (!canvas.width || !canvas.height) {
-    throw new Error('Canvas render failed.');
+    const imgData = canvas.toDataURL('image/png', 1.0);
+
+    if (i > 0) {
+      pdf.addPage();
+    }
+
+    // force full-page render
+    pdf.addImage(
+      imgData,
+      'PNG',
+      0,
+      0,
+      pdfWidth,
+      pdfHeight,
+      undefined,
+      'FAST'
+    );
   }
-
-  const imgData = canvas.toDataURL('image/png', 1.0);
-
-  const imgRatio = canvas.width / canvas.height;
-  const pageRatio = contentWidth / contentHeight;
-
-  let imgWidth = contentWidth;
-  let imgHeight = contentHeight;
-
-  if (imgRatio > pageRatio) {
-    imgWidth = contentWidth;
-    imgHeight = imgWidth / imgRatio;
-  } else {
-    imgHeight = contentHeight;
-    imgWidth = imgHeight * imgRatio;
-  }
-
-  const x = (pdfWidth - imgWidth) / 2;
-  const y = (pdfHeight - imgHeight) / 2;
-
-  pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
 
   if (mode === 'preview') {
     window.open(pdf.output('bloburl'), '_blank');

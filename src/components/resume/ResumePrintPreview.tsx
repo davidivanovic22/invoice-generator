@@ -6,24 +6,19 @@ type Props = {
   resume: ResumeData;
 };
 
-export const ResumePrintPreview = forwardRef<HTMLDivElement, Props>(
-  ({ resume }, ref) => {
-    return (
-      <div
-        ref={ref}
-        style={{
-          width: '794px',
-          minHeight: '1123px',
-          background: '#ffffff',
-          margin: 0,
-          padding: 0,
-          overflow: 'hidden'
-        }}
-      >
-        <ResumeTemplateRenderer resume={resume} isPdf={true} />
-      </div>
-    );
-  }
-);
+export const ResumePrintPreview = forwardRef<HTMLDivElement, Props>(({ resume }, ref) => {
+  return (
+    <div
+      ref={ref}
+      style={{
+        width: '794px',
+        margin: '0 auto',
+        background: '#ffffff'
+      }}
+    >
+      <ResumeTemplateRenderer resume={resume} isPdf />
+    </div>
+  );
+});
 
 ResumePrintPreview.displayName = 'ResumePrintPreview';

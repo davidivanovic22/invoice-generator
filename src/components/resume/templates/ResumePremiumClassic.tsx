@@ -7,6 +7,7 @@ import { ResumeSectionTitleBlock } from '../blocks/ResumeSectionTitleBlock';
 import {
   ResumeAchievementsList,
   ResumeEducationList,
+  ResumeExperienceList,
   ResumeFooterText,
   ResumeSkillGrid,
   ResumeSummary
@@ -31,14 +32,16 @@ type ResumePage = {
 };
 
 const PAGE_HEIGHT = 1123;
-const DEFAULT_USABLE_HEIGHT = 1100;
-const RELAXED_USABLE_HEIGHT = 1140;
+const DEFAULT_USABLE_HEIGHT = 1030;
+const RELAXED_USABLE_HEIGHT = 1080;
+
+const CLASSIC_ACCENT = '#8a7458';
 
 const createVisibleSkills = (resume: ResumeData) =>
   resume.skills
     .filter((skill) => (skill.name ?? '').trim().length > 0 && (skill.percent ?? 0) > 0)
     .sort((a, b) => (b.percent ?? 0) - (a.percent ?? 0))
-    .slice(0, 8);
+    .slice(0, 10);
 
 const createVisibleExperience = (resume: ResumeData) =>
   resume.experience.filter(
@@ -57,18 +60,30 @@ const createVisibleAchievements = (resume: ResumeData) =>
 
 const createSidebarHeader = (resume: ResumeData): PageSection => ({
   key: 'sidebar-header',
-  estimatedHeight: 235,
+  estimatedHeight: 255,
   content: (
-    <div className="mx-auto w-full max-w-[220px]">
-      <div className="overflow-hidden rounded-t-[120px] bg-[#b4b8be] px-4 pt-4">
-        <div className="rounded-full border-[8px] border-white/80 p-1">
-          <ResumePhotoBlock
-            photo={resume.personal.photo}
-            alt={resume.personal.fullName}
-            rounded="rounded-full"
-            sizeClassName="h-[180px] w-[180px]"
-          />
-        </div>
+    <div className="text-center">
+      <div className="mx-auto flex justify-center">
+        <ResumePhotoBlock
+          photo={resume.personal.photo}
+          alt={resume.personal.fullName}
+          rounded="rounded-full"
+          sizeClassName="h-[170px] w-[170px]"
+        />
+      </div>
+
+      <div className="mt-6 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-400">
+        Personal Profile
+      </div>
+
+      <div className="mx-auto mt-4 h-px w-24 bg-slate-300" />
+
+      <h1 className="mt-6 text-[30px] font-light uppercase leading-tight tracking-[0.18em] text-slate-700">
+        {resume.personal.fullName}
+      </h1>
+
+      <div className="mt-3 text-[14px] font-medium uppercase tracking-[0.18em] text-slate-500">
+        {resume.personal.title}
       </div>
     </div>
   )
@@ -82,10 +97,21 @@ const createSidebarSections = (
   const visibleSkills = createVisibleSkills(resume);
   const sections: PageSection[] = [createSidebarHeader(resume)];
 
+  sections.push({
+    key: 'contact',
+    estimatedHeight: 130,
+    content: (
+      <div className="mt-8">
+        <ResumeSectionTitleBlock accent={accent}>Contact</ResumeSectionTitleBlock>
+        <ResumeContactListBlock resume={resume} />
+      </div>
+    )
+  });
+
   if (resume.education.length > 0) {
     sections.push({
       key: 'education',
-      estimatedHeight: 90 + resume.education.length * 64,
+      estimatedHeight: 85 + resume.education.length * 70,
       content: (
         <div className="mt-8">
           <ResumeEducationList resume={resume} accent={accent} />
@@ -99,7 +125,7 @@ const createSidebarSections = (
       key: 'skills',
       estimatedHeight: 70 + Math.ceil(visibleSkills.length / 2) * 40,
       content: (
-        <div className="mt-5">
+        <div className="mt-8">
           <ResumeSectionTitleBlock accent={accent}>Skills</ResumeSectionTitleBlock>
           <ResumeSkillGrid
             skills={visibleSkills}
@@ -115,26 +141,15 @@ const createSidebarSections = (
   if (resume.languages.length > 0) {
     sections.push({
       key: 'languages',
-      estimatedHeight: 55 + resume.languages.length * 36,
+      estimatedHeight: 55 + resume.languages.length * 40,
       content: (
-        <div className="mt-5">
+        <div className="mt-8">
           <ResumeSectionTitleBlock accent={accent}>Languages</ResumeSectionTitleBlock>
           <ResumeLanguageListBlock resume={resume} />
         </div>
       )
     });
   }
-
-  sections.push({
-    key: 'contact',
-    estimatedHeight: 110,
-    content: (
-      <div className="mt-5">
-        <ResumeSectionTitleBlock accent={accent}>Contact</ResumeSectionTitleBlock>
-        <ResumeContactListBlock resume={resume} />
-      </div>
-    )
-  });
 
   return sections;
 };
@@ -144,72 +159,58 @@ const createMainSections = (resume: ResumeData, accent: string): PageSection[] =
   const visibleAchievements = createVisibleAchievements(resume);
   const sections: PageSection[] = [];
 
-  sections.push({
-    key: 'header',
-    estimatedHeight: 82,
-    content: (
-      <header>
-        <h1 className="text-[34px] font-light uppercase tracking-[0.2em] text-slate-700">
-          {resume.personal.fullName}
-        </h1>
-        <div className="mt-2 text-[18px] font-medium tracking-[0.14em] text-slate-500">
-          {resume.personal.title}
-        </div>
-      </header>
-    )
-  });
-
-  sections.push({
-    key: 'summary',
-    estimatedHeight: resume.professionalSummary ? 90 : 18,
-    content: (
-      <div className="mt-8">
-        <ResumeSummary resume={resume} accent={accent} />
-      </div>
-    )
-  });
+  if (resume.professionalSummary?.trim()) {
+    sections.push({
+      key: 'summary',
+      estimatedHeight: 120,
+      content: <ResumeSummary resume={resume} accent={accent} />
+    });
+  }
 
   if (visibleExperience.length > 0) {
     sections.push({
       key: 'experience',
       estimatedHeight:
-        60 +
+        85 +
         visibleExperience.reduce((total, exp) => {
           const bulletsCount = exp.bullets.filter((bullet) => bullet.trim().length > 0).length;
-          return total + 68 + bulletsCount * 18;
+          return total + 84 + bulletsCount * 19;
         }, 0),
       content: (
-        <div className="mt-8">
+        <div className={sections.length > 0 ? 'mt-10' : ''}>
           <ResumeSectionTitleBlock accent={accent}>Experience</ResumeSectionTitleBlock>
 
-          <div className="relative ml-3 border-l-2 border-slate-400 pl-8">
+          <div className="space-y-8">
             {visibleExperience.map((exp, index) => (
-              <article key={exp.id} className={index === 0 ? 'pb-8' : 'py-8'}>
-                <span className="absolute -left-[11px] mt-1 h-5 w-5 rounded-full border-2 border-slate-500 bg-white" />
-
+              <article
+                key={exp.id}
+                className={`${index !== 0 ? 'border-t border-slate-200 pt-8' : ''}`}
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="text-[17px] font-extrabold text-slate-900">{exp.role}</div>
+                    <div className="text-[20px] font-semibold tracking-[0.02em] text-slate-900">
+                      {exp.role}
+                    </div>
 
-                    <div className="mt-1 text-[14px] font-semibold text-slate-700">
+                    <div className="mt-2 text-[14px] font-medium uppercase tracking-[0.14em] text-slate-500">
                       {[exp.company, exp.project, exp.location].filter(Boolean).join(' • ')}
                     </div>
                   </div>
 
-                  <div className="shrink-0 text-[14px] text-slate-500">
-                    {exp.start} - {exp.end}
+                  <div className="shrink-0 text-[13px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                    {[exp.start, exp.end].filter(Boolean).join(' — ')}
                   </div>
                 </div>
 
-                {exp.bullets.some((bullet) => bullet.trim().length > 0) && (
-                  <div className="mt-3 space-y-2 text-[14px] leading-6 text-slate-700">
+                {exp.bullets.some((bullet) => bullet.trim().length > 0) ? (
+                  <div className="mt-4 space-y-2.5 text-[14px] leading-7 text-slate-700">
                     {exp.bullets
                       .filter((bullet) => bullet.trim().length > 0)
                       .map((bullet, bulletIndex) => (
                         <div key={`${exp.id}-bullet-${bulletIndex}`}>{bullet}</div>
                       ))}
                   </div>
-                )}
+                ) : null}
               </article>
             ))}
           </div>
@@ -221,24 +222,10 @@ const createMainSections = (resume: ResumeData, accent: string): PageSection[] =
   if (resume.enabledSections.achievements && visibleAchievements.length > 0) {
     sections.push({
       key: 'achievements',
-      estimatedHeight: 65 + Math.ceil(visibleAchievements.length / 2) * 90,
+      estimatedHeight: 72 + visibleAchievements.length * 66,
       content: (
-        <div className="mt-8">
-          <ResumeSectionTitleBlock accent={accent}>Achievement</ResumeSectionTitleBlock>
-
-          <div className="grid grid-cols-2 gap-8">
-            {visibleAchievements.map((item) => (
-              <article key={item.id}>
-                <div className="text-[16px] font-bold text-slate-900">{item.title}</div>
-
-                {item.description ? (
-                  <div className="mt-2 text-[14px] leading-6 text-slate-700">
-                    {item.description}
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
+        <div className={sections.length > 0 ? 'mt-10' : ''}>
+          <ResumeAchievementsList resume={resume} accent={accent} />
         </div>
       )
     });
@@ -247,10 +234,10 @@ const createMainSections = (resume: ResumeData, accent: string): PageSection[] =
   if (resume.enabledSections.footer && resume.footer) {
     sections.push({
       key: 'footer',
-      estimatedHeight: 65,
+      estimatedHeight: 70,
       content: (
-        <div className="mt-8">
-          <ResumeFooterText title="Footer" value={resume.footer} accent={accent} />
+        <div className={sections.length > 0 ? 'mt-10' : ''}>
+          <ResumeFooterText title="Additional Note" value={resume.footer} accent={accent} />
         </div>
       )
     });
@@ -321,11 +308,11 @@ const paginateSections = (
   return pages;
 };
 
-export const buildArchedProfilePages = (
+export const buildPremiumClassicPages = (
   resume: ResumeData,
   isPdf = false
 ): ResumePage[] => {
-  const accent = resume.editorSettings.accentColor || '#6b7280';
+  const accent = resume.editorSettings.accentColor || CLASSIC_ACCENT;
   const sidebarSections = createSidebarSections(resume, accent, isPdf);
   const mainSections = createMainSections(resume, accent);
 
@@ -338,13 +325,13 @@ export const buildArchedProfilePages = (
   return paginateSections(sidebarSections, mainSections, RELAXED_USABLE_HEIGHT);
 };
 
-export const ResumeArchedProfile = ({
+export const ResumePremiumClassic = ({
   resume,
   isPdf = false,
   pageIndex
 }: Props) => {
-  const accent = resume.editorSettings.accentColor || '#6b7280';
-  const pages = buildArchedProfilePages(resume, isPdf);
+  const accent = resume.editorSettings.accentColor || CLASSIC_ACCENT;
+  const pages = buildPremiumClassicPages(resume, isPdf);
   const visiblePages =
     typeof pageIndex === 'number' ? pages.filter((_, index) => index === pageIndex) : pages;
 
@@ -352,8 +339,9 @@ export const ResumeArchedProfile = ({
     <>
       {visiblePages.map((page, index) => (
         <div
-          key={`resume-arched-profile-page-${index}`}
-          className={`${resumePaperClassName} rounded-none bg-[#f3f4f6]`}
+          key={`resume-premium-classic-page-${index}`}
+          data-pdf-page="true"
+          className={`${resumePaperClassName} rounded-none bg-[#f8f6f2]`}
           style={{
             ...resumePaperStyle,
             width: '794px',
@@ -364,18 +352,24 @@ export const ResumeArchedProfile = ({
           }}
         >
           <div
-            className="grid h-full grid-cols-[290px_1fr]"
+            className="grid h-full"
             style={{
+              gridTemplateColumns: '280px 1fr',
               minHeight: `${PAGE_HEIGHT}px`
             }}
           >
-            <aside className="bg-[#e5e7eb] px-8 pb-8 pt-8">
+            <aside className="bg-[#efebe4] px-8 pb-10 pt-10">
+              <div className="mb-8 h-px w-full bg-slate-300" />
               {page.sidebarSections.map((section) => (
                 <div key={section.key}>{section.content}</div>
               ))}
             </aside>
 
-            <main className="bg-[#f9fafb] px-10 pb-8 pt-10">
+            <main className="bg-[#fcfbf8] px-12 pb-12 pt-12">
+              <div
+                className="mb-10 h-px w-full"
+                style={{ backgroundColor: `${accent}55` }}
+              />
               {page.mainSections.map((section) => (
                 <div key={section.key}>{section.content}</div>
               ))}

@@ -3,7 +3,6 @@ export type ResumeTemplateKey =
   | 'sidebar-stacked'
   | 'top-banner'
   | 'editorial-columns'
-  | 'centered-profile'
   | 'soft-accent-grid'
   | 'modern-minimal'
   | 'elegant-classic'
@@ -13,7 +12,14 @@ export type ResumeTemplateKey =
   | 'compact-pro'
   | 'cv-curve-sidebar'
   | 'cv-infographic-split'
-  | 'cv-arched-profile';
+  | 'cv-arched-profile'
+  | 'premium-golden'
+  | 'premium-classic'
+  | 'minimal-classic-block'
+  | 'rounded-card-profile'
+  | 'executive-slate'
+  | 'modern-ribbon'
+  ;
 
 export type ResumePersonalExtraFieldKey =
   | 'birthPlace'

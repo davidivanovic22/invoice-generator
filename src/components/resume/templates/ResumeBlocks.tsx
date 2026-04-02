@@ -839,21 +839,26 @@ export const ResumeDotPercentageRatings = ({
   items,
   accent,
   darkAccent = '#17324d',
-  light = false
+  light = false,
+  variant = 'filled'
 }: {
   items: PercentageItem[];
   accent: string;
   darkAccent?: string;
   light?: boolean;
+  variant?: 'filled' | 'outline';
 }) => {
   const visibleItems = getRenderablePercentageItems(items);
 
   if (!visibleItems.length) return null;
 
-  const filledDotColor = light ? '#ffffff' : accent;
-  const emptyDotColor = light
+  const filledColor = light ? '#ffffff' : accent;
+
+  const emptyColor = light
     ? 'rgba(255,255,255,0.3)'
-    : darkAccent;
+    : 'rgba(0,0,0,0.2)';
+
+  const borderColor = light ? '#ffffff' : accent;
 
   return (
     <div className="space-y-3">
@@ -884,18 +889,42 @@ export const ResumeDotPercentageRatings = ({
 
             {/* DOTS */}
             <div className="flex gap-[6px]">
-              {Array.from({ length: 10 }).map((_, dotIndex) => (
-                <span
-                  key={`${item.id || index}-dot-${dotIndex}`}
-                  className="h-[8px] w-[8px] rounded-full"
-                  style={{
-                    backgroundColor:
-                      dotIndex < filledDots
-                        ? filledDotColor
-                        : emptyDotColor
-                  }}
-                />
-              ))}
+              {Array.from({ length: 10 }).map((_, dotIndex) => {
+                const isFilled = dotIndex < filledDots;
+
+                let style: React.CSSProperties;
+
+                if (variant === 'outline') {
+                  if (isFilled) {
+                    // ✅ FILLED → always has background + border
+                    style = {
+                      backgroundColor: filledColor,
+                      border: `1.5px solid ${borderColor}`
+                    };
+                  } else {
+                    // ❌ EMPTY → only border
+                    style = {
+                      backgroundColor: 'transparent',
+                      border: `1.5px solid ${emptyColor}`
+                    };
+                  }
+                } else {
+                  // default filled mode
+                  style = {
+                    backgroundColor: isFilled
+                      ? filledColor
+                      : emptyColor
+                  };
+                }
+
+                return (
+                  <span
+                    key={`${item.id || index}-dot-${dotIndex}`}
+                    className="h-[8px] w-[8px] rounded-full"
+                    style={style}
+                  />
+                );
+              })}
             </div>
           </div>
         );
@@ -903,7 +932,6 @@ export const ResumeDotPercentageRatings = ({
     </div>
   );
 };
-
 
 export const ResumeCompactReferences = ({
   resume,
