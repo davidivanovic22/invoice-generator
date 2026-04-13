@@ -23,22 +23,22 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
   const settings = invoice.editorSettings as InvoiceData['editorSettings'] & {
     templateMode?: 'manual' | 'auto-season' | 'auto-month';
     templateKey?:
-      | 'winter'
-      | 'spring'
-      | 'summer'
-      | 'autumn'
-      | 'january'
-      | 'february'
-      | 'march'
-      | 'april'
-      | 'may'
-      | 'june'
-      | 'july'
-      | 'august'
-      | 'september'
-      | 'october'
-      | 'november'
-      | 'december';
+    | 'winter'
+    | 'spring'
+    | 'summer'
+    | 'autumn'
+    | 'january'
+    | 'february'
+    | 'march'
+    | 'april'
+    | 'may'
+    | 'june'
+    | 'july'
+    | 'august'
+    | 'september'
+    | 'october'
+    | 'november'
+    | 'december';
     useTemplateAccentColor?: boolean;
   };
 
@@ -53,11 +53,12 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
   return (
     <div
       ref={ref}
+      data-pdf-page="true"
       className="relative"
       style={{
-        width: '1123px',
-        minHeight: '1587px',
-        padding: '48px',
+        width: '794px',
+        minHeight: '1123px',
+        padding: '28px',
         fontSize: `${settings.baseFontSize}px`,
         background: theme.surface,
         color: theme.textPrimary
@@ -67,7 +68,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         style={{
           position: 'absolute',
           inset: '0 0 auto 0',
-          height: '220px',
+          height: '180px',
           background: theme.headerGradient
         }}
       />
@@ -235,39 +236,81 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '60px 2fr 2fr 120px 120px 140px',
+              gridTemplateColumns: '30px 3fr 3fr 60px 90px 110px',
               background: theme.tableHeaderBackground,
-              padding: '16px',
               fontWeight: 700
             }}
           >
-            <div>#</div>
-            <div>Service</div>
-            <div>Description</div>
-            <div>Hours</div>
-            <div>Rate</div>
-            <div>Amount</div>
+            {['#', 'Service', 'Description', 'Hours', 'Rate', 'Amount'].map(
+              (label, index, arr) => (
+                <div
+                  key={label}
+                  style={{
+                    padding: '16px',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent:
+                      label === 'Amount'
+                        ? 'flex-end'
+                        : label === 'Hours' || label === 'Rate'
+                          ? 'center'
+                          : 'flex-start'
+                  }}
+                >
+                  {label}
+                </div>
+              )
+            )}
           </div>
 
-          {invoice.items.map((item, index) => (
-            <div
-              key={item.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '60px 2fr 2fr 120px 120px 140px',
-                padding: '16px',
-                alignItems: 'start',
-                borderTop: index === 0 ? 'none' : `1px solid ${theme.borderColor}`
-              }}
-            >
-              <div>{index + 1}</div>
-              <div>{item.serviceName}</div>
-              <div>{item.description}</div>
-              <div>{item.hours}</div>
-              <div>{money(item.rate, invoice.currency)}</div>
-              <div style={{ fontWeight: 700 }}>{money(item.hours * item.rate, invoice.currency)}</div>
-            </div>
-          ))}
+          {invoice.items.map((item, index) => {
+            const row = [
+              index + 1,
+              item.serviceName,
+              item.description,
+              item.hours,
+              money(item.rate, invoice.currency),
+              money(item.hours * item.rate, invoice.currency)
+            ];
+
+            return (
+              <div
+                key={item.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '30px 3fr 3fr 60px 90px 110px',
+                  borderTop:
+                    index === 0 ? 'none' : `1px solid ${theme.borderColor}`
+                }}
+              >
+                {row.map((cell, cellIndex) => (
+                  <div
+                    key={cellIndex}
+                    style={{
+                      padding: '16px',
+                      borderRight:
+                        cellIndex < row.length - 1
+                          ? `1px solid ${theme.borderColor}`
+                          : 'none',
+                      minHeight: '100%',
+                      display: 'flex',
+                      alignItems: 'stretch',
+                      justifyContent:
+                        cellIndex === 5
+                          ? 'flex-end'
+                          : cellIndex === 3 || cellIndex === 4
+                            ? 'center'
+                            : 'flex-start',
+                      fontWeight: cellIndex === 5 ? 700 : 400
+                    }}
+                  >
+                    <span>{cell}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </section>
 
         <section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
@@ -312,14 +355,27 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
+                alignItems: 'baseline',
                 paddingTop: '14px',
-                borderTop: `1px dashed ${theme.borderColor}`,
-                fontSize: '28px',
-                fontWeight: 800
+                borderTop: `1px dashed ${theme.borderColor}`
               }}
             >
-              <span>Total to pay</span>
-              <span>{money(grandTotal, invoice.currency)}</span>
+              <span
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 700
+                }}
+              >
+                Total to pay
+              </span>
+              <span
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 800
+                }}
+              >
+                {money(grandTotal, invoice.currency)}
+              </span>
             </div>
           </div>
         </section>

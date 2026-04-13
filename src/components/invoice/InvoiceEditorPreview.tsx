@@ -37,22 +37,22 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
     const settings = invoice.editorSettings as InvoiceData['editorSettings'] & {
       templateMode?: 'manual' | 'auto-season' | 'auto-month';
       templateKey?:
-        | 'winter'
-        | 'spring'
-        | 'summer'
-        | 'autumn'
-        | 'january'
-        | 'february'
-        | 'march'
-        | 'april'
-        | 'may'
-        | 'june'
-        | 'july'
-        | 'august'
-        | 'september'
-        | 'october'
-        | 'november'
-        | 'december';
+      | 'winter'
+      | 'spring'
+      | 'summer'
+      | 'autumn'
+      | 'january'
+      | 'february'
+      | 'march'
+      | 'april'
+      | 'may'
+      | 'june'
+      | 'july'
+      | 'august'
+      | 'september'
+      | 'october'
+      | 'november'
+      | 'december';
       useTemplateAccentColor?: boolean;
     };
 
@@ -68,7 +68,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
     return (
       <div
         ref={ref}
-        className="relative mx-auto min-h-[1100px] max-w-5xl overflow-hidden rounded-[24px] p-8 shadow-soft print:hidden"
+        className="relative mx-auto min-h-[1100px] max-w-5xl overflow-hidden rounded-[24px] p-7 shadow-soft print:hidden"
         style={{
           fontSize: `${settings.baseFontSize}px`,
           background: theme.surface,
@@ -301,36 +301,71 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
             style={{ borderColor: theme.borderColor }}
           >
             <div
-              className="grid grid-cols-[60px_2fr_2fr_120px_120px_140px] px-4 py-4 font-semibold"
+              className="grid grid-cols-[30px_3fr_3fr_60px_90px_110px] font-semibold"
               style={{
                 background: theme.tableHeaderBackground,
                 color: theme.textPrimary
               }}
             >
-              <div>#</div>
-              <div>Service</div>
-              <div>Description</div>
-              <div>Hours</div>
-              <div>Rate</div>
-              <div>Amount</div>
+              {['#', 'Service', 'Description', 'Hours', 'Rate', 'Amount'].map(
+                (label, index, arr) => (
+                  <div
+                    key={label}
+                    className={`py-4 px-4 flex items-center ${label === 'Amount'
+                        ? 'justify-end'
+                        : label === 'Hours' || label === 'Rate'
+                          ? 'justify-center'
+                          : 'justify-start'
+                      }`}
+                  >
+                    {label}
+                  </div>
+                )
+              )}
             </div>
 
-            {invoice.items.map((item, index) => (
-              <div
-                key={item.id}
-                className="grid grid-cols-[60px_2fr_2fr_120px_120px_140px] items-start px-4 py-4"
-                style={{
-                  borderTop: index === 0 ? 'none' : `1px solid ${theme.borderColor}`
-                }}
-              >
-                <div>{index + 1}</div>
-                <div>{item.serviceName}</div>
-                <div>{item.description}</div>
-                <div>{item.hours}</div>
-                <div>{money(item.rate, invoice.currency)}</div>
-                <div className="font-bold">{money(item.hours * item.rate, invoice.currency)}</div>
-              </div>
-            ))}
+            {invoice.items.map((item, index) => {
+              const row = [
+                index + 1,
+                item.serviceName,
+                item.description,
+                item.hours,
+                money(item.rate, invoice.currency),
+                money(item.hours * item.rate, invoice.currency)
+              ];
+
+              return (
+                <div
+                  key={item.id}
+                  className="grid grid-cols-[30px_3fr_3fr_60px_90px_110px]"
+                  style={{
+                    borderTop:
+                      index === 0 ? 'none' : `1px solid ${theme.borderColor}`
+                  }}
+                >
+                  {row.map((cell, cellIndex) => (
+                    <div
+                      key={cellIndex}
+                      className={`py-4 px-4 flex h-full ${cellIndex === 5
+                          ? 'justify-end font-bold'
+                          : cellIndex === 3 || cellIndex === 4
+                            ? 'justify-center'
+                            : 'justify-start'
+                        }`}
+                      style={{
+                        borderRight:
+                          cellIndex < row.length - 1
+                            ? `1px solid ${theme.borderColor}`
+                            : 'none',
+                        alignItems: 'stretch'
+                      }}
+                    >
+                      <span className="w-full">{cell}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </section>
 
           <section className="mb-8 flex justify-end">
@@ -360,11 +395,11 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                 <strong>{money(vatAmount, invoice.currency)}</strong>
               </div>
               <div
-                className="flex justify-between pt-3 text-2xl font-bold"
+                className="flex items-baseline justify-between pt-3"
                 style={{ borderTop: `1px dashed ${theme.borderColor}` }}
               >
-                <span>Total to pay</span>
-                <span>{money(grandTotal, invoice.currency)}</span>
+                <span className="text-sm font-semibold">Total to pay</span>
+                <span className="text-xl font-extrabold">{money(grandTotal, invoice.currency)}</span>
               </div>
             </div>
           </section>

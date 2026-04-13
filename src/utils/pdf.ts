@@ -24,13 +24,55 @@ const waitForAssets = async (element: HTMLElement) => {
   if ('fonts' in document) {
     try {
       await (document as Document & { fonts: FontFaceSet }).fonts.ready;
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+};
+
+const getRenderablePages = (element: HTMLElement) => {
+  const explicitPages = Array.from(
+    element.querySelectorAll<HTMLElement>('[data-pdf-page="true"]')
+  );
+
+  if (explicitPages.length > 0) {
+    return explicitPages;
+  }
+
+  return [element];
+};
+
+const renderPageToCanvas = async (page: HTMLElement) => {
+  await waitForAssets(page);
+
+  const rect = page.getBoundingClientRect();
+  const width = Math.max(
+    Math.ceil(rect.width),
+    page.scrollWidth,
+    page.offsetWidth,
+    page.clientWidth
+  );
+  const height = Math.max(
+    Math.ceil(rect.height),
+    page.scrollHeight,
+    page.offsetHeight,
+    page.clientHeight
+  );
+
+  return html2canvas(page, {
+    scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: '#ffffff',
+    logging: false,
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: width,
+    windowHeight: height,
+    width,
+    height
+  });
 };
 
 const renderPdf = async (
@@ -39,12 +81,10 @@ const renderPdf = async (
 ) => {
   await waitForAssets(element);
 
-  const pages = Array.from(
-    element.querySelectorAll<HTMLElement>('[data-pdf-page="true"]')
-  );
+  const pages = getRenderablePages(element);
 
   if (pages.length === 0) {
-    throw new Error('No pages found for PDF export.');
+    throw new Error('No renderable pages found for PDF export.');
   }
 
   const pdf = new jsPDF({
@@ -59,28 +99,13 @@ const renderPdf = async (
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-
-    await waitForAssets(page);
-
-    const canvas = await html2canvas(page, {
-      scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: '#ffffff',
-      logging: false,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: page.scrollWidth,
-      windowHeight: page.scrollHeight
-    });
-
+    const canvas = await renderPageToCanvas(page);
     const imgData = canvas.toDataURL('image/png', 1.0);
 
     if (i > 0) {
       pdf.addPage();
     }
 
-    // force full-page render
     pdf.addImage(
       imgData,
       'PNG',
