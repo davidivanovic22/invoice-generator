@@ -9,7 +9,6 @@ import { INVOICE_TEMPLATES } from '../invoices/document/templates';
 import { PartyFields } from '../invoices/editor/PartyFields';
 import { CURRENCIES, UNITS, nextInvoiceNumber, type BankDetails, type BusinessProfile, type DocLanguage, type InvoiceTemplateId } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
-import { TaxesSection } from './TaxesSection';
 import { t } from '../../i18n';
 
 const UNIT_NAMES: Record<string, string> = { h: 'hours', day: 'days', pcs: 'pieces', month: 'months', project: 'project', km: 'km' };
@@ -20,7 +19,7 @@ export const ProfilePage = () => {
   const { profile } = store;
   const location = useLocation();
 
-  // Links like /profile#taxes jump straight to that section.
+  // Links like /profile#section-id jump straight to that section.
   useEffect(() => {
     if (!location.hash) return;
     const element = document.getElementById(location.hash.slice(1));
@@ -56,8 +55,6 @@ export const ProfilePage = () => {
             <SignaturePad value={profile.signature} onChange={(signature) => set({ signature })} />
           </div>
         </Section>
-
-        <TaxesSection taxes={profile.taxes} onChange={(taxes) => set({ taxes })} />
 
         <Section title={t('Invoice defaults')} icon="settings" description={t('Used for every new invoice; you can still change them per invoice')}>
           <div className="grid grid-cols-2 gap-3">

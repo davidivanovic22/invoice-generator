@@ -633,39 +633,5 @@ export const SR: Record<string, string> = {
   'Your signature': 'Tvoj potpis',
   Redraw: 'Ponovo nacrtaj',
 
-  'Marked as sent. Mark it paid when the money arrives.': 'Označena kao poslata. Označi je kao plaćenu kad legne novac.',
-
-  // ---------- Taxes ----------
-  'Taxes and contributions': 'Porezi i doprinosi',
-  'What you pay each month, per year. Used to show what is left of every invoice.': 'Koliko plaćaš mesečno, po godinama. Koristi se da vidiš koliko ti ostaje od svake fakture.',
-  'Add the monthly amount from your tax decision (for example the flat-rate "paušal"). It changes every year, so each year has its own amount.':
-    'Unesi mesečni iznos iz poreskog rešenja (npr. paušal). Menja se svake godine, pa svaka godina ima svoj iznos.',
-  Year: 'Godina',
-  'Per month': 'Mesečno',
-  'Remove year {year}': 'Ukloni {year}. godinu',
-  'Exchange rate (RSD for 1 EUR)': 'Kurs (dinara za 1 €)',
-  "Today's rate": 'Današnji kurs',
-  'Loading…': 'Učitavam…',
-  '{amount} per month': '{amount} mesečno',
-  '{amount} per year': '{amount} godišnje',
-  'Add next year': 'Dodaj sledeću godinu',
-  'Add this year': 'Dodaj ovu godinu',
-  'Exchange rate updated: 1 EUR = {rate} RSD': 'Kurs ažuriran: 1 € = {rate} din',
-  'Could not fetch the rate; using {rate}. You can type it yourself.': 'Kurs nije mogao da se preuzme; koristi se {rate}. Možeš ga upisati sam.',
-  'What you keep': 'Koliko ti ostaje',
-  'Only for you, not printed': 'Samo za tebe, ne štampa se',
-  'Invoice total': 'Iznos fakture',
-  'Tax and contributions for {month}': 'Porez i doprinosi za {month}',
-  'Left for you': 'Ostaje tebi',
-  'Converted at the rate saved for {year}.': 'Preračunato po kursu sačuvanom za {year}.',
-  'After-tax amount is shown for invoices in EUR or RSD.': 'Iznos posle poreza se prikazuje za fakture u evrima ili dinarima.',
-  'See what is left after taxes:': 'Vidi koliko ostaje posle poreza:',
-  'add your monthly tax for {year}': 'unesi mesečni porez za {year}.',
-  'Add your monthly tax for {year}': 'Unesi mesečni porez za {year}.',
-  'Year overview': 'Pregled godine',
-  'Invoiced (sent and paid)': 'Fakturisano (poslato i plaćeno)',
-  'Tax and contributions': 'Porez i doprinosi',
-  'Tax and contributions ({count} month)|Tax and contributions ({count} months)': 'Porez i doprinosi ({count} mesec)|Porez i doprinosi ({count} meseca)|Porez i doprinosi ({count} meseci)',
-  '{count} invoice in another currency is not included.|{count} invoices in other currencies are not included.':
-    '{count} faktura u drugoj valuti nije uračunata.|{count} fakture u drugim valutama nisu uračunate.|{count} faktura u drugim valutama nije uračunato.',
+  'Marked as sent. Mark it paid when the money arrives.': 'Označena kao poslata. Označi je kao plaćenu kad legne novac.'
 };

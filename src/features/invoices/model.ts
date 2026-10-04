@@ -93,22 +93,11 @@ export type Invoice = {
 
 export type Client = { id: string; party: Party; currency: string; lastUsedAt: string };
 
-/** Monthly tax and contributions for one year (amounts change every year). */
-export type TaxYear = {
-  id: string;
-  year: number;
-  monthlyAmount: number;
-  currency: 'RSD' | 'EUR';
-  /** Exchange rate saved with the year, so past years keep their numbers. */
-  rsdPerEur: number;
-};
-
 export type BusinessProfile = {
   party: Party;
   bank: BankDetails;
   logo: string;
   signature: string;
-  taxes: TaxYear[];
   defaults: {
     currency: string;
     vatPercent: number;
@@ -156,7 +145,6 @@ export const createProfile = (overrides?: Partial<BusinessProfile>): BusinessPro
   bank: createBank(),
   logo: '',
   signature: '',
-  taxes: [],
   ...overrides,
   defaults: {
     currency: 'EUR',

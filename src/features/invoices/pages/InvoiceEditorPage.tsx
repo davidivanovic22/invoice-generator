@@ -15,7 +15,6 @@ import { DesignSection } from '../editor/DesignSection';
 import { DetailsSection } from '../editor/DetailsSection';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
-import { TaxCard } from '../editor/TaxCard';
 import { isDefaultPeriod, periodLabel, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
 
@@ -171,7 +170,6 @@ export const InvoiceEditorPage = () => {
         <div className={`min-w-0 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
           <ClientSection invoice={invoice} clients={store.clients} invoices={store.invoices} onChange={onChange} onCommit={saveClient} />
           <ItemsSection invoice={invoice} defaultUnit={store.profile.defaults.unit} onChange={onChange} />
-          <TaxCard invoice={invoice} profile={store.profile} />
           <DetailsSection invoice={invoice} invoices={store.invoices} numberPrefix={store.profile.defaults.numberPrefix} onChange={onChange} />
           <DesignSection
             invoice={invoice}
