@@ -44,6 +44,10 @@ export type InvoiceEditorSettings = {
   templateMode?: InvoiceTemplateMode;
   templateKey?: InvoiceTemplateKey;
   useTemplateAccentColor?: boolean;
+  /** Manual pick among the resolved theme's watermark variants (index into
+   *  InvoiceResolvedTheme.backgroundImages). Undefined = auto (rotates by
+   *  year), so most invoices never set this. */
+  templateVariantIndex?: number;
 };
 
 export type InvoiceData = {

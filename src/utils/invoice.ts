@@ -13,9 +13,8 @@ export const createInvoiceNumber = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const random = Math.floor(Math.random() * 900 + 100);
 
-  return `${year}-${month}-${random}`;
+  return `InvoiceDavidIvanovic-${year}-${month}`;
 };
 
 export const createParty = (
@@ -120,9 +119,10 @@ export const createEditorSettings = (
       typeof safePartial.signatureWidth === 'number' ? safePartial.signatureWidth : 180,
     signatureHeight:
       typeof safePartial.signatureHeight === 'number' ? safePartial.signatureHeight : 80,
-    templateMode: safePartial.templateMode ?? 'manual',
+    templateMode: safePartial.templateMode ?? 'auto-month',
     templateKey: safePartial.templateKey ?? 'winter',
     useTemplateAccentColor: safePartial.useTemplateAccentColor ?? true,
+    templateVariantIndex: safePartial.templateVariantIndex,
     elements: ensureRequiredElements(elements)
   };
 };
@@ -164,7 +164,7 @@ export const createInvoice = (): InvoiceData => {
       })
     ],
     editorSettings: createEditorSettings({
-      templateMode: 'manual',
+      templateMode: 'auto-month',
       templateKey: 'winter',
       useTemplateAccentColor: true,
       elements: [

@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# large/unused design assets (kept locally, not shipped)
+/public/invoice-watermarks/
+/public/monthly-themes/
+/public/*.zip
+/design-review/
+/sample-invoices-2026/

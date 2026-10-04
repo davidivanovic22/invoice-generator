@@ -155,7 +155,7 @@ const normalizeEditorSettings = (
     logoWidth: typeof safeSettings.logoWidth === 'number' ? safeSettings.logoWidth : 128,
     logoHeight: typeof safeSettings.logoHeight === 'number' ? safeSettings.logoHeight : 80,
     elements: ensureRequiredElements(elements),
-    templateMode: safeSettings.templateMode ?? 'manual',
+    templateMode: safeSettings.templateMode ?? 'auto-month',
     templateKey: safeSettings.templateKey ?? 'winter',
     useTemplateAccentColor: safeSettings.useTemplateAccentColor ?? true
   });

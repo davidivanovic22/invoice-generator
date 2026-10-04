@@ -18,7 +18,10 @@ export const ImportExportPanel = ({
 }: Props) => {
   return (
     <Card>
-      <SectionTitle title="Import / Export" />
+      <SectionTitle
+        title="Import / Export"
+        subtitle="Back up your invoices as JSON, or bring them back later"
+      />
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button variant="secondary" onClick={onExportCurrent}>
           Export current
@@ -31,10 +34,15 @@ export const ImportExportPanel = ({
           buttonLabel="Import JSON"
           onFileSelect={onImport}
         />
-        <Button variant="secondary" onClick={onResetCurrent}>
-          Reset current
-        </Button>
       </div>
+
+      <button
+        type="button"
+        onClick={onResetCurrent}
+        className="mt-3 w-full rounded-xl border border-red-200 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+      >
+        Reset this invoice to blank
+      </button>
     </Card>
   );
 };
