@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AtsPanel } from '../../ats/AtsPanel';
+import { analyzeResume, type AtsIssue } from '../../ats/analyze';
+import { scoreColor } from '../../ats/ScoreRing';
 import { safeFileName } from '../../../lib/files';
 import { printToPdf } from '../../../lib/pdf';
 import { A4Preview } from '../../../ui/A4Preview';
@@ -55,6 +58,11 @@ export const ResumeEditorPage = () => {
   const { confirm, toast } = useFeedback();
   const resume = store.resumes.find((candidate) => candidate.id === id);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'ats' ? 'ats' : 'content';
+  const setTab = (next: 'content' | 'ats') => setSearchParams(next === 'ats' ? { tab: 'ats' } : {}, { replace: true });
+  const [focus, setFocus] = useState<{ sectionId: string; token: number } | null>(null);
+  const atsScore = useMemo(() => (resume ? analyzeResume(resume).score : 0), [resume]);
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -104,6 +112,13 @@ export const ResumeEditorPage = () => {
     } finally {
       setExporting(false);
     }
+  };
+
+  const goTo = (target: AtsIssue['target']) => {
+    setTab('content');
+    setMobileView('edit');
+    if (target?.sectionId) setFocus({ sectionId: target.sectionId, token: Date.now() });
+    else requestAnimationFrame(() => document.getElementById('personal')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   const setSections = (sections: ResumeSection[]) => update({ sections });
@@ -181,20 +196,58 @@ export const ResumeEditorPage = () => {
 
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(420px,560px)_1fr]">
         <div className={`space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
-          <PersonalSection personal={resume.personal} onChange={(personal) => update({ personal })} />
-          {resume.sections.map((section, index) => (
-            <SectionCard
-              key={section.id}
-              section={section}
-              onChange={(next) => setSections(resume.sections.map((other) => (other.id === section.id ? next : other)))}
-              onRemove={() => removeSection(section)}
-              onMove={(delta) => moveSection(index, delta)}
-              canMoveUp={index > 0}
-              canMoveDown={index < resume.sections.length - 1}
+          <div className="flex rounded-xl bg-slate-200/60 p-1" role="tablist" aria-label="Editor mode">
+            {(['content', 'ats'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={tab === value}
+                onClick={() => setTab(value)}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${tab === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                {value === 'content' ? (
+                  <>
+                    <Icon name="pen" /> Content
+                  </>
+                ) : (
+                  <>
+                    <Icon name="sparkle" /> ATS check
+                    <span className="rounded-full px-1.5 text-xs font-semibold text-white" style={{ background: scoreColor(atsScore) }}>
+                      {atsScore}
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+          {tab === 'ats' ? (
+            <AtsPanel
+              resume={resume}
+              onChange={update}
+              onGoTo={goTo}
+              autoStartWizard={searchParams.get('wizard') === '1'}
+              onWizardStarted={() => setSearchParams({ tab: 'ats' }, { replace: true })}
             />
-          ))}
-          <AddSectionMenu sections={resume.sections} onAdd={(kind) => setSections([...resume.sections, createSection(kind)])} />
-          <DesignPanel resume={resume} onChange={(design) => update({ design })} />
+          ) : (
+            <>
+          <PersonalSection personal={resume.personal} onChange={(personal) => update({ personal })} />
+            {resume.sections.map((section, index) => (
+              <SectionCard
+                key={section.id}
+                section={section}
+                onChange={(next) => setSections(resume.sections.map((other) => (other.id === section.id ? next : other)))}
+                onRemove={() => removeSection(section)}
+                onMove={(delta) => moveSection(index, delta)}
+                canMoveUp={index > 0}
+                canMoveDown={index < resume.sections.length - 1}
+                focusToken={focus?.sectionId === section.id ? focus.token : undefined}
+              />
+            ))}
+            <AddSectionMenu sections={resume.sections} onAdd={(kind) => setSections([...resume.sections, createSection(kind)])} />
+            <DesignPanel resume={resume} onChange={(design) => update({ design })} />
+            </>
+          )}
         </div>
         <div className={mobileView === 'edit' ? 'hidden lg:block' : ''}>
           <div className="sticky top-[124px] max-h-[calc(100vh-140px)] overflow-y-auto rounded-xl pb-2 lg:pr-1">

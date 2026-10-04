@@ -21,6 +21,8 @@ type Props = {
   onMove: (delta: number) => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  /** Changes when the ATS panel asks to show this section. */
+  focusToken?: number;
 };
 
 const countLabel = (section: ResumeSection) => {
@@ -29,17 +31,25 @@ const countLabel = (section: ResumeSection) => {
   return count === 0 ? 'Empty' : `${count} item${count === 1 ? '' : 's'}`;
 };
 
-export const SectionCard = ({ section, onChange, onRemove, onMove, canMoveUp, canMoveDown }: Props) => {
+export const SectionCard = ({ section, onChange, onRemove, onMove, canMoveUp, canMoveDown, focusToken }: Props) => {
   const [open, setOpen] = useState(section.kind === 'summary' || section.kind === 'experience');
   const [renaming, setRenaming] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+
+  const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (renaming) titleRef.current?.select();
   }, [renaming]);
 
+  useEffect(() => {
+    if (!focusToken) return;
+    setOpen(true);
+    requestAnimationFrame(() => rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [focusToken]);
+
   return (
-    <section className={`rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 transition ${section.hidden ? 'opacity-60' : ''}`}>
+    <section ref={rootRef} id={`section-${section.id}`} className={`scroll-mt-32 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 transition ${section.hidden ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-2 py-3 pl-5 pr-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
           <Icon name={ICONS[section.kind] ?? 'file'} />

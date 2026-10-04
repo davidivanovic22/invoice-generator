@@ -61,6 +61,15 @@ export type ResumeDesign = {
   showPhoto: boolean;
 };
 
+export type AtsSettings = {
+  /** The job ad the resume is tailored to (optional). */
+  jobDescription: string;
+  /** Keywords Claude extracted for that job ad; used by the local scorer. */
+  keywords: string[];
+  /** The job description the keywords were extracted from, to detect staleness. */
+  keywordsSource: string;
+};
+
 export type Resume = {
   id: string;
   /** Internal name shown in the list, e.g. "Frontend — English". */
@@ -68,6 +77,7 @@ export type Resume = {
   personal: PersonalInfo;
   sections: ResumeSection[];
   design: ResumeDesign;
+  ats: AtsSettings;
   createdAt: string;
   updatedAt: string;
 };
@@ -208,6 +218,13 @@ export const createDesign = (overrides?: Partial<ResumeDesign>): ResumeDesign =>
   ...overrides
 });
 
+export const createAts = (overrides?: Partial<AtsSettings>): AtsSettings => ({
+  jobDescription: '',
+  keywords: [],
+  keywordsSource: '',
+  ...overrides
+});
+
 export const createEmptyResume = (): Resume => {
   const now = new Date().toISOString();
   return {
@@ -216,6 +233,7 @@ export const createEmptyResume = (): Resume => {
     personal: createPersonal(),
     sections: (['summary', 'experience', 'education', 'skills', 'languages'] as SectionKind[]).map((kind) => createSection(kind)),
     design: createDesign(),
+    ats: createAts(),
     createdAt: now,
     updatedAt: now
   };

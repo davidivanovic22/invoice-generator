@@ -6,6 +6,7 @@ import { A4Thumbnail } from '../../../ui/A4Preview';
 import { Button, IconButton } from '../../../ui/Button';
 import { useFeedback } from '../../../ui/Feedback';
 import { Icon } from '../../../ui/Icon';
+import { ImportDialog } from '../../ats/ImportDialog';
 import { ResumeDocument } from '../document/ResumeDocument';
 import { RESUME_TEMPLATES } from '../document/templates';
 import { resumeDisplayName } from '../model';
@@ -40,7 +41,8 @@ const NewResumeDialog = ({ onPick, onClose }: { onPick: (kind: 'sample' | 'empty
 );
 
 export const ResumeListPage = () => {
-  const { store, createResume, duplicateResume, deleteResume, importBackup } = useResumeStore();
+  const { store, createResume, duplicateResume, deleteResume, importBackup, addResume } = useResumeStore();
+  const [importing, setImporting] = useState(false);
   const { confirm, toast } = useFeedback();
   const navigate = useNavigate();
   const [choosing, setChoosing] = useState(false);
@@ -60,11 +62,14 @@ export const ResumeListPage = () => {
           <p className="mt-1 text-sm text-slate-500">Keep a version per job or language. Everything is saved in this browser.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button icon="upload" onClick={() => fileRef.current?.click()}>
-            Import
+          <Button icon="upload" onClick={() => fileRef.current?.click()} title="Restore a backup file made with this app">
+            Restore backup
           </Button>
           <Button icon="download" onClick={() => downloadJson(store, `resumes-backup-${todayIso()}.json`)} disabled={!store.resumes.length}>
             Backup
+          </Button>
+          <Button size="lg" icon="sparkle" onClick={() => setImporting(true)}>
+            Import existing CV
           </Button>
           <Button variant="primary" size="lg" icon="plus" onClick={() => setChoosing(true)}>
             New resume
@@ -143,6 +148,17 @@ export const ResumeListPage = () => {
       </div>
 
       {choosing && <NewResumeDialog onPick={start} onClose={() => setChoosing(false)} />}
+      {importing && (
+        <ImportDialog
+          onClose={() => setImporting(false)}
+          onImported={(resume) => {
+            addResume(resume);
+            setImporting(false);
+            toast('Resume imported. Now let us make it ATS-ready.');
+            navigate(`/resumes/${resume.id}?tab=ats&wizard=1`);
+          }}
+        />
+      )}
     </div>
   );
 };

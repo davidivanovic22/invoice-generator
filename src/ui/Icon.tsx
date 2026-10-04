@@ -36,7 +36,8 @@ export type IconName =
   | 'link'
   | 'printer'
   | 'refresh'
-  | 'cash';
+  | 'cash'
+  | 'list';
 
 const paths: Record<IconName, string> = {
   plus: 'M12 5v14M5 12h14',
@@ -78,7 +79,8 @@ const paths: Record<IconName, string> = {
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   printer: 'M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z',
   refresh: 'M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4',
-  cash: 'M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9v.01M18 15v.01'
+  cash: 'M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9v.01M18 15v.01',
+  list: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2'
 };
 
 type Props = { name: IconName; className?: string; strokeWidth?: number };

@@ -1,6 +1,7 @@
 import { createId } from '../../lib/files';
 import { readJson, writeJson } from '../../lib/storage';
 import {
+  createAts,
   createDesign,
   createEntry,
   createPersonal,
@@ -165,6 +166,7 @@ export const migrateLegacyResume = (legacy: Loose): Resume => {
       template: LEGACY_TEMPLATES[str(settings.template)] ?? 'modern',
       accentColor: str(settings.accentColor) || '#4f46e5'
     }),
+    ats: createAts(),
     createdAt: str(legacy.createdAt) || now,
     updatedAt: str(legacy.updatedAt) || now
   };
@@ -178,6 +180,7 @@ const normalizeResume = (raw: Partial<Resume>): Resume => {
     personal: createPersonal(raw.personal),
     sections: Array.isArray(raw.sections) ? raw.sections : [],
     design: createDesign(raw.design),
+    ats: createAts(raw.ats),
     createdAt: raw.createdAt ?? now,
     updatedAt: raw.updatedAt ?? now
   };

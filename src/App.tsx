@@ -6,12 +6,29 @@ import { ProfilePage } from './features/profile/ProfilePage';
 import { ResumeStoreProvider } from './features/resumes/store';
 import { ResumeListPage } from './features/resumes/pages/ResumeListPage';
 import { ResumeEditorPage } from './features/resumes/pages/ResumeEditorPage';
+import { AiProvider, useAi } from './features/ai/AiSettings';
 import { FeedbackProvider } from './ui/Feedback';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Icon } from './ui/Icon';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
+
+const AiStatus = () => {
+  const { hasKey, openSettings } = useAi();
+  return (
+    <button
+      type="button"
+      onClick={openSettings}
+      className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+      title={hasKey ? 'Claude AI is connected' : 'Connect Claude AI'}
+    >
+      <span className={`h-2 w-2 rounded-full ${hasKey ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+      <Icon name="sparkle" />
+      <span className="hidden md:inline">{hasKey ? 'AI on' : 'Connect AI'}</span>
+    </button>
+  );
+};
 
 const Header = () => (
   <header className="sticky top-0 z-30 h-14 border-b border-slate-200 bg-white/90 backdrop-blur print:hidden">
@@ -30,10 +47,12 @@ const Header = () => (
           Resumes
         </NavLink>
       </nav>
+      <div className="ml-auto" />
+      <AiStatus />
       <NavLink
         to="/profile"
         className={({ isActive }) =>
-          `ml-auto flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`
+          `flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`
         }
       >
         <Icon name="building" />
@@ -47,26 +66,28 @@ function App() {
   return (
     <BrowserRouter>
       <FeedbackProvider>
-        <InvoiceStoreProvider>
-          <ResumeStoreProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex flex-1 flex-col">
-                <ErrorBoundary>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/invoices" replace />} />
-                    <Route path="/invoices" element={<InvoiceListPage />} />
-                    <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/resumes" element={<ResumeListPage />} />
-                    <Route path="/resumes/:id" element={<ResumeEditorPage />} />
-                    <Route path="*" element={<Navigate to="/invoices" replace />} />
-                  </Routes>
-                </ErrorBoundary>
-              </main>
-            </div>
-          </ResumeStoreProvider>
-        </InvoiceStoreProvider>
+        <AiProvider>
+          <InvoiceStoreProvider>
+            <ResumeStoreProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex flex-1 flex-col">
+                  <ErrorBoundary>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/invoices" replace />} />
+                      <Route path="/invoices" element={<InvoiceListPage />} />
+                      <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/resumes" element={<ResumeListPage />} />
+                      <Route path="/resumes/:id" element={<ResumeEditorPage />} />
+                      <Route path="*" element={<Navigate to="/invoices" replace />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </main>
+              </div>
+            </ResumeStoreProvider>
+          </InvoiceStoreProvider>
+        </AiProvider>
       </FeedbackProvider>
     </BrowserRouter>
   );

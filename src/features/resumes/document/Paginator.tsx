@@ -71,6 +71,9 @@ export const Paginator = ({ header, columns, pageStyle, background }: Props) => 
     };
   }, []);
 
+  // Runs after every render on purpose: any content change can move a page break. It only sets
+  // state when the layout actually changed, so it settles after one extra render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     const root = measureRef.current;
     if (!root) return;

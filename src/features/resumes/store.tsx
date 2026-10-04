@@ -13,6 +13,10 @@ type ResumeStoreValue = {
   updateResume: (id: string, update: Updater) => void;
   deleteResume: (id: string) => void;
   importBackup: (data: unknown) => number;
+  /** Adds a fully built resume (e.g. one imported by AI). */
+  addResume: (resume: Resume) => void;
+  /** The latest saved version, for async flows that outlive a render. */
+  getResume: (id: string) => Resume | undefined;
 };
 
 const Context = createContext<ResumeStoreValue | null>(null);
@@ -109,9 +113,15 @@ export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
     return fresh.length;
   }, []);
 
+  const addResume = useCallback((resume: Resume) => {
+    setStore((current) => ({ ...current, resumes: [resume, ...current.resumes] }));
+  }, []);
+
+  const getResume = useCallback((id: string) => storeRef.current.resumes.find((resume) => resume.id === id), []);
+
   const value = useMemo(
-    () => ({ store, createResume, duplicateResume, updateResume, deleteResume, importBackup }),
-    [store, createResume, duplicateResume, updateResume, deleteResume, importBackup]
+    () => ({ store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume }),
+    [store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume]
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 };
