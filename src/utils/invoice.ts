@@ -6,6 +6,7 @@ import type {
   PartyDetails
 } from '../types/invoice';
 import { addDaysIso, currentBillingPeriod, todayIso } from './dates';
+import { computeTotals, fromMinor } from './money';
 
 export const createId = (): string => crypto.randomUUID();
 
@@ -191,14 +192,28 @@ export const createInvoice = (): InvoiceData => {
   };
 };
 
+export const calculateInvoiceTotals = (invoice: InvoiceData) => {
+  const totals = computeTotals(
+    invoice.items.map((item) => ({ quantity: item.hours, unitPrice: item.rate })),
+    invoice.vatPercent,
+    invoice.currency
+  );
+  return {
+    lines: totals.lines.map((minor) => fromMinor(minor, invoice.currency)),
+    subtotal: fromMinor(totals.subtotal, invoice.currency),
+    vat: fromMinor(totals.tax, invoice.currency),
+    total: fromMinor(totals.total, invoice.currency)
+  };
+};
+
 export const calculateSubtotal = (invoice: InvoiceData): number =>
-  invoice.items.reduce((sum, item) => sum + item.hours * item.rate, 0);
+  calculateInvoiceTotals(invoice).subtotal;
 
 export const calculateTotalHours = (invoice: InvoiceData): number =>
   invoice.items.reduce((sum, item) => sum + item.hours, 0);
 
 export const calculateVatAmount = (invoice: InvoiceData): number =>
-  calculateSubtotal(invoice) * (invoice.vatPercent / 100);
+  calculateInvoiceTotals(invoice).vat;
 
 export const calculateGrandTotal = (invoice: InvoiceData): number =>
-  calculateSubtotal(invoice) + calculateVatAmount(invoice);
+  calculateInvoiceTotals(invoice).total;

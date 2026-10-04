@@ -4,6 +4,7 @@ import type {
   EditorElement,
   InvoiceData
 } from '../../types/invoice';
+import { formatAmount, formatMinor, lineTotalMinor } from '../../utils/money';
 import {
   calculateGrandTotal,
   calculateSubtotal,
@@ -25,11 +26,7 @@ type Props = {
   onElementRemove: (elementId: string) => void;
 };
 
-const money = (value: number, currency: string) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency
-  }).format(value);
+const money = (value: number, currency: string) => formatAmount(value, currency);
 
 // Any text that sits directly on the artwork with no card behind it (the
 // header, and free-floating custom text elements) can land on a dense part
@@ -340,7 +337,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                 item.description,
                 item.hours,
                 money(item.rate, invoice.currency),
-                money(item.hours * item.rate, invoice.currency)
+                formatMinor(lineTotalMinor(item.hours, item.rate, invoice.currency), invoice.currency)
               ];
 
               return (
