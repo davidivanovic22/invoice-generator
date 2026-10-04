@@ -4,7 +4,17 @@ Create professional invoices and ATS-ready resumes in minutes. Everything runs i
 
 ## Features
 
+### Made to be effortless
+- **Serbian and English interface** (switch any time; Serbian plurals done right).
+- **Home page** with the three things you do most, "invoice again" in one click, a setup checklist and recent documents.
+- **First-run welcome** that sets up your business in one screen.
+- **Click anything in the live preview** to jump to its field. **Undo/redo** with Ctrl+Z / Ctrl+Y.
+- **Ctrl+K** to create, navigate or find any invoice or resume.
+- Deleting is instant with **Undo** in the notification; optional fields stay hidden until you need them.
+
 ### Invoices
+- **Quick invoice:** repeat a client's last invoice in one click, describe it in one sentence ("Acme, 40 h at 25 €, due in 15 days") and let AI fill it in, or use a five-field form, with **Create & download PDF**.
+- **Taxes and contributions per year:** enter your monthly amount (e.g. the flat-rate *paušal*) in RSD or EUR; RSD is converted with a rate saved for that year (today's rate fetched on request, or typed in). Every invoice shows what is left after that month's tax (not printed), and the invoice list has a year overview: invoiced, tax so far, left for you. Downloading a draft marks it as sent.
 - **Type it once.** Business details, bank account, logo, signature and defaults live in the business profile, so every new invoice arrives filled in.
 - **Client address book.** Clients are saved automatically; start typing a name to reuse one, and repeat the last invoice's items in one click.
 - **Correct numbers.** Amounts are computed in integer minor units: every line is rounded, the subtotal is the sum of the printed lines, and VAT is applied once. Sequential numbering (`2026-001`) warns about duplicates.

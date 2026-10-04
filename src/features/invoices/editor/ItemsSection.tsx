@@ -47,7 +47,7 @@ export const ItemsSection = ({ invoice, defaultUnit, onChange }: Props) => {
   };
 
   return (
-    <Section id="items" title={t('Items')} icon="file" description={`${invoice.items.length} item${invoice.items.length === 1 ? '' : 's'} · ${money(totals.totalMinor)}`}>
+    <Section id="items" title={t('Items')} icon="file" description={`${t('{count} item|{count} items', { count: invoice.items.length })} · ${money(totals.totalMinor)}`}>
       <div className="space-y-3">
         {invoice.items.map((item, index) => (
           <div key={item.id} className="group rounded-xl bg-slate-50/70 p-3 ring-1 ring-slate-200/70">

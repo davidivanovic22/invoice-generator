@@ -11,6 +11,7 @@ import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
 import { StatusBadge } from '../components/Status';
+import { YearSummary } from '../components/YearSummary';
 import { displayStatus, invoiceTotals, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
 import { useInvoiceStore } from '../store';
@@ -135,6 +136,12 @@ export const InvoiceListPage = () => {
             tone={overdue.length ? 'red' : 'default'}
           />
           <Stat label={t('Paid in {year}', { year: today.slice(0, 4) })} value={sumByCurrency(paidThisYear)} detail={t('{count} invoice|{count} invoices', { count: paidThisYear.length })} />
+        </div>
+      )}
+
+      {store.invoices.length > 0 && (
+        <div className="mt-3">
+          <YearSummary store={store} />
         </div>
       )}
 

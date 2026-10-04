@@ -118,10 +118,11 @@ export const Onboarding = () => {
                   }}
                   className="rounded-2xl p-5 text-left ring-1 ring-slate-200 transition hover:bg-indigo-50/50 hover:ring-indigo-300"
                 >
-                  <span className="text-2xl" aria-hidden="true">
-                    {value === 'sr' ? '🇷🇸' : '🇬🇧'}
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-sm font-bold text-indigo-700" aria-hidden="true">
+                    {value === 'sr' ? 'SR' : 'EN'}
                   </span>
-                  <span className="mt-2 block text-lg font-semibold text-slate-900">{value === 'sr' ? 'Srpski' : 'English'}</span>
+                  <span className="mt-3 block text-lg font-semibold text-slate-900">{value === 'sr' ? 'Srpski' : 'English'}</span>
+                  <span className="block text-sm text-slate-500">{value === 'sr' ? 'Latinica' : 'International'}</span>
                 </button>
               ))}
             </div>

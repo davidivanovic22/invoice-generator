@@ -93,11 +93,22 @@ export type Invoice = {
 
 export type Client = { id: string; party: Party; currency: string; lastUsedAt: string };
 
+/** Monthly tax and contributions for one year (amounts change every year). */
+export type TaxYear = {
+  id: string;
+  year: number;
+  monthlyAmount: number;
+  currency: 'RSD' | 'EUR';
+  /** Exchange rate saved with the year, so past years keep their numbers. */
+  rsdPerEur: number;
+};
+
 export type BusinessProfile = {
   party: Party;
   bank: BankDetails;
   logo: string;
   signature: string;
+  taxes: TaxYear[];
   defaults: {
     currency: string;
     vatPercent: number;
@@ -145,6 +156,7 @@ export const createProfile = (overrides?: Partial<BusinessProfile>): BusinessPro
   bank: createBank(),
   logo: '',
   signature: '',
+  taxes: [],
   ...overrides,
   defaults: {
     currency: 'EUR',
@@ -196,6 +208,13 @@ export const nextInvoiceNumber = (invoices: Invoice[], prefix: string, issueDate
 export const isNumberTaken = (invoices: Invoice[], number: string, exceptId?: string) =>
   invoices.some((invoice) => invoice.id !== exceptId && invoice.number.trim() === number.trim());
 
+/** "October 2026" or "oktobar 2026." depending on the document language. */
+export const periodLabel = (iso: string, language: DocLanguage) =>
+  language === 'en' ? monthLabel(iso, 'en-US') : `${monthLabel(iso, 'sr-Latn-RS').replace(/\.$/, '')}.`;
+
+/** Matches the period label in any language, to tell an untouched default from a custom value. */
+export const isDefaultPeriod = (value: string, iso: string) => [periodLabel(iso, 'en'), periodLabel(iso, 'sr'), monthLabel(iso)].includes(value);
+
 export const createInvoice = (store: InvoiceStore, overrides?: Partial<Invoice>): Invoice => {
   const { profile } = store;
   const today = todayIso();
@@ -207,7 +226,7 @@ export const createInvoice = (store: InvoiceStore, overrides?: Partial<Invoice>)
     issueDate: today,
     serviceDate: today,
     dueDate: addDaysIso(today, profile.defaults.paymentDays),
-    billingPeriod: monthLabel(today),
+    billingPeriod: periodLabel(today, profile.defaults.language),
     currency: profile.defaults.currency,
     vatPercent: profile.defaults.vatPercent,
     issuer: { ...profile.party },

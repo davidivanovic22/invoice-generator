@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button, IconButton } from '../../ui/Button';
 import { useFeedback } from '../../ui/Feedback';
 import { NumberField, SelectField, TextArea, TextField } from '../../ui/Field';
@@ -8,6 +9,7 @@ import { INVOICE_TEMPLATES } from '../invoices/document/templates';
 import { PartyFields } from '../invoices/editor/PartyFields';
 import { CURRENCIES, UNITS, nextInvoiceNumber, type BankDetails, type BusinessProfile, type DocLanguage, type InvoiceTemplateId } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
+import { TaxesSection } from './TaxesSection';
 import { t } from '../../i18n';
 
 const UNIT_NAMES: Record<string, string> = { h: 'hours', day: 'days', pcs: 'pieces', month: 'months', project: 'project', km: 'km' };
@@ -16,6 +18,14 @@ export const ProfilePage = () => {
   const { store, updateProfile, deleteClient } = useInvoiceStore();
   const { confirm, toast } = useFeedback();
   const { profile } = store;
+  const location = useLocation();
+
+  // Links like /profile#taxes jump straight to that section.
+  useEffect(() => {
+    if (!location.hash) return;
+    const element = document.getElementById(location.hash.slice(1));
+    if (element) requestAnimationFrame(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [location.hash]);
   const set = (patch: Partial<BusinessProfile>) => updateProfile(patch);
   const setDefaults = (patch: Partial<BusinessProfile['defaults']>) => updateProfile({ defaults: { ...profile.defaults, ...patch } });
   const setBank = (field: keyof BankDetails) => (value: string) => set({ bank: { ...profile.bank, [field]: value } });
@@ -46,6 +56,8 @@ export const ProfilePage = () => {
             <SignaturePad value={profile.signature} onChange={(signature) => set({ signature })} />
           </div>
         </Section>
+
+        <TaxesSection taxes={profile.taxes} onChange={(taxes) => set({ taxes })} />
 
         <Section title={t('Invoice defaults')} icon="settings" description={t('Used for every new invoice; you can still change them per invoice')}>
           <div className="grid grid-cols-2 gap-3">

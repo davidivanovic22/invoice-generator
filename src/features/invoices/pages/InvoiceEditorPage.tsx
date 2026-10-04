@@ -8,14 +8,15 @@ import { Button } from '../../../ui/Button';
 import { EditorToolbar, editTargetFrom, flash, MobileViewSwitch, PreviewHint, useUndoShortcuts } from '../../../ui/EditorChrome';
 import { useFeedback } from '../../../ui/Feedback';
 import { EmptyState } from '../../../ui/Layout';
-import { StatusBadge, StatusMenu } from '../components/Status';
+import { StatusMenu } from '../components/Status';
 import { InvoiceDocument } from '../document/InvoiceDocument';
 import { ClientSection } from '../editor/ClientSection';
 import { DesignSection } from '../editor/DesignSection';
 import { DetailsSection } from '../editor/DetailsSection';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
-import type { Invoice } from '../model';
+import { TaxCard } from '../editor/TaxCard';
+import { isDefaultPeriod, periodLabel, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
 
 const SECTION_IDS: Record<string, string> = { client: 'client', items: 'items', details: 'details', from: 'from', design: 'design' };
@@ -68,13 +69,18 @@ export const InvoiceEditorPage = () => {
     toast(t('In the window that opens, choose "Save as PDF".'), 'info');
     try {
       await printToPdf(node, safeFileName(`${current.design.language === 'en' ? 'Invoice' : 'Faktura'}-${current.number}`, 'invoice'));
+      // A downloaded invoice has been issued: count it as sent, so totals and the year overview are right.
+      if (current.status === 'draft') {
+        updateInvoice(current.id, { status: 'sent' }, { record: false });
+        toast(t('Marked as sent. Mark it paid when the money arrives.'), 'info');
+      }
     } catch (error) {
       console.error(error);
       toast(t('The PDF could not be created. Please try again.'), 'error');
     } finally {
       setExporting(false);
     }
-  }, [saveClient, toast]);
+  }, [saveClient, toast, updateInvoice]);
 
   // Arriving with ?print=1 (from "Create & download") opens the save dialog right away.
   useEffect(() => {
@@ -143,9 +149,6 @@ export const InvoiceEditorPage = () => {
             <h1 className="hidden truncate text-[15px] font-semibold text-slate-900 sm:block">
               {t('Invoice')} {invoice.number}
             </h1>
-            <span className="hidden sm:inline-flex">
-              <StatusBadge invoice={invoice} />
-            </span>
             <StatusMenu invoice={invoice} onChange={(status) => setStatus(invoice.id, status)} />
           </>
         }
@@ -168,8 +171,19 @@ export const InvoiceEditorPage = () => {
         <div className={`min-w-0 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
           <ClientSection invoice={invoice} clients={store.clients} invoices={store.invoices} onChange={onChange} onCommit={saveClient} />
           <ItemsSection invoice={invoice} defaultUnit={store.profile.defaults.unit} onChange={onChange} />
+          <TaxCard invoice={invoice} profile={store.profile} />
           <DetailsSection invoice={invoice} invoices={store.invoices} numberPrefix={store.profile.defaults.numberPrefix} onChange={onChange} />
-          <DesignSection invoice={invoice} profile={store.profile} onChange={(design) => onChange({ design })} />
+          <DesignSection
+            invoice={invoice}
+            profile={store.profile}
+            onChange={(design) =>
+              onChange(
+                design.language !== invoice.design.language && isDefaultPeriod(invoice.billingPeriod, invoice.issueDate)
+                  ? { design, billingPeriod: periodLabel(invoice.issueDate, design.language) }
+                  : { design }
+              )
+            }
+          />
           <FromSection invoice={invoice} profile={store.profile} onChange={onChange} onProfileChange={updateProfile} forceOpenToken={openFromToken} />
         </div>
         <div className={`min-w-0 ${mobileView === 'edit' ? 'hidden lg:block' : ''}`}>

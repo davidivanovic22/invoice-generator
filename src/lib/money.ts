@@ -1,3 +1,5 @@
+import { uiLocale } from '../i18n';
+
 /**
  * Exact invoice arithmetic.
  *
@@ -124,9 +126,10 @@ const getFormatter = (currency: string, locale: string) => {
   return formatter;
 };
 
-export const formatMinor = (minor: number, currency: string, locale = 'en-US'): string =>
+/** Without a locale, amounts follow the app's language (documents always pass their own). */
+export const formatMinor = (minor: number, currency: string, locale = uiLocale()): string =>
   getFormatter(currency, locale).format(fromMinor(minor, currency));
 
 /** Formats a major-unit amount after rounding it with the invoice policy. */
-export const formatAmount = (amount: number, currency: string, locale = 'en-US'): string =>
+export const formatAmount = (amount: number, currency: string, locale = uiLocale()): string =>
   formatMinor(toMinor(amount, currency), currency, locale);

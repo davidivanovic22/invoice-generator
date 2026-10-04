@@ -53,7 +53,7 @@ export const t = (text: string, vars?: Record<string, string | number>): string 
 };
 
 /** Locale for dates and numbers in the app's own UI. */
-export const uiLocale = () => (current === 'sr' ? 'sr-Latn-RS' : 'en-GB');
+export const uiLocale = () => (current === 'sr' ? 'sr-Latn-RS' : 'en-US');
 
 type LanguageContextValue = { lang: Lang; setLang: (lang: Lang) => void };
 const LanguageContext = createContext<LanguageContextValue>({ lang: current, setLang: () => undefined });

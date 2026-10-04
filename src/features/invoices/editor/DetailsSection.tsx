@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { t } from '../../../i18n';
-import { addDaysIso, daysBetween, monthLabel } from '../../../lib/dates';
+import { addDaysIso, daysBetween } from '../../../lib/dates';
 import { SelectField, TextArea, TextField } from '../../../ui/Field';
 import { Chips, MoreToggle, Section } from '../../../ui/Layout';
-import { CURRENCIES, isNumberTaken, nextInvoiceNumber, type Invoice } from '../model';
+import { CURRENCIES, isDefaultPeriod, isNumberTaken, nextInvoiceNumber, periodLabel, type Invoice } from '../model';
 
 type Props = {
   invoice: Invoice;
@@ -18,7 +18,7 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
   const taken = isNumberTaken(invoices, invoice.number, invoice.id);
   const termDays = daysBetween(invoice.issueDate, invoice.dueDate);
   const currencies = CURRENCIES.includes(invoice.currency) ? CURRENCIES : [invoice.currency, ...CURRENCIES];
-  const customised = invoice.serviceDate !== invoice.issueDate || Boolean(invoice.note.trim()) || invoice.billingPeriod !== monthLabel(invoice.issueDate);
+  const customised = invoice.serviceDate !== invoice.issueDate || Boolean(invoice.note.trim()) || !isDefaultPeriod(invoice.billingPeriod, invoice.issueDate);
   const [more, setMore] = useState(customised);
   const due = termDays === 0 ? t('due on receipt') : t('due in {count} day|due in {count} days', { count: termDays });
 
@@ -51,7 +51,7 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
             if (!issueDate) return;
             const update: Partial<Invoice> = { issueDate, dueDate: addDaysIso(issueDate, Math.max(0, termDays)) };
             if (invoice.serviceDate === invoice.issueDate) update.serviceDate = issueDate;
-            if (invoice.billingPeriod === monthLabel(invoice.issueDate)) update.billingPeriod = monthLabel(issueDate);
+            if (isDefaultPeriod(invoice.billingPeriod, invoice.issueDate)) update.billingPeriod = periodLabel(issueDate, invoice.design.language);
             onChange(update);
           }}
         />
