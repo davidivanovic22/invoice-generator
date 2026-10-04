@@ -13,7 +13,7 @@
 | R7 validation | 🟡 Partly: numbers can't go negative, duplicate numbers flagged; no schema validation of every field yet |
 | R8 inconsistent formatting | ✅ Fixed: one formatter, locale per document language |
 | R9 raster PDFs | ✅ Fixed: browser print engine, real text |
-| R10 build ships unused assets | ⏳ Open: move `public/invoice-watermarks`, `monthly-themes` and zips out of `public/` locally |
+| R10 build ships unused assets | ✅ Fixed: source assets moved to git-ignored `design-assets/`; build 577 MB → 13 MB |
 | R11 tests / CI | 🟡 Partly: 41 unit tests pass; no CI or E2E yet |
 | R12–R14 duplication, dead code, big files | ✅ Fixed: legacy code deleted, features rebuilt |
 | R15 personal defaults | ✅ Fixed: neutral sample data |
