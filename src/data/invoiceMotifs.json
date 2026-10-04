@@ -1,0 +1,206 @@
+{
+  "january": {
+    "palette": [
+      "#729ab4",
+      "#dcecf5",
+      "#3d5869",
+      "#637c70",
+      "#b39878",
+      "#f9fcfe"
+    ],
+    "names": [
+      "Alpska zima",
+      "Na snežnim padinama",
+      "Sanke kroz šumu",
+      "Zaleđeno jezero",
+      "Mraz i zimski kristali"
+    ]
+  },
+  "february": {
+    "palette": [
+      "#b57b89",
+      "#f2dce0",
+      "#77515c",
+      "#89967e",
+      "#c4a27b",
+      "#fffaf5"
+    ],
+    "names": [
+      "Ruže i svilene mašne",
+      "Kupidonova pisma",
+      "Zaljubljene ptice",
+      "Romantična terasa",
+      "Venac ljubavi"
+    ]
+  },
+  "march": {
+    "palette": [
+      "#8c87a9",
+      "#e5e8e7",
+      "#626f70",
+      "#8b9d87",
+      "#b8a385",
+      "#fbfcfa"
+    ],
+    "names": [
+      "Kiša na kaldrmi",
+      "Prve visibabe",
+      "Šafran posle kiše",
+      "Fenjer u prolece",
+      "Prolećna šetnja"
+    ]
+  },
+  "april": {
+    "palette": [
+      "#cb9b9b",
+      "#f7e6df",
+      "#7e776c",
+      "#9cb493",
+      "#d2b28d",
+      "#fffcf7"
+    ],
+    "names": [
+      "Procvetale grane",
+      "Vrt leptira",
+      "Prolećni voćnjak",
+      "Vrtna kapija",
+      "Latice na stazi"
+    ]
+  },
+  "may": {
+    "palette": [
+      "#bf869c",
+      "#f5e6ea",
+      "#686f58",
+      "#8ba377",
+      "#c6b287",
+      "#fffdf7"
+    ],
+    "names": [
+      "Raskošni božuri",
+      "Bašta lala",
+      "Pergola u cvetu",
+      "Livada i pčele",
+      "Leptiri među cvećem"
+    ]
+  },
+  "june": {
+    "palette": [
+      "#bca159",
+      "#f2ecd8",
+      "#817d5c",
+      "#a4b58a",
+      "#dac17e",
+      "#fffffa"
+    ],
+    "names": [
+      "Bele rade na suncu",
+      "Vilini konjici",
+      "Herbarijum ranog leta",
+      "Mirno jezero",
+      "Zlatna livada"
+    ]
+  },
+  "july": {
+    "palette": [
+      "#6c97b1",
+      "#e1edf3",
+      "#496778",
+      "#96a8a1",
+      "#c8bda4",
+      "#fbfdff"
+    ],
+    "names": [
+      "Jedra na moru",
+      "Obala školjki",
+      "Svetionik i galebovi",
+      "Letnja terasa",
+      "Mornarski ornamenti"
+    ]
+  },
+  "august": {
+    "palette": [
+      "#70a8a4",
+      "#e5f1ed",
+      "#617e7b",
+      "#91ab88",
+      "#d9bb7c",
+      "#fffaf0"
+    ],
+    "names": [
+      "Suncobran na pesku",
+      "Popodne u ležaljci",
+      "Palme i povetarac",
+      "Morsko blago",
+      "Tirkizni talasi"
+    ]
+  },
+  "september": {
+    "palette": [
+      "#9e8292",
+      "#ede3d2",
+      "#79624e",
+      "#919374",
+      "#c1a46d",
+      "#fffcf4"
+    ],
+    "names": [
+      "Vinogradska berba",
+      "Jabuke u voćnjaku",
+      "Zlatna žitna polja",
+      "Korpa sa plodovima",
+      "Vinski ornamenti"
+    ]
+  },
+  "october": {
+    "palette": [
+      "#bb8159",
+      "#f0e2d2",
+      "#805f4b",
+      "#929078",
+      "#c2a078",
+      "#fffbf5"
+    ],
+    "names": [
+      "Bundeve i bakarno lišće",
+      "Fenjeri uz ogradu",
+      "Jesenja kisa",
+      "Tiha oktobarska magla",
+      "Diskretni Halloween"
+    ]
+  },
+  "november": {
+    "palette": [
+      "#989282",
+      "#e8e5df",
+      "#736e66",
+      "#949780",
+      "#b3a285",
+      "#fbfaf7"
+    ],
+    "names": [
+      "Klupa u kasnu jesen",
+      "Fenjer u magli",
+      "Mokre parkovske staze",
+      "Jezero u novembru",
+      "Poslednje jesenje lišće"
+    ]
+  },
+  "december": {
+    "palette": [
+      "#a66064",
+      "#e3eef5",
+      "#536e80",
+      "#778e80",
+      "#ceae68",
+      "#fffcf5"
+    ],
+    "names": [
+      "Deda Mraz i pokloni",
+      "Vilenjačka radionica",
+      "Jelka u zlatnom svetlu",
+      "Sneško i zimska čarolija",
+      "Praznični venac"
+    ]
+  }
+}

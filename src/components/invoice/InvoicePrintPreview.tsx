@@ -8,6 +8,7 @@ import {
 } from '../../utils/invoice';
 import { resolveInvoiceTheme } from '../../utils/invoiceTheme';
 import { InvoiceSignature } from './InvoiceSignature';
+import { InvoiceWatermark } from './InvoiceWatermark';
 
 type Props = {
   invoice: InvoiceData;
@@ -18,6 +19,14 @@ const money = (value: number, currency: string) =>
     style: 'currency',
     currency
   }).format(value);
+
+// Any text that sits directly on the artwork with no card behind it (the
+// header, and free-floating custom text elements) can land on a dense part
+// of the illustration — a branch, a roofline, a shadow — and become hard to
+// read. A soft white halo keeps it legible without needing a backing panel
+// that would cover the art it's sitting on.
+const TEXT_LEGIBILITY_HALO =
+  '0 0 8px rgba(255,255,255,0.95), 0 0 3px rgba(255,255,255,0.95), 0 0 1px rgba(255,255,255,1)';
 
 export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice }, ref) => {
   const settings = invoice.editorSettings as InvoiceData['editorSettings'] & {
@@ -42,7 +51,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
     useTemplateAccentColor?: boolean;
   };
 
-  const theme = resolveInvoiceTheme(settings, invoice.issueDate);
+  const theme = resolveInvoiceTheme(settings, invoice.issueDate, invoice.billingPeriod);
   const totalHours = calculateTotalHours(invoice);
   const subtotal = calculateSubtotal(invoice);
   const vatAmount = calculateVatAmount(invoice);
@@ -61,17 +70,11 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         padding: '28px',
         fontSize: `${settings.baseFontSize}px`,
         background: theme.surface,
-        color: theme.textPrimary
+        color: theme.textPrimary,
+        overflow: 'hidden'
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: '0 0 auto 0',
-          height: '180px',
-          background: theme.headerGradient
-        }}
-      />
+      <InvoiceWatermark backgroundImage={theme.backgroundImage} backgroundPosition={theme.backgroundPosition} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         <header
@@ -79,7 +82,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
             display: 'flex',
             justifyContent: 'space-between',
             gap: '24px',
-            borderBottom: `1px solid ${theme.borderColor}`,
+            borderBottom: `1.25px solid ${theme.borderColor}`,
             paddingBottom: '24px',
             marginBottom: '24px'
           }}
@@ -128,7 +131,8 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
                 style={{
                   marginTop: '10px',
                   color: theme.textMuted,
-                  fontSize: '15px'
+                  fontSize: '15px',
+                  textShadow: TEXT_LEGIBILITY_HALO
                 }}
               >
                 Invoice number: {invoice.invoiceNumber}
@@ -136,7 +140,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
             </div>
           </div>
 
-          <div style={{ fontSize: '16px', lineHeight: 1.9 }}>
+          <div style={{ fontSize: '16px', lineHeight: 1.9, textShadow: TEXT_LEGIBILITY_HALO }}>
             <div>
               <strong>Issue date:</strong> {invoice.issueDate}
             </div>
@@ -159,8 +163,8 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         >
           <div
             style={{
-              border: `1px solid ${theme.borderColor}`,
-              borderRadius: '24px',
+              border: `1.25px solid ${theme.borderColor}`,
+              borderRadius: '22px',
               padding: '20px',
               background: theme.surfaceAlt
             }}
@@ -193,8 +197,8 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
 
           <div
             style={{
-              border: `1px solid ${theme.borderColor}`,
-              borderRadius: '24px',
+              border: `1.25px solid ${theme.borderColor}`,
+              borderRadius: '22px',
               padding: '20px',
               background: theme.surfaceAlt
             }}
@@ -228,8 +232,8 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         <section
           style={{
             overflow: 'hidden',
-            border: `1px solid ${theme.borderColor}`,
-            borderRadius: '24px',
+            border: `1.25px solid ${theme.borderColor}`,
+            borderRadius: '22px',
             marginBottom: '24px'
           }}
         >
@@ -280,8 +284,9 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '30px 3fr 3fr 60px 90px 110px',
+                  background: theme.tableRowBackground,
                   borderTop:
-                    index === 0 ? 'none' : `1px solid ${theme.borderColor}`
+                    index === 0 ? 'none' : `1.25px solid ${theme.borderColor}`
                 }}
               >
                 {row.map((cell, cellIndex) => (
@@ -291,7 +296,7 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
                       padding: '16px',
                       borderRight:
                         cellIndex < row.length - 1
-                          ? `1px solid ${theme.borderColor}`
+                          ? `1.25px solid ${theme.borderColor}`
                           : 'none',
                       minHeight: '100%',
                       display: 'flex',
@@ -313,12 +318,34 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
           })}
         </section>
 
-        <section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: '20px', alignItems: 'start' }}>
+          <section
+            style={{
+              border: `1.25px solid ${theme.borderColor}`,
+              borderRadius: '22px',
+              padding: '24px',
+              background: theme.noteBackground
+            }}
+          >
+            <div
+              style={{
+                marginBottom: '10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.24em',
+                textTransform: 'uppercase',
+                color: theme.accentColor
+              }}
+            >
+              Note
+            </div>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{invoice.note}</div>
+          </section>
           <div
             style={{
               width: '280px',
-              border: `1px solid ${theme.borderColor}`,
-              borderRadius: '24px',
+              border: `1.25px solid ${theme.borderColor}`,
+              borderRadius: '22px',
               padding: '20px',
               background: theme.totalCardBackground
             }}
@@ -380,28 +407,6 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
           </div>
         </section>
 
-        <section
-          style={{
-            border: `1px solid ${theme.borderColor}`,
-            borderRadius: '20px',
-            padding: '24px',
-            background: theme.noteBackground
-          }}
-        >
-          <div
-            style={{
-              marginBottom: '10px',
-              fontSize: '12px',
-              fontWeight: 700,
-              letterSpacing: '0.24em',
-              textTransform: 'uppercase',
-              color: theme.accentColor
-            }}
-          >
-            Note
-          </div>
-          <div style={{ whiteSpace: 'pre-wrap' }}>{invoice.note}</div>
-        </section>
       </div>
 
       {textElements.map((element) => (
@@ -416,7 +421,8 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
             fontSize: `${element.fontSize ?? 16}px`,
             whiteSpace: 'pre-wrap',
             zIndex: 20,
-            color: theme.textPrimary
+            color: theme.textPrimary,
+            textShadow: TEXT_LEGIBILITY_HALO
           }}
         >
           {element.text}
@@ -427,17 +433,26 @@ export const InvoicePrintPreview = forwardRef<HTMLDivElement, Props>(({ invoice 
         <div
           style={{
             position: 'absolute',
-            right: '32px',
-            bottom: '32px',
-            width: `${settings.signatureWidth}px`,
-            height: `${settings.signatureHeight}px`
+            right: '24px',
+            bottom: '24px',
+            padding: '10px 18px 8px',
+            background: theme.surfaceAlt,
+            border: `1.25px solid ${theme.borderColor}`,
+            borderRadius: '14px'
           }}
         >
-          <InvoiceSignature
-            signature={invoice.signature}
-            width={settings.signatureWidth}
-            height={settings.signatureHeight}
-          />
+          <div
+            style={{
+              width: `${settings.signatureWidth}px`,
+              height: `${settings.signatureHeight}px`
+            }}
+          >
+            <InvoiceSignature
+              signature={invoice.signature}
+              width={settings.signatureWidth}
+              height={settings.signatureHeight}
+            />
+          </div>
         </div>
       ) : null}
     </div>

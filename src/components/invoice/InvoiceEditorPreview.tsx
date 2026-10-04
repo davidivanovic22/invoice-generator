@@ -13,6 +13,7 @@ import {
 import { resolveInvoiceTheme } from '../../utils/invoiceTheme';
 import { DraggableElement } from './DraggableElement';
 import { InvoiceSignature } from './InvoiceSignature';
+import { InvoiceWatermark } from './InvoiceWatermark';
 
 type Props = {
   invoice: InvoiceData;
@@ -29,6 +30,14 @@ const money = (value: number, currency: string) =>
     style: 'currency',
     currency
   }).format(value);
+
+// Any text that sits directly on the artwork with no card behind it (the
+// header, and free-floating custom text elements) can land on a dense part
+// of the illustration — a branch, a roofline, a shadow — and become hard to
+// read. A soft white halo keeps it legible without needing a backing panel
+// that would cover the art it's sitting on.
+const TEXT_LEGIBILITY_HALO =
+  '0 0 8px rgba(255,255,255,0.95), 0 0 3px rgba(255,255,255,0.95), 0 0 1px rgba(255,255,255,1)';
 
 export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
   ({ invoice, onInvoiceFieldChange, onElementChange, onElementRemove }, ref) => {
@@ -56,7 +65,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
       useTemplateAccentColor?: boolean;
     };
 
-    const theme = resolveInvoiceTheme(settings, invoice.issueDate);
+    const theme = resolveInvoiceTheme(settings, invoice.issueDate, invoice.billingPeriod);
 
     const totalHours = calculateTotalHours(invoice);
     const subtotal = calculateSubtotal(invoice);
@@ -68,7 +77,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
     return (
       <div
         ref={ref}
-        className="relative mx-auto min-h-[1100px] max-w-5xl overflow-hidden rounded-[24px] p-7 shadow-soft print:hidden"
+        className="relative mx-auto w-[794px] min-h-[1123px] overflow-hidden rounded-[24px] p-7 shadow-soft print:hidden"
         style={{
           fontSize: `${settings.baseFontSize}px`,
           background: theme.surface,
@@ -76,17 +85,14 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
         }}
         onClick={() => setSelectedElementId(null)}
       >
-        <div
-          className="absolute inset-x-0 top-0 h-[180px]"
-          style={{ background: theme.headerGradient }}
-        />
+        <InvoiceWatermark backgroundImage={theme.backgroundImage} backgroundPosition={theme.backgroundPosition} />
 
         <div className="relative z-10">
           <header
-            className="mb-5 flex items-start justify-between gap-6 border-b pb-5"
+            className="mb-5 flex items-start justify-between gap-6 border-b-[1.25px] pb-5"
             style={{ borderColor: theme.borderColor }}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               {invoice.logo ? (
                 <div
                   className="flex items-center justify-center rounded-2xl bg-white"
@@ -104,7 +110,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                 </div>
               ) : null}
 
-              <div>
+              <div className="min-w-0 flex-1">
                 <div
                   className="font-extrabold leading-none tracking-tight"
                   style={{
@@ -124,12 +130,15 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                     )
                   }
                   className="mt-2 w-full bg-transparent text-sm outline-none"
-                  style={{ color: theme.textMuted }}
+                  style={{ color: theme.textMuted, textShadow: TEXT_LEGIBILITY_HALO }}
                 />
               </div>
             </div>
 
-            <div className="space-y-2 text-sm" style={{ color: theme.textPrimary }}>
+            <div
+              className="space-y-2 text-sm"
+              style={{ color: theme.textPrimary, textShadow: TEXT_LEGIBILITY_HALO }}
+            >
               <label className="block">
                 <span className="font-semibold">Issue date: </span>
                 <input
@@ -164,7 +173,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
 
           <section className="mb-5 grid grid-cols-2 gap-4">
             <div
-              className="rounded-[24px] border p-5"
+              className="rounded-[22px] border-[1.25px] p-5"
               style={{
                 borderColor: theme.borderColor,
                 background: theme.surfaceAlt
@@ -235,7 +244,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
             </div>
 
             <div
-              className="rounded-[24px] border p-5"
+              className="rounded-[22px] border-[1.25px] p-5"
               style={{
                 borderColor: theme.borderColor,
                 background: theme.surfaceAlt
@@ -297,7 +306,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
           </section>
 
           <section
-            className="mb-6 overflow-hidden rounded-[24px] border"
+            className="mb-6 overflow-hidden rounded-[22px] border-[1.25px]"
             style={{ borderColor: theme.borderColor }}
           >
             <div
@@ -339,8 +348,9 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                   key={item.id}
                   className="grid grid-cols-[30px_3fr_3fr_60px_90px_110px]"
                   style={{
+                    background: theme.tableRowBackground,
                     borderTop:
-                      index === 0 ? 'none' : `1px solid ${theme.borderColor}`
+                      index === 0 ? 'none' : `1.25px solid ${theme.borderColor}`
                   }}
                 >
                   {row.map((cell, cellIndex) => (
@@ -355,7 +365,7 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                       style={{
                         borderRight:
                           cellIndex < row.length - 1
-                            ? `1px solid ${theme.borderColor}`
+                            ? `1.25px solid ${theme.borderColor}`
                             : 'none',
                         alignItems: 'stretch'
                       }}
@@ -368,9 +378,28 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
             })}
           </section>
 
-          <section className="mb-8 flex justify-end">
+          <section className="grid grid-cols-[minmax(0,1fr)_280px] items-start gap-5">
+            <section
+              className="rounded-[22px] border-[1.25px] p-6"
+              style={{
+                borderColor: theme.borderColor,
+                background: theme.noteBackground
+              }}
+            >
+              <div
+                className="mb-2 text-xs font-bold uppercase tracking-[0.24em]"
+                style={{ color: theme.accentColor }}
+              >
+                Note
+              </div>
+              <textarea
+                value={invoice.note}
+                onChange={(e) => onInvoiceFieldChange('note', e.target.value)}
+                className="min-h-[80px] w-full resize-none bg-transparent outline-none"
+              />
+            </section>
             <div
-              className="w-full max-w-md rounded-[24px] border p-5"
+              className="w-full max-w-md rounded-[22px] border-[1.25px] p-5"
               style={{
                 borderColor: theme.borderColor,
                 background: theme.totalCardBackground
@@ -404,25 +433,6 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
             </div>
           </section>
 
-          <section
-            className="mb-10 rounded-[20px] border p-6"
-            style={{
-              borderColor: theme.borderColor,
-              background: theme.noteBackground
-            }}
-          >
-            <div
-              className="mb-2 text-xs font-bold uppercase tracking-[0.24em]"
-              style={{ color: theme.accentColor }}
-            >
-              Note
-            </div>
-            <textarea
-              value={invoice.note}
-              onChange={(e) => onInvoiceFieldChange('note', e.target.value)}
-              className="min-h-[80px] w-full resize-none bg-transparent outline-none"
-            />
-          </section>
         </div>
 
         {textElements.map((element) => (
@@ -448,7 +458,8 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
                 className="h-full w-full resize-none overflow-hidden bg-transparent outline-none"
                 style={{
                   fontSize: `${element.fontSize ?? 16}px`,
-                  color: theme.textPrimary
+                  color: theme.textPrimary,
+                  textShadow: TEXT_LEGIBILITY_HALO
                 }}
               />
 
@@ -501,17 +512,26 @@ export const InvoiceEditorPreview = forwardRef<HTMLDivElement, Props>(
           <div
             className="absolute"
             style={{
-              right: '32px',
-              bottom: '32px',
-              width: `${settings.signatureWidth}px`,
-              height: `${settings.signatureHeight}px`
+              right: '24px',
+              bottom: '24px',
+              padding: '10px 18px 8px',
+              background: theme.surfaceAlt,
+              border: `1.25px solid ${theme.borderColor}`,
+              borderRadius: '14px'
             }}
           >
-            <InvoiceSignature
-              signature={invoice.signature}
-              width={settings.signatureWidth}
-              height={settings.signatureHeight}
-            />
+            <div
+              style={{
+                width: `${settings.signatureWidth}px`,
+                height: `${settings.signatureHeight}px`
+              }}
+            >
+              <InvoiceSignature
+                signature={invoice.signature}
+                width={settings.signatureWidth}
+                height={settings.signatureHeight}
+              />
+            </div>
           </div>
         ) : null}
       </div>
