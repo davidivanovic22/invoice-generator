@@ -1,6 +1,8 @@
+import { useState } from 'react';
+import { t } from '../../../i18n';
 import { addDaysIso, daysBetween, monthLabel } from '../../../lib/dates';
 import { SelectField, TextArea, TextField } from '../../../ui/Field';
-import { Chips, Section } from '../../../ui/Layout';
+import { Chips, MoreToggle, Section } from '../../../ui/Layout';
 import { CURRENCIES, isNumberTaken, nextInvoiceNumber, type Invoice } from '../model';
 
 type Props = {
@@ -16,38 +18,34 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
   const taken = isNumberTaken(invoices, invoice.number, invoice.id);
   const termDays = daysBetween(invoice.issueDate, invoice.dueDate);
   const currencies = CURRENCIES.includes(invoice.currency) ? CURRENCIES : [invoice.currency, ...CURRENCIES];
+  const customised = invoice.serviceDate !== invoice.issueDate || Boolean(invoice.note.trim()) || invoice.billingPeriod !== monthLabel(invoice.issueDate);
+  const [more, setMore] = useState(customised);
+  const due = termDays === 0 ? t('due on receipt') : t('due in {count} day|due in {count} days', { count: termDays });
 
   return (
-    <Section id="details" title="Details" icon="calendar" description={`No. ${invoice.number} · due ${termDays === 0 ? 'on receipt' : `in ${termDays} days`}`}>
+    <Section id="details" title={t('Details')} icon="calendar" description={`${t('No.')} ${invoice.number} · ${due}`}>
       <div className="grid grid-cols-2 gap-3">
         <TextField
-          label="Invoice number"
+          label={t('Invoice number')}
           value={invoice.number}
           onChange={(number) => onChange({ number })}
-          error={taken ? 'Another invoice already uses this number.' : undefined}
+          error={taken ? t('Another invoice already uses this number.') : undefined}
           hint={
             taken ? undefined : (
               <button
                 type="button"
                 className="text-indigo-600 hover:underline"
-                onClick={() =>
-                  onChange({ number: nextInvoiceNumber(invoices.filter((other) => other.id !== invoice.id), numberPrefix, invoice.issueDate) })
-                }
+                onClick={() => onChange({ number: nextInvoiceNumber(invoices.filter((other) => other.id !== invoice.id), numberPrefix, invoice.issueDate) })}
               >
-                Use next number
+                {t('Use next number')}
               </button>
             )
           }
         />
-        <SelectField
-          label="Currency"
-          value={invoice.currency}
-          onChange={(currency) => onChange({ currency })}
-          options={currencies.map((code) => ({ value: code, label: code }))}
-        />
+        <SelectField label={t('Currency')} value={invoice.currency} onChange={(currency) => onChange({ currency })} options={currencies.map((code) => ({ value: code, label: code }))} />
         <TextField
           type="date"
-          label="Issue date"
+          label={t('Issue date')}
           value={invoice.issueDate}
           onChange={(issueDate) => {
             if (!issueDate) return;
@@ -57,30 +55,37 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
             onChange(update);
           }}
         />
-        <TextField type="date" label="Due date" value={invoice.dueDate} onChange={(dueDate) => dueDate && onChange({ dueDate })} />
+        <TextField type="date" label={t('Due date')} value={invoice.dueDate} onChange={(dueDate) => dueDate && onChange({ dueDate })} />
         <div className="col-span-2 -mt-1">
           <Chips
             value={TERMS.includes(termDays) ? String(termDays) : null}
             onChange={(days) => onChange({ dueDate: addDaysIso(invoice.issueDate, Number(days)) })}
-            options={TERMS.map((days) => ({ value: String(days), label: days === 0 ? 'On receipt' : `${days} days` }))}
+            options={TERMS.map((days) => ({ value: String(days), label: days === 0 ? t('On receipt') : t('{count} day|{count} days', { count: days }) }))}
           />
         </div>
-        <TextField
-          type="date"
-          label="Service date"
-          hint="When the work was delivered"
-          value={invoice.serviceDate}
-          onChange={(serviceDate) => serviceDate && onChange({ serviceDate })}
-        />
-        <TextField label="Billing period" hint="Optional, e.g. September 2026" value={invoice.billingPeriod} onChange={(billingPeriod) => onChange({ billingPeriod })} />
-        <TextArea
-          wrapperClassName="col-span-2"
-          label="Note"
-          rows={2}
-          value={invoice.note}
-          onChange={(note) => onChange({ note })}
-          placeholder="e.g. Not in the VAT system. Payment within 14 days."
-        />
+        <div className="col-span-2">
+          <MoreToggle open={more} onToggle={() => setMore((value) => !value)} label={t('Service date, period and note')} />
+        </div>
+        {more && (
+          <>
+            <TextField
+              type="date"
+              label={t('Service date')}
+              hint={t('When the work was delivered')}
+              value={invoice.serviceDate}
+              onChange={(serviceDate) => serviceDate && onChange({ serviceDate })}
+            />
+            <TextField label={t('Billing period')} hint={t('Optional, e.g. September 2026')} value={invoice.billingPeriod} onChange={(billingPeriod) => onChange({ billingPeriod })} />
+            <TextArea
+              wrapperClassName="col-span-2"
+              label={t('Note')}
+              rows={2}
+              value={invoice.note}
+              onChange={(note) => onChange({ note })}
+              placeholder={t('e.g. Not in the VAT system. Payment within 14 days.')}
+            />
+          </>
+        )}
       </div>
     </Section>
   );

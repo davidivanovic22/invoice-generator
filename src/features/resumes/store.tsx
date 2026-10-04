@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createId } from '../../lib/files';
+import { DocHistory } from '../../lib/history';
 import { writeJson } from '../../lib/storage';
 import { loadResumeStore, migrateLegacyResume, normalizeResumeStore, RESUME_STORE_KEY } from './migrate';
 import { createEmptyResume, createSampleResume, type Resume, type ResumeStore } from './model';
@@ -11,8 +12,13 @@ type ResumeStoreValue = {
   createResume: (kind: 'sample' | 'empty') => Resume;
   duplicateResume: (id: string) => Resume | null;
   updateResume: (id: string, update: Updater) => void;
-  deleteResume: (id: string) => void;
+  /** Removes a resume and returns it, so the caller can offer Undo. */
+  deleteResume: (id: string) => Resume | undefined;
   importBackup: (data: unknown) => number;
+  undo: (id: string) => void;
+  redo: (id: string) => void;
+  canUndo: (id: string) => boolean;
+  canRedo: (id: string) => boolean;
   /** Adds a fully built resume (e.g. one imported by AI). */
   addResume: (resume: Resume) => void;
   /** The latest saved version, for async flows that outlive a render. */
@@ -83,7 +89,11 @@ export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
     return copy;
   }, []);
 
+  const history = useRef(new DocHistory<Resume>()).current;
+
   const updateResume = useCallback((id: string, update: Updater) => {
+    const before = storeRef.current.resumes.find((resume) => resume.id === id);
+    if (before) history.record(id, before);
     setStore((current) => ({
       ...current,
       resumes: current.resumes.map((resume) => {
@@ -92,11 +102,38 @@ export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
         return { ...next, updatedAt: new Date().toISOString() };
       })
     }));
-  }, []);
+  }, [history]);
 
   const deleteResume = useCallback((id: string) => {
+    const removed = storeRef.current.resumes.find((resume) => resume.id === id);
     setStore((current) => ({ ...current, resumes: current.resumes.filter((resume) => resume.id !== id) }));
+    return removed;
   }, []);
+
+  const replace = useCallback((resume: Resume) => {
+    setStore((current) => ({ ...current, resumes: current.resumes.map((item) => (item.id === resume.id ? resume : item)) }));
+  }, []);
+
+  const undo = useCallback(
+    (id: string) => {
+      const current = storeRef.current.resumes.find((resume) => resume.id === id);
+      const previous = current && history.undo(id, current);
+      if (previous) replace(previous);
+    },
+    [history, replace]
+  );
+
+  const redo = useCallback(
+    (id: string) => {
+      const current = storeRef.current.resumes.find((resume) => resume.id === id);
+      const next = current && history.redo(id, current);
+      if (next) replace(next);
+    },
+    [history, replace]
+  );
+
+  const canUndo = useCallback((id: string) => history.canUndo(id), [history]);
+  const canRedo = useCallback((id: string) => history.canRedo(id), [history]);
 
   /** Adds resumes from a backup without touching existing ones; returns how many were added. */
   const importBackup = useCallback((data: unknown) => {
@@ -120,8 +157,8 @@ export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
   const getResume = useCallback((id: string) => storeRef.current.resumes.find((resume) => resume.id === id), []);
 
   const value = useMemo(
-    () => ({ store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume }),
-    [store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume]
+    () => ({ store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume, undo, redo, canUndo, canRedo }),
+    [store, createResume, duplicateResume, updateResume, deleteResume, importBackup, addResume, getResume, undo, redo, canUndo, canRedo]
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 };

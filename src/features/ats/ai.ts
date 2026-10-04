@@ -1,8 +1,8 @@
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import type { BetaContentBlockParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { z } from 'zod';
+import { getLang, t } from '../../i18n';
 import { createId } from '../../lib/files';
-import { AI_MODEL, AiError, getClient, toAiError } from '../ai/client';
+import { callStructured } from '../ai/structured';
 import {
   createDesign,
   createEntry,
@@ -18,44 +18,9 @@ import type { AtsReport } from './analyze';
 
 /* ------------------------------ shared ------------------------------ */
 
-type Effort = 'low' | 'medium' | 'high';
-
-/**
- * One structured call. `fallbacks: "default"` lets the API retry on another
- * model if a safety classifier declines, instead of failing the request.
- */
-const callStructured = async <T extends z.ZodType>(options: {
-  schema: T;
-  system: string;
-  content: BetaContentBlockParam[];
-  effort: Effort;
-  maxTokens?: number;
-  signal?: AbortSignal;
-}): Promise<z.infer<T>> => {
-  const client = await getClient();
-  try {
-    const response = await client.beta.messages.parse(
-      {
-        model: AI_MODEL,
-        max_tokens: options.maxTokens ?? 16000,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        system: options.system,
-        output_config: { effort: options.effort, format: betaZodOutputFormat(options.schema) },
-        messages: [{ role: 'user', content: options.content }]
-      },
-      { signal: options.signal }
-    );
-    if (response.stop_reason === 'refusal') throw new AiError('refusal', 'Claude declined this request. Try rephrasing the text.');
-    if (response.stop_reason === 'max_tokens') throw new AiError('invalid', 'The resume is too long to process in one go. Try shortening it.');
-    if (!response.parsed_output) throw new AiError('invalid', 'Claude returned an unexpected answer. Please try again.');
-    return response.parsed_output as z.infer<T>;
-  } catch (error) {
-    throw toAiError(error);
-  }
-};
-
 const LANGUAGE_RULE = 'Write in the same language as the resume (if it is in Serbian, answer in Serbian; if English, in English).';
+/** Explanations shown in the app follow the app's language, not the resume's. */
+const uiLanguageRule = () => `Write every "reason" and "assessment" in ${getLang() === 'sr' ? 'Serbian (Latin script)' : 'English'}.`;
 
 /** A compact, id-annotated view of the resume for prompts. */
 const resumeForPrompt = (resume: Resume) => ({
@@ -102,7 +67,7 @@ export const extractJobKeywords = (resume: Resume, jobDescription: string, signa
       'You are an ATS (applicant tracking system) expert. Extract the keywords a recruiter\'s ATS would screen for in this job ad, ordered by importance. Use the exact wording of the ad so string matching works. Skip generic words (team player, motivated) unless the ad stresses them.',
     content: [
       { type: 'text', text: `<job_ad>\n${jobDescription}\n</job_ad>` },
-      { type: 'text', text: `<resume>\n${JSON.stringify(resumeForPrompt(resume))}\n</resume>` }
+      { type: 'text', text: `<resume>\n${JSON.stringify(resumeForPrompt(resume))}\n</resume>\n${uiLanguageRule()}` }
     ]
   });
 
@@ -151,7 +116,7 @@ export const suggestImprovements = (resume: Resume, report: AtsReport, signal?: 
         text: `<ats_findings score="${report.score}">\n${report.issues
           .filter((issue) => issue.aiFixable)
           .map((issue) => `- ${issue.title}: ${issue.detail}`)
-          .join('\n')}\n</ats_findings>\nPropose the changes that raise this resume to 95-100%.`
+          .join('\n')}\n</ats_findings>\nPropose the changes that raise this resume to 95-100%. ${uiLanguageRule()}`
       }
     ]
   }).then((result) => result.suggestions);
@@ -205,13 +170,13 @@ export const suggestionBefore = (resume: Resume, suggestion: Suggestion): string
 };
 
 export const suggestionLabel = (resume: Resume, suggestion: Suggestion): string => {
-  if (suggestion.type === 'headline') return 'Job title';
-  if (suggestion.type === 'summary') return 'Profile summary';
-  if (suggestion.type === 'skills_add') return 'Skills you already show';
-  if (suggestion.type === 'skills_confirm') return 'Skills from the job ad';
+  if (suggestion.type === 'headline') return t('Job title');
+  if (suggestion.type === 'summary') return t('Profile summary');
+  if (suggestion.type === 'skills_add') return t('Skills you already show');
+  if (suggestion.type === 'skills_confirm') return t('Skills from the job ad');
   const section = resume.sections.find((candidate) => candidate.id === suggestion.sectionId);
   const item = section?.type === 'entries' ? section.items.find((candidate) => candidate.id === suggestion.itemId) : undefined;
-  return item ? [item.title, item.subtitle].filter(Boolean).join(' · ') : 'Experience';
+  return item ? [item.title, item.subtitle].filter(Boolean).join(' · ') : t('Experience');
 };
 
 /* ------------------------------ import ------------------------------ */
@@ -219,6 +184,7 @@ export const suggestionLabel = (resume: Resume, suggestion: Suggestion): string 
 const IMPORT_KINDS = Object.keys(SECTION_KINDS) as [SectionKind, ...SectionKind[]];
 
 const ImportSchema = z.object({
+  language: z.enum(['en', 'sr']).describe('sr if the resume is written in Serbian, Croatian, Bosnian or Montenegrin; otherwise en'),
   personal: z.object({
     fullName: z.string(),
     headline: z.string().describe('Current or target job title'),
@@ -273,21 +239,22 @@ export const importResume = async (source: ImportSource, signal?: AbortSignal): 
     .map((section): ResumeSection | null => {
       const info = SECTION_KINDS[section.kind] ?? SECTION_KINDS.custom;
       const title = section.title.trim() || info.title;
-      if (info.type === 'text') return section.text.trim() ? createSection(section.kind, { title, text: section.text.trim() }) : null;
-      if (info.type === 'tags') return section.tags.length ? createSection(section.kind, { title, items: section.tags }) : null;
+      const language = parsed.language;
+      if (info.type === 'text') return section.text.trim() ? createSection(section.kind, { title, text: section.text.trim() }, language) : null;
+      if (info.type === 'tags') return section.tags.length ? createSection(section.kind, { title, items: section.tags }, language) : null;
       if (info.type === 'languages')
-        return section.languages.length ? createSection('languages', { title, items: section.languages.map((item) => ({ id: createId(), ...item })) }) : null;
-      return section.entries.length ? createSection(section.kind, { title, items: section.entries.map((entry) => createEntry(entry)) }) : null;
+        return section.languages.length ? createSection('languages', { title, items: section.languages.map((item) => ({ id: createId(), ...item })) }, language) : null;
+      return section.entries.length ? createSection(section.kind, { title, items: section.entries.map((entry) => createEntry(entry)) }, language) : null;
     })
     .filter((section): section is ResumeSection => section !== null);
 
   const name = parsed.personal.fullName.trim();
   return {
     id: createId(),
-    name: name ? `${name} (imported)` : 'Imported resume',
+    name: name ? `${name} (${parsed.language === 'sr' ? 'uvezen' : 'imported'})` : parsed.language === 'sr' ? 'Uvezen CV' : 'Imported resume',
     personal: createPersonal({ ...parsed.personal, extras: parsed.personal.extras.map((extra) => ({ id: createId(), ...extra })) }),
     sections,
-    design: createDesign({ template: 'classic', font: 'serif' }),
+    design: createDesign({ template: 'classic', font: 'serif', language: parsed.language }),
     ats: createAts(),
     createdAt: now,
     updatedAt: now

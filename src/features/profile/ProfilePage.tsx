@@ -8,6 +8,9 @@ import { INVOICE_TEMPLATES } from '../invoices/document/templates';
 import { PartyFields } from '../invoices/editor/PartyFields';
 import { CURRENCIES, UNITS, nextInvoiceNumber, type BankDetails, type BusinessProfile, type DocLanguage, type InvoiceTemplateId } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
+import { t } from '../../i18n';
+
+const UNIT_NAMES: Record<string, string> = { h: 'hours', day: 'days', pcs: 'pieces', month: 'months', project: 'project', km: 'km' };
 
 export const ProfilePage = () => {
   const { store, updateProfile, deleteClient } = useInvoiceStore();
@@ -19,71 +22,71 @@ export const ProfilePage = () => {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Business profile</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('Business profile')}</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Fill this in once. Every new invoice starts with these details, so you only add the client and the work.
+        {t('Fill this in once. Every new invoice starts with these details, so you only add the client and the work.')}
       </p>
 
       <div className="mt-6 space-y-4">
-        <Section title="Your business" icon="building" description="Shown as the issuer on every invoice">
+        <Section title={t('Your business')} icon="building" description={t('Shown as the issuer on every invoice')}>
           <PartyFields party={profile.party} onChange={(party) => set({ party })} />
         </Section>
 
-        <Section title="Bank account" icon="cash" description="Printed in the payment details">
+        <Section title={t('Bank account')} icon="cash" description={t('Printed in the payment details')}>
           <div className="grid grid-cols-2 gap-3">
-            <TextField wrapperClassName="col-span-2" label="IBAN / account number" value={profile.bank.iban} onChange={setBank('iban')} placeholder="RS35 1050 0812 3123 1231 23" />
+            <TextField wrapperClassName="col-span-2" label={t('IBAN / account number')} value={profile.bank.iban} onChange={setBank('iban')} placeholder="RS35 1050 0812 3123 1231 23" />
             <TextField label="SWIFT / BIC" value={profile.bank.swift} onChange={setBank('swift')} placeholder="AIKBRS22" />
-            <TextField label="Bank name" value={profile.bank.bankName} onChange={setBank('bankName')} placeholder="Banka Intesa" />
+            <TextField label={t('Bank name')} value={profile.bank.bankName} onChange={setBank('bankName')} placeholder={t('Banka Intesa')} />
           </div>
         </Section>
 
-        <Section title="Logo & signature" icon="image" description="Optional, but they make invoices look official">
+        <Section title={t('Logo & signature')} icon="image" description={t('Optional, but they make invoices look official')}>
           <div className="space-y-6">
-            <ImagePicker label="Logo" value={profile.logo} onChange={(logo) => set({ logo })} hint="PNG or SVG with a transparent background works best." />
+            <ImagePicker label={t('Logo')} value={profile.logo} onChange={(logo) => set({ logo })} hint={t('PNG or SVG with a transparent background works best.')} />
             <SignaturePad value={profile.signature} onChange={(signature) => set({ signature })} />
           </div>
         </Section>
 
-        <Section title="Invoice defaults" icon="settings" description="Used for every new invoice; you can still change them per invoice">
+        <Section title={t('Invoice defaults')} icon="settings" description={t('Used for every new invoice; you can still change them per invoice')}>
           <div className="grid grid-cols-2 gap-3">
             <SelectField
-              label="Currency"
+              label={t('Currency')}
               value={profile.defaults.currency}
               onChange={(currency) => setDefaults({ currency })}
               options={CURRENCIES.map((code) => ({ value: code, label: code }))}
             />
             <NumberField label="VAT" suffix="%" min={0} value={profile.defaults.vatPercent} onChange={(vatPercent) => setDefaults({ vatPercent })} />
-            <NumberField label="Payment due after" suffix="days" min={0} value={profile.defaults.paymentDays} onChange={(paymentDays) => setDefaults({ paymentDays: Math.round(paymentDays) })} />
+            <NumberField label={t('Payment due after')} suffix="days" min={0} value={profile.defaults.paymentDays} onChange={(paymentDays) => setDefaults({ paymentDays: Math.round(paymentDays) })} />
             <SelectField
-              label="Default unit"
+              label={t('Default unit')}
               value={profile.defaults.unit}
               onChange={(unit) => setDefaults({ unit })}
-              options={UNITS.map((unit) => ({ value: unit, label: unit }))}
+              options={UNITS.map((unit) => ({ value: unit, label: t(UNIT_NAMES[unit] ?? unit) }))}
             />
             <TextField
               wrapperClassName="col-span-2"
-              label="Number prefix"
+              label={t('Number prefix')}
               value={profile.defaults.numberPrefix}
               onChange={(numberPrefix) => setDefaults({ numberPrefix })}
-              placeholder="e.g. INV-"
-              hint={`Next invoice number: ${nextInvoiceNumber(store.invoices, profile.defaults.numberPrefix)}`}
+              placeholder={t('e.g. INV-')}
+              hint={t('Next invoice number: {number}', { number: nextInvoiceNumber(store.invoices, profile.defaults.numberPrefix) })}
             />
             <TextArea
               wrapperClassName="col-span-2"
-              label="Default note"
+              label={t('Default note')}
               rows={2}
               value={profile.defaults.note}
               onChange={(note) => setDefaults({ note })}
-              placeholder="e.g. The issuer is not in the VAT system."
+              placeholder={t('e.g. The issuer is not in the VAT system.')}
             />
             <SelectField
-              label="Template"
+              label={t('Template')}
               value={profile.defaults.template}
               onChange={(template) => setDefaults({ template: template as InvoiceTemplateId })}
               options={(Object.keys(INVOICE_TEMPLATES) as InvoiceTemplateId[]).map((id) => ({ value: id, label: INVOICE_TEMPLATES[id].name }))}
             />
             <div>
-              <div className="mb-1.5 text-[13px] font-medium text-slate-700">Document language</div>
+              <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Document language')}</div>
               <Segmented<DocLanguage>
                 size="sm"
                 value={profile.defaults.language}
@@ -96,16 +99,16 @@ export const ProfilePage = () => {
               />
             </div>
             <div className="col-span-2">
-              <div className="mb-1.5 text-[13px] font-medium text-slate-700">Accent colour</div>
+              <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Accent colour')}</div>
               <Swatches value={profile.defaults.accentColor} onChange={(accentColor) => setDefaults({ accentColor })} />
             </div>
           </div>
         </Section>
 
-        <Section title="Clients" icon="users" description={`${store.clients.length} saved · added automatically when you invoice someone new`}>
+        <Section title={t('Clients')} icon="users" description={t('{count} saved · added automatically when you invoice someone new', { count: store.clients.length })}>
           {store.clients.length === 0 ? (
             <p className="text-sm text-slate-500">
-              No clients yet. <Link to="/invoices" className="font-medium text-indigo-600 hover:underline">Create an invoice</Link> and the client is saved here.
+              {t('No clients yet.')} <Link to="/invoices" className="font-medium text-indigo-600 hover:underline">{t('Create an invoice')}</Link> {t('and the client is saved here.')}
             </p>
           ) : (
             <ul className="-my-2 divide-y divide-slate-100">
@@ -123,17 +126,17 @@ export const ProfilePage = () => {
                     <IconButton
                       icon="trash"
                       tone="danger"
-                      label={`Remove ${client.party.name}`}
+                      label={t('Remove {name}', { name: client.party.name })}
                       onClick={async () => {
                         const ok = await confirm({
-                          title: `Remove ${client.party.name}?`,
-                          message: 'Existing invoices keep their details. The client just stops showing up in suggestions.',
-                          confirmLabel: 'Remove',
+                          title: t('Remove {name}?', { name: client.party.name }),
+                          message: t('Existing invoices keep their details. The client just stops showing up in suggestions.'),
+                          confirmLabel: t('Remove'),
                           tone: 'danger'
                         });
                         if (ok) {
                           deleteClient(client.id);
-                          toast('Client removed');
+                          toast(t('Client removed'));
                         }
                       }}
                     />
@@ -146,7 +149,7 @@ export const ProfilePage = () => {
         <div className="flex justify-end pt-2">
           <Link to="/invoices">
             <Button variant="primary" iconRight="chevronRight">
-              Done
+              {t('Done')}
             </Button>
           </Link>
         </div>

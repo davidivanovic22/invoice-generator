@@ -5,6 +5,7 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
 import { useAi } from '../ai/AiSettings';
 import type { Resume } from '../resumes/model';
+import { t } from '../../i18n';
 
 type Props = { onClose: () => void; onImported: (resume: Resume) => void };
 
@@ -14,7 +15,7 @@ const readBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-    reader.onerror = () => reject(new Error('The file could not be read.'));
+    reader.onerror = () => reject(new Error(t('The file could not be read.')));
     reader.readAsDataURL(file);
   });
 
@@ -49,11 +50,11 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
     setError('');
     if (!candidate) return;
     if (candidate.size > MAX_BYTES) {
-      setError('That file is larger than 20 MB.');
+      setError(t('That file is larger than 20 MB.'));
       return;
     }
     if (!/\.(pdf|docx|txt|md)$/i.test(candidate.name)) {
-      setError('Please choose a PDF, Word (.docx) or text file.');
+      setError(t('Please choose a PDF, Word (.docx) or text file.'));
       return;
     }
     setFile(candidate);
@@ -79,7 +80,7 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
       onImported(resume);
     } catch (failure) {
       if (failure instanceof DOMException && failure.name === 'AbortError') return;
-      setError(failure instanceof Error ? failure.message : 'The resume could not be imported.');
+      setError(failure instanceof Error ? failure.message : t('The resume could not be imported.'));
     } finally {
       setWorking(false);
     }
@@ -91,17 +92,17 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={() => !working && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="import-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <h2 id="import-title" className="text-lg font-semibold text-slate-900">
-          Import your existing resume
+          {t('Import your existing resume')}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">Claude reads it, rebuilds it in an ATS-friendly template, and then guides you step by step through every improvement.</p>
+        <p className="mt-1 text-sm text-slate-500">{t('Claude reads it, rebuilds it in an ATS-friendly template, and then guides you step by step through every improvement.')}</p>
 
         <div className="mt-5">
           <Segmented
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'file', label: 'Upload file' },
-              { value: 'paste', label: 'Paste text' }
+              { value: 'file', label: t('Upload file') },
+              { value: 'paste', label: t('Paste text') }
             ]}
           />
         </div>
@@ -129,17 +130,17 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
               {file ? (
                 <>
                   <span className="text-sm font-medium text-slate-900">{file.name}</span>
-                  <span className="text-xs text-slate-500">Click to choose another file</span>
+                  <span className="text-xs text-slate-500">{t('Click to choose another file')}</span>
                 </>
               ) : (
                 <>
-                  <span className="text-sm font-medium text-slate-900">Drop your CV here, or click to choose</span>
-                  <span className="text-xs text-slate-500">PDF, Word (.docx) or text</span>
+                  <span className="text-sm font-medium text-slate-900">{t('Drop your CV here, or click to choose')}</span>
+                  <span className="text-xs text-slate-500">{t('PDF, Word (.docx) or text')}</span>
                 </>
               )}
             </button>
           ) : (
-            <TextArea rows={9} value={text} onChange={setText} placeholder="Paste the full text of your resume here (for example from LinkedIn or a Word document)." />
+            <TextArea rows={9} value={text} onChange={setText} placeholder={t('Paste the full text of your resume here (for example from LinkedIn or a Word document).')} />
           )}
           <input
             ref={inputRef}
@@ -161,11 +162,11 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
         )}
         {!hasKey && (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
-            Importing uses Claude AI.{' '}
+            {t('Importing uses Claude AI.')}{' '}
             <button type="button" onClick={openSettings} className="font-semibold underline">
-              Connect Claude
+              {t('Connect Claude')}
             </button>{' '}
-            first; it takes a minute.
+            {t('first; it takes a minute.')}
           </p>
         )}
 
@@ -176,10 +177,10 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
               onClose();
             }}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button variant="accent" icon="sparkle" onClick={run} disabled={!ready || working}>
-            {working ? 'Claude is reading your resume…' : 'Import & analyse'}
+            {working ? t('Claude is reading your resume…') : t('Import & analyse')}
           </Button>
         </div>
       </div>

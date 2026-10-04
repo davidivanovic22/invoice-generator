@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { t } from '../../i18n';
 import type { Resume } from '../resumes/model';
 import { useResumeStore } from '../resumes/store';
 import { analyzeResume } from './analyze';
@@ -62,7 +63,7 @@ export const useAts = (resumeId: string) => {
       run(async (signal) => {
         const resume = getResume(resumeId);
         if (!resume) return;
-        setBusy({ label: 'Reading the job ad…' });
+        setBusy({ label: t('Reading the job ad…') });
         await refreshKeywords({ ...resume, ats: { ...resume.ats, keywordsSource: '' } }, signal);
       }),
     [getResume, refreshKeywords, resumeId, run]
@@ -74,9 +75,9 @@ export const useAts = (resumeId: string) => {
       run(async (signal): Promise<Suggestion[]> => {
         let resume = getResume(resumeId);
         if (!resume) return [];
-        setBusy({ label: 'Reading the job ad…' });
+        setBusy({ label: t('Reading the job ad…') });
         resume = await refreshKeywords(resume, signal);
-        setBusy({ label: 'Claude is reviewing your resume…' });
+        setBusy({ label: t('Claude is reviewing your resume…') });
         const { suggestImprovements } = await loadAi();
         return suggestImprovements(resume, analyzeResume(resume), signal);
       }),
@@ -95,7 +96,7 @@ export const useAts = (resumeId: string) => {
         if (!resume) return { pendingSkills: [] as Suggestion[], before: 0, after: 0 };
         const before = analyzeResume(resume).score;
         setUndoSnapshot(resume);
-        setBusy({ label: 'Reading the job ad…' });
+        setBusy({ label: t('Reading the job ad…') });
         resume = await refreshKeywords(resume, signal);
         const { suggestImprovements, applySuggestion } = await loadAi();
         const pendingSkills: Suggestion[] = [];
@@ -103,7 +104,7 @@ export const useAts = (resumeId: string) => {
         for (let round = 1; round <= MAX_ROUNDS; round++) {
           const report = analyzeResume(resume);
           if (report.score >= TARGET_SCORE && !report.issues.some((issue) => issue.aiFixable && issue.points > 0)) break;
-          setBusy({ label: round === 1 ? 'Rewriting your resume…' : 'Polishing the remaining issues…', round });
+          setBusy({ label: round === 1 ? t('Rewriting your resume…') : t('Polishing the remaining issues…'), round });
           const suggestions = await suggestImprovements(resume, report, signal);
           const automatic = suggestions.filter((suggestion) => suggestion.type !== 'skills_confirm');
           pendingSkills.push(...suggestions.filter((suggestion) => suggestion.type === 'skills_confirm' && suggestion.skills.length));

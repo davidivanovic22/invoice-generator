@@ -4,6 +4,7 @@ import { useFeedback } from '../../ui/Feedback';
 import { TextField } from '../../ui/Field';
 import { Icon } from '../../ui/Icon';
 import { getApiKey, onApiKeyChange, setApiKey, testApiKey } from './client';
+import { t } from '../../i18n';
 
 type AiContextValue = { hasKey: boolean; openSettings: () => void };
 const AiContext = createContext<AiContextValue | null>(null);
@@ -35,10 +36,10 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
     try {
       await testApiKey(draft);
       setApiKey(draft);
-      toast('Claude is connected');
+      toast(t('Claude is connected'));
       onClose();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'The key could not be verified.');
+      setError(failure instanceof Error ? failure.message : t('The key could not be verified.'));
     } finally {
       setTesting(false);
     }
@@ -53,9 +54,9 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
           </span>
           <div>
             <h2 id="ai-settings-title" className="text-lg font-semibold text-slate-900">
-              Connect Claude AI
+              {t('Connect Claude AI')}
             </h2>
-            <p className="text-sm text-slate-500">Powers the ATS analysis, rewriting and resume import.</p>
+            <p className="text-sm text-slate-500">{t('Powers the ATS analysis, rewriting and resume import.')}</p>
           </div>
         </div>
 
@@ -63,29 +64,29 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold">1</span>
             <span>
-              Open{' '}
+              {t('Open')}{' '}
               <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
                 console.anthropic.com
               </a>{' '}
-              and sign in (or create a free account).
+              {t('and sign in (or create a free account).')}
             </span>
           </li>
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold">2</span>
-            <span>Click "Create Key", copy it, and paste it below. You pay Anthropic directly; a full resume optimisation costs a few cents.</span>
+            <span>{t('Click "Create Key", copy it, and paste it below. You pay Anthropic directly; a full resume optimisation costs a few cents.')}</span>
           </li>
         </ol>
 
         <div className="mt-5">
           <TextField
-            label="Anthropic API key"
+            label={t('Anthropic API key')}
             type="password"
             autoComplete="off"
             value={draft}
             onChange={setDraft}
-            placeholder={current ? `Saved: ${mask(current)}` : 'sk-ant-…'}
+            placeholder={current ? t('Saved: {key}', { key: mask(current) }) : 'sk-ant-…'}
             error={error || undefined}
-            hint="Stored only in this browser and sent only to Anthropic. Never share it."
+            hint={t('Stored only in this browser and sent only to Anthropic. Never share it.')}
             onKeyDown={(event) => event.key === 'Enter' && draft.trim() && save()}
           />
         </div>
@@ -96,19 +97,19 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
               variant="danger"
               onClick={() => {
                 setApiKey('');
-                toast('Claude disconnected', 'info');
+                toast(t('Claude disconnected'), 'info');
                 onClose();
               }}
             >
-              Remove key
+              {t('Remove key')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t('Cancel')}</Button>
             <Button variant="accent" onClick={save} disabled={!draft.trim() || testing}>
-              {testing ? 'Checking…' : 'Connect'}
+              {testing ? t('Checking…') : t('Connect')}
             </Button>
           </div>
         </div>

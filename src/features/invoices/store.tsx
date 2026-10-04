@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { writeJson } from '../../lib/storage';
 import { createId } from '../../lib/files';
+import { DocHistory } from '../../lib/history';
 import { todayIso } from '../../lib/dates';
 import { loadInvoiceStore, migrateLegacy, normalizeStore, STORE_KEY } from './migrate';
 import {
@@ -25,8 +26,16 @@ type InvoiceStoreValue = {
   store: InvoiceStore;
   createInvoice: (overrides?: Partial<Invoice>) => Invoice;
   duplicateInvoice: (id: string) => Invoice | null;
-  updateInvoice: (id: string, update: Updater<Invoice>) => void;
-  deleteInvoice: (id: string) => void;
+  /** `record: false` skips undo history (for bookkeeping such as linking a client). */
+  updateInvoice: (id: string, update: Updater<Invoice>, options?: { record?: boolean }) => void;
+  /** Removes an invoice and returns it, so the caller can offer Undo. */
+  deleteInvoice: (id: string) => Invoice | undefined;
+  /** Puts a deleted invoice back. */
+  restoreInvoice: (invoice: Invoice) => void;
+  undo: (id: string) => void;
+  redo: (id: string) => void;
+  canUndo: (id: string) => boolean;
+  canRedo: (id: string) => boolean;
   setStatus: (id: string, status: InvoiceStatus) => void;
   updateProfile: (update: Updater<BusinessProfile>) => void;
   /** Saves (or refreshes) a client in the address book and returns its id. */
@@ -87,16 +96,51 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
     return copy;
   }, []);
 
-  const updateInvoice = useCallback((id: string, update: Updater<Invoice>) => {
+  const history = useRef(new DocHistory<Invoice>()).current;
+
+  const updateInvoice = useCallback((id: string, update: Updater<Invoice>, options?: { record?: boolean }) => {
+    const before = storeRef.current.invoices.find((invoice) => invoice.id === id);
+    if (before && options?.record !== false) history.record(id, before);
     setStore((current) => ({
       ...current,
       invoices: current.invoices.map((invoice) => (invoice.id === id ? touch(apply(invoice, update)) : invoice))
     }));
-  }, []);
+  }, [history]);
 
   const deleteInvoice = useCallback((id: string) => {
+    const removed = storeRef.current.invoices.find((invoice) => invoice.id === id);
     setStore((current) => ({ ...current, invoices: current.invoices.filter((invoice) => invoice.id !== id) }));
+    return removed;
   }, []);
+
+  const restoreInvoice = useCallback((invoice: Invoice) => {
+    setStore((current) => (current.invoices.some((item) => item.id === invoice.id) ? current : { ...current, invoices: [invoice, ...current.invoices] }));
+  }, []);
+
+  const replace = useCallback((invoice: Invoice) => {
+    setStore((current) => ({ ...current, invoices: current.invoices.map((item) => (item.id === invoice.id ? invoice : item)) }));
+  }, []);
+
+  const undo = useCallback(
+    (id: string) => {
+      const current = storeRef.current.invoices.find((invoice) => invoice.id === id);
+      const previous = current && history.undo(id, current);
+      if (previous) replace(previous);
+    },
+    [history, replace]
+  );
+
+  const redo = useCallback(
+    (id: string) => {
+      const current = storeRef.current.invoices.find((invoice) => invoice.id === id);
+      const next = current && history.redo(id, current);
+      if (next) replace(next);
+    },
+    [history, replace]
+  );
+
+  const canUndo = useCallback((id: string) => history.canUndo(id), [history]);
+  const canRedo = useCallback((id: string) => history.canRedo(id), [history]);
 
   const setStatus = useCallback(
     (id: string, status: InvoiceStatus) =>
@@ -166,13 +210,18 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
       duplicateInvoice: duplicateInvoiceAction,
       updateInvoice,
       deleteInvoice,
+      restoreInvoice,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
       setStatus,
       updateProfile,
       rememberClient,
       deleteClient,
       importBackup
     }),
-    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, setStatus, updateProfile, rememberClient, deleteClient, importBackup]
+    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, restoreInvoice, undo, redo, canUndo, canRedo, setStatus, updateProfile, rememberClient, deleteClient, importBackup]
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

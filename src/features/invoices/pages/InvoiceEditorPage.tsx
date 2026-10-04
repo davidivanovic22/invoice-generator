@@ -1,42 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { printToPdf } from '../../../lib/pdf';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { t } from '../../../i18n';
 import { safeFileName } from '../../../lib/files';
+import { printToPdf } from '../../../lib/pdf';
 import { A4Preview } from '../../../ui/A4Preview';
-import { Button, IconButton } from '../../../ui/Button';
+import { Button } from '../../../ui/Button';
+import { EditorToolbar, editTargetFrom, flash, MobileViewSwitch, PreviewHint, useUndoShortcuts } from '../../../ui/EditorChrome';
 import { useFeedback } from '../../../ui/Feedback';
-import { Icon } from '../../../ui/Icon';
-import { EmptyState, Segmented } from '../../../ui/Layout';
+import { EmptyState } from '../../../ui/Layout';
+import { StatusBadge, StatusMenu } from '../components/Status';
 import { InvoiceDocument } from '../document/InvoiceDocument';
 import { ClientSection } from '../editor/ClientSection';
 import { DesignSection } from '../editor/DesignSection';
 import { DetailsSection } from '../editor/DetailsSection';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
-import { StatusBadge, StatusMenu } from '../components/Status';
 import type { Invoice } from '../model';
 import { useInvoiceStore } from '../store';
+
+const SECTION_IDS: Record<string, string> = { client: 'client', items: 'items', details: 'details', from: 'from', design: 'design' };
 
 export const InvoiceEditorPage = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { store, updateInvoice, duplicateInvoice, deleteInvoice, setStatus, rememberClient } = useInvoiceStore();
-  const { confirm, toast } = useFeedback();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { store, updateInvoice, duplicateInvoice, deleteInvoice, restoreInvoice, setStatus, rememberClient, updateProfile, undo, redo, canUndo, canRedo } =
+    useInvoiceStore();
+  const { toast } = useFeedback();
   const invoice = store.invoices.find((candidate) => candidate.id === id);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [exporting, setExporting] = useState(false);
+  const [openFromToken, setOpenFromToken] = useState(0);
   const exportRef = useRef<HTMLDivElement>(null);
 
   const onChange = useCallback((update: Partial<Invoice>) => updateInvoice(id, update), [id, updateInvoice]);
+  const onUndo = useCallback(() => undo(id), [id, undo]);
+  const onRedo = useCallback(() => redo(id), [id, redo]);
+  useUndoShortcuts(onUndo, onRedo);
 
-  // Save the client to the address book when leaving the editor (not on every keystroke).
+  // Save the client to the address book when focus leaves it or the editor closes (not on every keystroke).
   const latest = useRef(invoice);
   latest.current = invoice;
   const saveClient = useCallback(() => {
     const current = latest.current;
     if (!current?.client.name.trim()) return;
     const clientId = rememberClient(current.client, current.currency, current.clientId);
-    if (clientId && clientId !== current.clientId) updateInvoice(current.id, { clientId });
+    if (clientId && clientId !== current.clientId) updateInvoice(current.id, { clientId }, { record: false });
   }, [rememberClient, updateInvoice]);
   useEffect(() => saveClient, [saveClient]);
 
@@ -46,21 +55,45 @@ export const InvoiceEditorPage = () => {
   useEffect(() => {
     const current = latest.current;
     if (current?.status === 'draft' && !current.issuer.name.trim() && profileParty.name.trim()) {
-      updateInvoice(current.id, { issuer: { ...profileParty }, bank: { ...profileBank } });
+      updateInvoice(current.id, { issuer: { ...profileParty }, bank: { ...profileBank } }, { record: false });
     }
   }, [id, profileParty, profileBank, updateInvoice]);
 
+  const exportPdf = useCallback(async () => {
+    const current = latest.current;
+    const node = exportRef.current;
+    if (!current || !node) return;
+    saveClient();
+    setExporting(true);
+    toast(t('In the window that opens, choose "Save as PDF".'), 'info');
+    try {
+      await printToPdf(node, safeFileName(`${current.design.language === 'en' ? 'Invoice' : 'Faktura'}-${current.number}`, 'invoice'));
+    } catch (error) {
+      console.error(error);
+      toast(t('The PDF could not be created. Please try again.'), 'error');
+    } finally {
+      setExporting(false);
+    }
+  }, [saveClient, toast]);
+
+  // Arriving with ?print=1 (from "Create & download") opens the save dialog right away.
+  useEffect(() => {
+    if (searchParams.get('print') !== '1' || !latest.current) return;
+    setSearchParams({}, { replace: true });
+    const timer = setTimeout(exportPdf, 400);
+    return () => clearTimeout(timer);
+  }, [searchParams, setSearchParams, exportPdf]);
 
   if (!invoice) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
         <EmptyState
           icon="file"
-          title="Invoice not found"
-          description="It may have been deleted, or it was created in another browser."
+          title={t('Invoice not found')}
+          description={t('It may have been deleted, or it was created in another browser.')}
           action={
             <Link to="/invoices">
-              <Button variant="primary">Back to invoices</Button>
+              <Button variant="primary">{t('Back to invoices')}</Button>
             </Link>
           }
         />
@@ -68,19 +101,17 @@ export const InvoiceEditorPage = () => {
     );
   }
 
-  const exportPdf = async () => {
-    saveClient();
-    const node = exportRef.current;
-    if (!node) return;
-    setExporting(true);
-    try {
-      await printToPdf(node, safeFileName(`${invoice.design.language === 'en' ? 'Invoice' : 'Faktura'}-${invoice.number}`, 'invoice'));
-    } catch (error) {
-      console.error(error);
-      toast('The PDF could not be created. Please try again.', 'error');
-    } finally {
-      setExporting(false);
-    }
+  const openSection = (target: string) => {
+    const sectionId = SECTION_IDS[target];
+    if (!sectionId) return;
+    setMobileView('edit');
+    if (sectionId === 'from') setOpenFromToken(Date.now());
+    requestAnimationFrame(() => {
+      const element = document.getElementById(sectionId);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      flash(element);
+      setTimeout(() => element?.querySelector<HTMLElement>('input, textarea')?.focus({ preventScroll: true }), 400);
+    });
   };
 
   const handleDuplicate = () => {
@@ -88,56 +119,50 @@ export const InvoiceEditorPage = () => {
     const copy = duplicateInvoice(invoice.id);
     if (copy) {
       navigate(`/invoices/${copy.id}`);
-      toast(`Created invoice ${copy.number}`);
+      toast(t('Created invoice {number}', { number: copy.number }));
     }
   };
 
-  const handleDelete = async () => {
-    const ok = await confirm({
-      title: `Delete invoice ${invoice.number}?`,
-      message: 'This removes it from this browser. Export a backup first if you might need it.',
-      confirmLabel: 'Delete',
-      tone: 'danger'
-    });
-    if (!ok) return;
-    deleteInvoice(invoice.id);
+  const handleDelete = () => {
+    const removed = deleteInvoice(invoice.id);
     navigate('/invoices');
-    toast('Invoice deleted');
+    if (removed) toast(t('Invoice {number} deleted', { number: removed.number }), 'success', { label: t('Undo'), onClick: () => restoreInvoice(removed) });
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="sticky top-14 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6">
-          <Link to="/invoices" className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900">
-            <Icon name="chevronLeft" />
-            <span className="hidden sm:inline">Invoices</span>
-          </Link>
-          <div className="hidden min-w-0 items-center gap-2 sm:flex">
-            <h1 className="truncate text-[15px] font-semibold text-slate-900">Invoice {invoice.number}</h1>
-            <StatusBadge invoice={invoice} />
-          </div>
-          <div className="ml-auto flex items-center gap-1.5">
+      <EditorToolbar
+        backTo="/invoices"
+        backLabel={t('Invoices')}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        canUndo={canUndo(id)}
+        canRedo={canRedo(id)}
+        title={
+          <>
+            <h1 className="hidden truncate text-[15px] font-semibold text-slate-900 sm:block">
+              {t('Invoice')} {invoice.number}
+            </h1>
+            <span className="hidden sm:inline-flex">
+              <StatusBadge invoice={invoice} />
+            </span>
             <StatusMenu invoice={invoice} onChange={(status) => setStatus(invoice.id, status)} />
-            <IconButton icon="copy" label="Duplicate as new invoice" onClick={handleDuplicate} className="hidden sm:inline-flex" />
-            <IconButton icon="trash" label="Delete invoice" tone="danger" onClick={handleDelete} />
-            <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting} title="Opens the save dialog: choose “Save as PDF”">
-              Download PDF
-            </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+        menu={[
+          { label: t('Duplicate as new invoice'), icon: 'copy', onSelect: handleDuplicate },
+          { label: t('Business profile'), icon: 'building', onSelect: () => navigate('/profile') },
+          'divider',
+          { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
+        ]}
+      >
+        <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting}>
+          <span className="hidden sm:inline">{t('Download PDF')}</span>
+          <span className="sm:hidden">PDF</span>
+        </Button>
+      </EditorToolbar>
 
-      <div className="mx-auto w-full max-w-[1600px] px-4 pt-4 sm:px-6 lg:hidden">
-        <Segmented
-          value={mobileView}
-          onChange={setMobileView}
-          options={[
-            { value: 'edit', label: 'Edit' },
-            { value: 'preview', label: 'Preview' }
-          ]}
-        />
-      </div>
+      <MobileViewSwitch value={mobileView} onChange={setMobileView} />
 
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(420px,560px)_1fr]">
         <div className={`min-w-0 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
@@ -145,20 +170,25 @@ export const InvoiceEditorPage = () => {
           <ItemsSection invoice={invoice} defaultUnit={store.profile.defaults.unit} onChange={onChange} />
           <DetailsSection invoice={invoice} invoices={store.invoices} numberPrefix={store.profile.defaults.numberPrefix} onChange={onChange} />
           <DesignSection invoice={invoice} profile={store.profile} onChange={(design) => onChange({ design })} />
-          <FromSection invoice={invoice} profile={store.profile} onChange={onChange} />
+          <FromSection invoice={invoice} profile={store.profile} onChange={onChange} onProfileChange={updateProfile} forceOpenToken={openFromToken} />
         </div>
         <div className={`min-w-0 ${mobileView === 'edit' ? 'hidden lg:block' : ''}`}>
           <div className="sticky top-[124px] max-h-[calc(100vh-140px)] overflow-y-auto rounded-xl pb-2 lg:pr-1">
-            <div className="overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08),0_12px_40px_-12px_rgba(15,23,42,0.25)] ring-1 ring-slate-200">
+            <div
+              className="editable-preview overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08),0_12px_40px_-12px_rgba(15,23,42,0.25)] ring-1 ring-slate-200"
+              onClick={(event) => {
+                const target = editTargetFrom(event);
+                if (target) openSection(target.target);
+              }}
+            >
               <A4Preview>
                 <InvoiceDocument ref={exportRef} invoice={invoice} profile={store.profile} />
               </A4Preview>
             </div>
-            <p className="mt-3 text-center text-xs text-slate-400">Live preview · saved automatically in this browser</p>
+            <PreviewHint />
           </div>
         </div>
       </div>
-
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { alpha, readableOn, shade, tint } from '../../../lib/color';
-import { SECTION_KINDS, type Resume, type ResumeFont, type ResumeSection, type ResumeTemplateId } from '../model';
+import { contactTitle, docTitle, SECTION_KINDS, type Resume, type ResumeFont, type ResumeSection, type ResumeTemplateId } from '../model';
 import { ContactList, Entry, Languages, Photo, RichText, SectionHeading, Tags, type HeadingVariant, type Theme } from './blocks';
 import { PAGE_WIDTH, Paginator, type Block } from './Paginator';
 
@@ -29,13 +29,22 @@ const sectionBlocks = (sections: ResumeSection[], theme: Theme, r: Renderers, is
   sections.flatMap((section, sectionIndex) => {
     const top = sectionIndex === 0 && isFirstColumnBlock ? 0 : r.sectionSpace;
     const heading = (
-      <div style={{ paddingTop: top, paddingBottom: r.headingSpace }}>{r.heading(section.title || SECTION_KINDS[section.kind].title)}</div>
+      <div data-edit={section.id} style={{ paddingTop: top, paddingBottom: r.headingSpace }}>
+        {r.heading(section.title || docTitle(section.kind, theme.language))}
+      </div>
     );
     if (section.type === 'entries') {
       const items = section.items.filter((item) => item.title.trim() || item.subtitle.trim() || item.description.trim());
       return [
         { key: `${section.id}-heading`, node: heading, keepWithNext: true },
-        ...items.map((item) => ({ key: item.id, node: <Entry item={item} theme={theme} layout={r.entry} dark={r.dark} /> }))
+        ...items.map((item) => ({
+          key: item.id,
+          node: (
+            <div data-edit={section.id} data-item={item.id}>
+              <Entry item={item} theme={theme} layout={r.entry} dark={r.dark} />
+            </div>
+          )
+        }))
       ];
     }
     let content: ReactNode;
@@ -46,7 +55,7 @@ const sectionBlocks = (sections: ResumeSection[], theme: Theme, r: Renderers, is
       {
         key: section.id,
         node: (
-          <div>
+          <div data-edit={section.id}>
             {heading}
             {content}
           </div>
@@ -60,7 +69,7 @@ const bodyStyle = (theme: Theme, color = theme.text) => ({ fontFamily: theme.bod
 const Name = ({ resume, theme, size, color, align }: { resume: Resume; theme: Theme; size: number; color?: string; align?: 'left' | 'center' }) => (
   <div style={{ textAlign: align }}>
     <div style={{ fontFamily: theme.heading, fontSize: size, fontWeight: 750, lineHeight: 1.08, letterSpacing: '-0.02em', color: color ?? theme.text }}>
-      {resume.personal.fullName || 'Your name'}
+      {resume.personal.fullName || placeholderName(theme)}
     </div>
     {resume.personal.headline && (
       <div style={{ marginTop: 6, fontSize: theme.size * 1.18, fontWeight: 500, color: color ? alpha(color, 0.78) : theme.ink }}>
@@ -69,6 +78,8 @@ const Name = ({ resume, theme, size, color, align }: { resume: Resume; theme: Th
     )}
   </div>
 );
+
+const placeholderName = (theme: Theme) => (theme.language === 'sr' ? 'Ime i prezime' : 'Your name');
 
 const heading = (theme: Theme, variant: HeadingVariant, color?: string) => (title: string) => (
   <SectionHeading title={title} theme={theme} variant={variant} color={color} />
@@ -82,13 +93,15 @@ const Modern = (resume: Resume, theme: Theme) => {
   const s = theme.space;
   const sideWidth = 262;
   const side: Block[] = [
-    ...(showPhoto(resume) ? [{ key: 'photo', node: <Photo src={resume.personal.photo} size={132} border={`4px solid #fff`} /> }] : []),
+    ...(showPhoto(resume)
+      ? [{ key: 'photo', node: <div data-edit="personal"><Photo src={resume.personal.photo} size={132} border={`4px solid #fff`} /></div> }]
+      : []),
     {
       key: 'contact',
       node: (
-        <div style={{ paddingTop: showPhoto(resume) ? 8 : 0 }}>
+        <div data-edit="personal" style={{ paddingTop: showPhoto(resume) ? 8 : 0 }}>
           <div style={{ paddingBottom: 10 * s }}>
-            <SectionHeading title="Contact" theme={theme} variant="caps" />
+            <SectionHeading title={contactTitle(theme.language)} theme={theme} variant="caps" />
           </div>
           <ContactList personal={resume.personal} theme={theme} />
         </div>
@@ -97,7 +110,7 @@ const Modern = (resume: Resume, theme: Theme) => {
     ...sectionBlocks(visibleSections(resume, 'side'), theme, { heading: heading(theme, 'caps'), entry: 'stacked', tags: 'chips', sectionSpace: 18 * s, headingSpace: 10 * s }, false)
   ];
   const main: Block[] = [
-    { key: 'name', node: <div style={{ paddingBottom: 10 * s }}><Name resume={resume} theme={theme} size={34} /></div> },
+    { key: 'name', node: <div data-edit="personal" style={{ paddingBottom: 10 * s }}><Name resume={resume} theme={theme} size={34} /></div> },
     ...sectionBlocks(visibleSections(resume, 'main'), theme, { heading: heading(theme, 'rule'), entry: 'split', tags: 'chips', sectionSpace: 16 * s, headingSpace: 10 * s }, false)
   ];
   return (
@@ -116,7 +129,7 @@ const Modern = (resume: Resume, theme: Theme) => {
 const Classic = (resume: Resume, theme: Theme) => {
   const s = theme.space;
   const header = (
-    <div style={{ padding: '52px 64px 0', textAlign: 'center' }}>
+    <div data-edit="personal" style={{ padding: '52px 64px 0', textAlign: 'center' }}>
       <Name resume={resume} theme={theme} size={32} align="center" />
       <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center' }}>
         <ContactList personal={resume.personal} theme={theme} variant="inline" />
@@ -145,10 +158,10 @@ const Classic = (resume: Resume, theme: Theme) => {
 const Minimal = (resume: Resume, theme: Theme) => {
   const s = theme.space;
   const header = (
-    <div style={{ padding: '60px 68px 0', display: 'flex', alignItems: 'center', gap: 24 }}>
+    <div data-edit="personal" style={{ padding: '60px 68px 0', display: 'flex', alignItems: 'center', gap: 24 }}>
       {showPhoto(resume) && <Photo src={resume.personal.photo} size={84} shape="circle" />}
       <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: theme.heading, fontSize: 36, fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1.05 }}>{resume.personal.fullName || 'Your name'}</div>
+        <div style={{ fontFamily: theme.heading, fontSize: 36, fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1.05 }}>{resume.personal.fullName || placeholderName(theme)}</div>
         {resume.personal.headline && <div style={{ marginTop: 6, fontSize: theme.size * 1.15, color: theme.ink, fontWeight: 500 }}>{resume.personal.headline}</div>}
         <div style={{ marginTop: 10, fontSize: theme.size * 0.92 }}>
           <ContactList personal={resume.personal} theme={theme} variant="inline" />
@@ -179,7 +192,7 @@ const Executive = (resume: Resume, theme: Theme) => {
   const band = shade(theme.accent, 0.62);
   const onBand = readableOn(band);
   const header = (
-    <div style={{ background: band, color: onBand, padding: '44px 48px 36px', display: 'flex', alignItems: 'center', gap: 28 }}>
+    <div data-edit="personal" style={{ background: band, color: onBand, padding: '44px 48px 36px', display: 'flex', alignItems: 'center', gap: 28 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <Name resume={resume} theme={theme} size={34} color={onBand} />
         <div style={{ marginTop: 14, fontSize: theme.size * 0.95 }}>
@@ -217,11 +230,11 @@ const Creative = (resume: Resume, theme: Theme) => {
     {
       key: 'identity',
       node: (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
+        <div data-edit="personal" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
           {showPhoto(resume) && <Photo src={resume.personal.photo} size={136} border={`5px solid ${alpha('#ffffff', 0.3)}`} />}
           <div>
             <div style={{ fontFamily: theme.heading, fontSize: 30, fontWeight: 700, lineHeight: 1.05, color: onPanel, letterSpacing: '-0.02em' }}>
-              {resume.personal.fullName || 'Your name'}
+              {resume.personal.fullName || placeholderName(theme)}
             </div>
             {resume.personal.headline && <div style={{ marginTop: 8, color: alpha(onPanel, 0.8), fontWeight: 500 }}>{resume.personal.headline}</div>}
           </div>
@@ -231,7 +244,7 @@ const Creative = (resume: Resume, theme: Theme) => {
     {
       key: 'contact',
       node: (
-        <div style={{ paddingTop: 10 * s }}>
+        <div data-edit="personal" style={{ paddingTop: 10 * s }}>
           <ContactList personal={resume.personal} theme={theme} color={onPanel} iconColor={alpha(onPanel, 0.75)} />
         </div>
       )
@@ -260,7 +273,7 @@ const Creative = (resume: Resume, theme: Theme) => {
 const Compact = (resume: Resume, theme: Theme) => {
   const s = theme.space;
   const header = (
-    <div style={{ padding: '40px 44px 18px', display: 'flex', alignItems: 'flex-end', gap: 20, borderBottom: `3px solid ${theme.accent}`, margin: '0 0 0 0' }}>
+    <div data-edit="personal" style={{ padding: '40px 44px 18px', display: 'flex', alignItems: 'flex-end', gap: 20, borderBottom: `3px solid ${theme.accent}` }}>
       {showPhoto(resume) && <Photo src={resume.personal.photo} size={76} shape="rounded" />}
       <div style={{ flex: 1, minWidth: 0 }}>
         <Name resume={resume} theme={theme} size={28} />

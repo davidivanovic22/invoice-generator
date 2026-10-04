@@ -4,6 +4,7 @@ import { Section, Segmented, Swatches } from '../../../ui/Layout';
 import { InvoiceDocument } from '../document/InvoiceDocument';
 import { INVOICE_TEMPLATES, resolveSeasonal } from '../document/templates';
 import { MONTHS, type BusinessProfile, type DocLanguage, type Invoice, type InvoiceDesign, type InvoiceTemplateId, type MonthKey } from '../model';
+import { t, uiLocale } from '../../../i18n';
 
 type Props = {
   invoice: Invoice;
@@ -11,7 +12,11 @@ type Props = {
   onChange: (design: InvoiceDesign) => void;
 };
 
-const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+/** Month name in the app's language. */
+const monthName = (month: MonthKey) => {
+  const name = new Intl.DateTimeFormat(uiLocale(), { month: 'long' }).format(new Date(2026, MONTHS.indexOf(month), 1));
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
 
 export const DesignSection = ({ invoice, profile, onChange }: Props) => {
   const design = invoice.design;
@@ -19,7 +24,7 @@ export const DesignSection = ({ invoice, profile, onChange }: Props) => {
   const seasonal = design.template === 'seasonal' ? resolveSeasonal(invoice) : null;
 
   return (
-    <Section id="design" title="Design" icon="palette" description={`${INVOICE_TEMPLATES[design.template].name} template`}>
+    <Section id="design" title={t('Design')} icon="palette" description={t('{name} template', { name: t(INVOICE_TEMPLATES[design.template].name) })}>
       <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-2">
         {(Object.keys(INVOICE_TEMPLATES) as InvoiceTemplateId[]).map((id) => {
           const active = id === design.template;
@@ -38,7 +43,7 @@ export const DesignSection = ({ invoice, profile, onChange }: Props) => {
                   <InvoiceDocument invoice={{ ...invoice, design: { ...design, template: id } }} profile={profile} />
                 </A4Thumbnail>
               </div>
-              <div className={`mt-1.5 text-xs font-medium ${active ? 'text-indigo-700' : 'text-slate-600'}`}>{INVOICE_TEMPLATES[id].name}</div>
+              <div className={`mt-1.5 text-xs font-medium ${active ? 'text-indigo-700' : 'text-slate-600'}`}>{t(INVOICE_TEMPLATES[id].name)}</div>
             </button>
           );
         })}
@@ -48,16 +53,16 @@ export const DesignSection = ({ invoice, profile, onChange }: Props) => {
         {seasonal ? (
           <>
             <SelectField
-              label="Motif month"
+              label={t('Motif month')}
               value={design.seasonalMonth ?? 'auto'}
               onChange={(value) => set({ seasonalMonth: value === 'auto' ? null : (value as MonthKey), seasonalVariant: null })}
               options={[
-                { value: 'auto', label: `Follow issue date (${capitalize(seasonal.month)})` },
-                ...MONTHS.map((month) => ({ value: month, label: capitalize(month) }))
+                { value: 'auto', label: t('Follow issue date ({month})', { month: monthName(seasonal.month) }) },
+                ...MONTHS.map((month) => ({ value: month, label: monthName(month) }))
               ]}
             />
             <div>
-              <div className="mb-1.5 text-[13px] font-medium text-slate-700">Illustration</div>
+              <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Illustration')}</div>
               <div className="grid grid-cols-5 gap-2">
                 {seasonal.names.map((name, index) => (
                   <button
@@ -78,15 +83,15 @@ export const DesignSection = ({ invoice, profile, onChange }: Props) => {
           </>
         ) : (
           <div>
-            <div className="mb-1.5 text-[13px] font-medium text-slate-700">Accent colour</div>
+            <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Accent colour')}</div>
             <Swatches value={design.accentColor} onChange={(accentColor) => set({ accentColor })} />
           </div>
         )}
 
         <div>
-          <div className="mb-1.5 text-[13px] font-medium text-slate-700">Document language</div>
+          <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Document language')}</div>
           <Segmented<DocLanguage>
-            label="Document language"
+            label={t('Document language')}
             value={design.language}
             onChange={(language) => set({ language })}
             options={[

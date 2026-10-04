@@ -20,7 +20,7 @@ import type { InvoiceView } from './view';
 type TemplateProps = { view: InvoiceView; invoice: Invoice };
 
 const MetaList = ({ view, align = 'left', labelColor = '#64748b' }: { view: InvoiceView; align?: 'left' | 'right'; labelColor?: string }) => (
-  <table style={{ borderCollapse: 'collapse', marginLeft: align === 'right' ? 'auto' : undefined }}>
+  <table data-edit="details" style={{ borderCollapse: 'collapse', marginLeft: align === 'right' ? 'auto' : undefined }}>
     <tbody>
       {view.meta.map((entry) => (
         <tr key={entry.label}>
@@ -54,12 +54,12 @@ const Modern = ({ view }: TemplateProps) => {
         <div>
           <Logo src={view.logo} />
           <div style={{ marginTop: view.logo ? 18 : 0 }}>
-            <PartyBlock label={view.t('from')} party={view.issuer} labelStyle={{ color: ink }} />
+            <PartyBlock label={view.t('from')} party={view.issuer} edit="from" labelStyle={{ color: ink }} />
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{view.t('invoice')}</div>
-          <div style={{ marginTop: 6, fontSize: 14, fontWeight: 600, color: ink }}>#{view.number}</div>
+          <div data-edit="details" style={{ marginTop: 6, fontSize: 14, fontWeight: 600, color: ink }}>#{view.number}</div>
           <div style={{ marginTop: 18 }}>
             <MetaList view={view} align="right" />
           </div>
@@ -68,7 +68,7 @@ const Modern = ({ view }: TemplateProps) => {
 
       <div style={{ margin: '36px 56px 0', display: 'flex', gap: 24, alignItems: 'stretch' }}>
         <div style={{ flex: 1, background: tint(accent, 0.94), borderRadius: 14, padding: '18px 22px' }}>
-          <PartyBlock label={view.t('billTo')} party={view.client} labelStyle={{ color: ink }} />
+          <PartyBlock label={view.t('billTo')} party={view.client} edit="client" labelStyle={{ color: ink }} />
         </div>
         <div
           style={{
@@ -123,7 +123,7 @@ const Classic = ({ view }: TemplateProps) => {
           <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: ink, lineHeight: 1 }}>
             {view.t('invoice')}
           </div>
-          <div style={{ marginTop: 8, fontSize: 13 }}>
+          <div data-edit="details" style={{ marginTop: 8, fontSize: 13 }}>
             {view.t('number')} <strong>{view.number}</strong>
           </div>
         </div>
@@ -131,10 +131,10 @@ const Classic = ({ view }: TemplateProps) => {
 
       <div style={{ display: 'flex', gap: 32, padding: '26px 0', borderBottom: rule }}>
         <div style={{ flex: 1 }}>
-          <PartyBlock label={view.t('from')} party={view.issuer} labelStyle={{ fontFamily: FONTS.inter, color: ink }} nameStyle={{ fontSize: 15 }} />
+          <PartyBlock label={view.t('from')} party={view.issuer} edit="from" labelStyle={{ fontFamily: FONTS.inter, color: ink }} nameStyle={{ fontSize: 15 }} />
         </div>
         <div style={{ flex: 1 }}>
-          <PartyBlock label={view.t('billTo')} party={view.client} labelStyle={{ fontFamily: FONTS.inter, color: ink }} nameStyle={{ fontSize: 15 }} />
+          <PartyBlock label={view.t('billTo')} party={view.client} edit="client" labelStyle={{ fontFamily: FONTS.inter, color: ink }} nameStyle={{ fontSize: 15 }} />
         </div>
         <div style={{ fontFamily: FONTS.inter, fontSize: 12 }}>
           <MetaList view={view} align="right" />
@@ -174,13 +174,13 @@ const Minimal = ({ view }: TemplateProps) => {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', color: ink }}>{view.t('invoice')}</div>
-          <div style={{ fontSize: 28, fontWeight: 400, marginTop: 4, letterSpacing: '-0.01em' }}>{view.number}</div>
+          <div data-edit="details" style={{ fontSize: 28, fontWeight: 400, marginTop: 4, letterSpacing: '-0.01em' }}>{view.number}</div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 32, marginTop: 56 }}>
-        <PartyBlock label={view.t('billTo')} party={view.client} labelStyle={label} />
-        <PartyBlock label={view.t('from')} party={{ ...view.issuer, name: '' }} labelStyle={label} nameStyle={{ display: 'none' }} />
+        <PartyBlock label={view.t('billTo')} party={view.client} edit="client" labelStyle={label} />
+        <PartyBlock label={view.t('from')} party={{ ...view.issuer, name: '' }} edit="from" labelStyle={label} nameStyle={{ display: 'none' }} />
         <div>
           {view.meta.map((entry) => (
             <div key={entry.label} style={{ marginBottom: 8 }}>
@@ -224,7 +224,7 @@ const Bold = ({ view }: TemplateProps) => {
               </div>
             )}
             <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 0.95, letterSpacing: '-0.03em' }}>{view.t('invoice')}</div>
-            <div style={{ marginTop: 10, fontSize: 15, opacity: 0.8 }}>#{view.number}</div>
+            <div data-edit="details" style={{ marginTop: 10, fontSize: 15, opacity: 0.8 }}>#{view.number}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.7 }}>{view.t('amountDue')}</div>
@@ -239,10 +239,10 @@ const Bold = ({ view }: TemplateProps) => {
 
       <div style={{ padding: '32px 56px 0', display: 'flex', gap: 32 }}>
         <div style={{ flex: 1 }}>
-          <PartyBlock label={view.t('billTo')} party={view.client} labelStyle={{ color: textSafe(accent) }} nameStyle={{ fontSize: 16 }} />
+          <PartyBlock label={view.t('billTo')} party={view.client} edit="client" labelStyle={{ color: textSafe(accent) }} nameStyle={{ fontSize: 16 }} />
         </div>
         <div style={{ flex: 1 }}>
-          <PartyBlock label={view.t('from')} party={view.issuer} labelStyle={{ color: textSafe(accent) }} nameStyle={{ fontSize: 16 }} />
+          <PartyBlock label={view.t('from')} party={view.issuer} edit="from" labelStyle={{ color: textSafe(accent) }} nameStyle={{ fontSize: 16 }} />
         </div>
       </div>
 
@@ -301,7 +301,7 @@ const Seasonal = ({ view, invoice }: TemplateProps) => {
             <div style={{ marginTop: view.logo ? 14 : 0, fontSize: 40, fontWeight: 800, letterSpacing: '-0.02em', color: ink, textShadow: '0 0 8px #fff' }}>
               {view.t('invoice')}
             </div>
-            <div style={{ fontWeight: 600, color: '#334155' }}>#{view.number}</div>
+            <div data-edit="details" style={{ fontWeight: 600, color: '#334155' }}>#{view.number}</div>
           </div>
           <div style={{ ...card, padding: '12px 16px' }}>
             <MetaList view={view} align="right" />
@@ -310,10 +310,10 @@ const Seasonal = ({ view, invoice }: TemplateProps) => {
 
         <div style={{ display: 'flex', gap: 18, marginTop: 30 }}>
           <div style={{ ...card, flex: 1, padding: '16px 20px' }}>
-            <PartyBlock label={view.t('from')} party={view.issuer} labelStyle={{ color: ink }} />
+            <PartyBlock label={view.t('from')} party={view.issuer} edit="from" labelStyle={{ color: ink }} />
           </div>
           <div style={{ ...card, flex: 1, padding: '16px 20px' }}>
-            <PartyBlock label={view.t('billTo')} party={view.client} labelStyle={{ color: ink }} />
+            <PartyBlock label={view.t('billTo')} party={view.client} edit="client" labelStyle={{ color: ink }} />
           </div>
         </div>
 

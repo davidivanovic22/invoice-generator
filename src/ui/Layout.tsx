@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { t } from '../i18n';
 import { Icon, type IconName } from './Icon';
 
 type SectionProps = {
@@ -10,11 +11,16 @@ type SectionProps = {
   collapsible?: boolean;
   defaultOpen?: boolean;
   id?: string;
+  /** Opens a collapsible section whenever this value changes (e.g. after a click in the preview). */
+  forceOpenToken?: number;
 };
 
 /** A titled card. Collapsible sections remember nothing: they open as configured. */
-export const Section = ({ title, description, icon, actions, children, collapsible, defaultOpen = true, id }: SectionProps) => {
+export const Section = ({ title, description, icon, actions, children, collapsible, defaultOpen = true, id, forceOpenToken }: SectionProps) => {
   const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (forceOpenToken) setOpen(true);
+  }, [forceOpenToken]);
   const isOpen = !collapsible || open;
 
   const heading = (
@@ -56,6 +62,19 @@ export const Section = ({ title, description, icon, actions, children, collapsib
     </section>
   );
 };
+
+/** "Show more fields" link for progressive disclosure: optional fields stay out of the way until needed. */
+export const MoreToggle = ({ open, onToggle, label }: { open: boolean; onToggle: () => void; label: string }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-expanded={open}
+    className="flex items-center gap-1.5 text-[13px] font-medium text-indigo-600 transition hover:text-indigo-800"
+  >
+    <Icon name="chevronDown" className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+    {open ? t('Fewer details') : label}
+  </button>
+);
 
 type SegmentedProps<T extends string> = {
   value: T;
@@ -128,7 +147,7 @@ export const Swatches = ({ value, onChange, colors = SWATCHES }: SwatchesProps) 
         <button
           key={color}
           type="button"
-          aria-label={`Colour ${color}`}
+          aria-label={t('Colour {color}', { color })}
           aria-pressed={active}
           onClick={() => onChange(color)}
           className={`h-7 w-7 rounded-full ring-offset-2 transition ${active ? 'ring-2 ring-slate-900' : 'hover:scale-110'}`}
@@ -136,13 +155,13 @@ export const Swatches = ({ value, onChange, colors = SWATCHES }: SwatchesProps) 
         />
       );
     })}
-    <label className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)] ring-offset-2 hover:scale-110" title="Custom colour">
+    <label className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)] ring-offset-2 hover:scale-110" title={t('Custom colour')}>
       <input
         type="color"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="absolute inset-0 cursor-pointer opacity-0"
-        aria-label="Custom colour"
+        aria-label={t('Custom colour')}
       />
     </label>
   </div>

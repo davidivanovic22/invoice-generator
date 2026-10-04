@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { SECTION_KINDS, type EntriesSection, type Resume, type ResumeSection } from '../resumes/model';
 
 /**
@@ -157,11 +158,11 @@ export const analyzeResume = (resume: Resume): AtsReport => {
 
   /* ---------- contact ---------- */
   const contactChecks: [boolean, number, string, string][] = [
-    [p.fullName.trim().length > 2, 3, 'Add your full name', 'Recruiters and ATS systems need your name at the top.'],
-    [/^\S+@\S+\.\S+$/.test(p.email.trim()), 3, 'Add a valid email address', 'Without an email, an ATS cannot create your candidate profile.'],
-    [p.phone.replace(/\D/g, '').length >= 6, 2, 'Add a phone number', 'Most recruiters call before they email.'],
-    [p.location.trim().length > 1, 1, 'Add your location', 'City and country help with location filters (or write "Remote").'],
-    [Boolean(p.linkedin.trim() || p.website.trim() || p.github.trim()), 1, 'Add LinkedIn or a portfolio link', 'Recruiters almost always check LinkedIn.']
+    [p.fullName.trim().length > 2, 3, t('Add your full name'), t('Recruiters and ATS systems need your name at the top.')],
+    [/^\S+@\S+\.\S+$/.test(p.email.trim()), 3, t('Add a valid email address'), t('Without an email, an ATS cannot create your candidate profile.')],
+    [p.phone.replace(/\D/g, '').length >= 6, 2, t('Add a phone number'), t('Most recruiters call before they email.')],
+    [p.location.trim().length > 1, 1, t('Add your location'), t('City and country help with location filters (or write "Remote").')],
+    [Boolean(p.linkedin.trim() || p.website.trim() || p.github.trim()), 1, t('Add LinkedIn or a portfolio link'), t('Recruiters almost always check LinkedIn.')]
   ];
   contactChecks.forEach(([ok, points, title, detail], index) => {
     if (ok) earned.contact += points;
@@ -177,13 +178,13 @@ export const analyzeResume = (resume: Resume): AtsReport => {
   const workEntries = workSections.flatMap((section) => section.items.filter((item) => item.title.trim() || item.subtitle.trim()).map((item) => ({ section, item })));
 
   if (experience && experience.items.some((item) => item.title.trim())) earned.structure += 4;
-  else add({ id: 'structure-experience', category: 'structure', severity: 'critical', title: 'Add your work experience', detail: 'ATS systems rank candidates mainly on experience. Add jobs, freelance work or internships.', target: { sectionId: experience?.id }, aiFixable: false, points: 4 });
+  else add({ id: 'structure-experience', category: 'structure', severity: 'critical', title: t('Add your work experience'), detail: t('ATS systems rank candidates mainly on experience. Add jobs, freelance work or internships.'), target: { sectionId: experience?.id }, aiFixable: false, points: 4 });
   if (education && (education.type !== 'entries' || education.items.length > 0)) earned.structure += 2;
-  else add({ id: 'structure-education', category: 'structure', severity: 'major', title: 'Add an education section', detail: 'Many ATS filters check for a degree or school, even when it is not required.', target: { sectionId: education?.id }, aiFixable: false, points: 2 });
+  else add({ id: 'structure-education', category: 'structure', severity: 'major', title: t('Add an education section'), detail: t('Many ATS filters check for a degree or school, even when it is not required.'), target: { sectionId: education?.id }, aiFixable: false, points: 2 });
   if (skills.some((section) => section.type === 'tags' && section.items.length > 0)) earned.structure += 2;
-  else add({ id: 'structure-skills', category: 'structure', severity: 'major', title: 'Add a skills section', detail: 'A dedicated skills list is where ATS systems look for keywords first.', aiFixable: true, points: 2 });
+  else add({ id: 'structure-skills', category: 'structure', severity: 'major', title: t('Add a skills section'), detail: t('A dedicated skills list is where ATS systems look for keywords first.'), aiFixable: true, points: 2 });
   if (p.headline.trim()) earned.structure += 1;
-  else add({ id: 'structure-headline', category: 'structure', severity: 'major', title: 'Add a job title under your name', detail: 'A headline like "Senior Frontend Developer" tells the ATS which role you match.', target: { field: 'personal' }, aiFixable: true, points: 1 });
+  else add({ id: 'structure-headline', category: 'structure', severity: 'major', title: t('Add a job title under your name'), detail: t('A headline like "Senior Frontend Developer" tells the ATS which role you match.'), target: { field: 'personal' }, aiFixable: true, points: 1 });
 
   const missingDates = workEntries.filter(({ item }) => !item.start.trim() && !item.end.trim());
   if (missingDates.length === 0) earned.structure += 1;
@@ -192,8 +193,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
       id: 'structure-dates',
       category: 'structure',
       severity: 'major',
-      title: `Add dates to ${missingDates.length} entr${missingDates.length === 1 ? 'y' : 'ies'}`,
-      detail: `ATS systems calculate years of experience from dates. Missing: ${missingDates.map(({ item }) => item.title || item.subtitle).join(', ')}.`,
+      title: t('Add dates to {count} entry|Add dates to {count} entries', { count: missingDates.length }),
+      detail: t('ATS systems calculate years of experience from dates. Missing: {list}.', { list: missingDates.map(({ item }) => item.title || item.subtitle).join(', ') }),
       target: { sectionId: missingDates[0].section.id, itemId: missingDates[0].item.id },
       aiFixable: false,
       points: 1
@@ -205,8 +206,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
       id: 'structure-titles',
       category: 'structure',
       severity: 'minor',
-      title: 'Use standard section titles',
-      detail: `ATS parsers recognise titles like "Experience" or "Skills". Rename: ${unusual.map((section) => `"${section.title}"`).join(', ')}.`,
+      title: t('Use standard section titles'),
+      detail: t('ATS parsers recognise titles like "Experience" or "Skills". Rename: {list}.', { list: unusual.map((section) => `"${section.title}"`).join(', ') }),
       target: { sectionId: unusual[0].id },
       aiFixable: false,
       points: 0
@@ -223,7 +224,7 @@ export const analyzeResume = (resume: Resume): AtsReport => {
 
   if (bullets.length === 0) {
     if (workEntries.length > 0)
-      add({ id: 'impact-none', category: 'impact', severity: 'critical', title: 'Describe what you achieved in each job', detail: 'Your experience has no descriptions. Add 3–5 bullet points per role, starting with a verb and including results.', target: { sectionId: workEntries[0].section.id, itemId: workEntries[0].item.id }, aiFixable: true, points: MAX.impact });
+      add({ id: 'impact-none', category: 'impact', severity: 'critical', title: t('Describe what you achieved in each job'), detail: t('Your experience has no descriptions. Add 3–5 bullet points per role, starting with a verb and including results.'), target: { sectionId: workEntries[0].section.id, itemId: workEntries[0].item.id }, aiFixable: true, points: MAX.impact });
   } else {
     const quantifiedRatio = quantified.length / bullets.length;
     const quantifiedPoints = 10 * Math.min(1, quantifiedRatio / 0.5);
@@ -233,8 +234,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
         id: 'impact-numbers',
         category: 'impact',
         severity: quantifiedRatio < 0.2 ? 'critical' : 'major',
-        title: 'Add numbers to your achievements',
-        detail: `Only ${quantified.length} of ${bullets.length} bullet points contain a number. Aim for at least half: team size, users, %, money, time saved.`,
+        title: t('Add numbers to your achievements'),
+        detail: t('Only {n} of {total} bullet points contain a number. Aim for at least half: team size, users, %, money, time saved.', { n: quantified.length, total: bullets.length }),
         target: { sectionId: bullets[0].section.id },
         aiFixable: true,
         points: Math.round(10 - quantifiedPoints)
@@ -249,8 +250,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
           id: 'impact-verbs',
           category: 'impact',
           severity: 'major',
-          title: 'Start bullet points with strong action verbs',
-          detail: `${bullets.length - actionCount} bullet points don't start with a verb like "Led", "Built" or "Reduced".`,
+          title: t('Start bullet points with strong action verbs'),
+          detail: t('{n} bullet points don\'t start with a verb like "Led", "Built" or "Reduced".', { n: bullets.length - actionCount }),
           target: { sectionId: bullets[0].section.id },
           aiFixable: true,
           points: Math.round(8 - actionPoints)
@@ -271,8 +272,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
         id: 'impact-bullet-count',
         category: 'impact',
         severity: 'minor',
-        title: 'Use 2–6 bullet points per job',
-        detail: `Adjust: ${badRoles.map(({ item }) => item.title || item.subtitle).join(', ')}.`,
+        title: t('Use 2–6 bullet points per job'),
+        detail: t('Adjust: {list}.', { list: badRoles.map(({ item }) => item.title || item.subtitle).join(', ') }),
         target: { sectionId: badRoles[0].section.id, itemId: badRoles[0].item.id },
         aiFixable: true,
         points: Math.round(4 - rolePoints)
@@ -283,9 +284,9 @@ export const analyzeResume = (resume: Resume): AtsReport => {
     const stylePoints = Math.max(0, 3 - weak.length - firstPerson.length);
     earned.impact += stylePoints;
     if (weak.length)
-      add({ id: 'impact-weak', category: 'impact', severity: 'minor', title: 'Replace passive phrases', detail: `Phrases like "responsible for" or "worked on" describe duties, not results (${weak.length} found).`, target: { sectionId: weak[0].section.id, itemId: weak[0].item.id }, aiFixable: true, points: Math.min(3, weak.length) });
+      add({ id: 'impact-weak', category: 'impact', severity: 'minor', title: t('Replace passive phrases'), detail: t('Phrases like "responsible for" or "worked on" describe duties, not results ({n} found).', { n: weak.length }), target: { sectionId: weak[0].section.id, itemId: weak[0].item.id }, aiFixable: true, points: Math.min(3, weak.length) });
     if (firstPerson.length)
-      add({ id: 'impact-first-person', category: 'impact', severity: 'minor', title: 'Remove "I" and "my" from bullet points', detail: 'Resume bullets are written without pronouns: "Led the team", not "I led the team".', target: { sectionId: firstPerson[0].section.id, itemId: firstPerson[0].item.id }, aiFixable: true, points: Math.min(3, firstPerson.length) });
+      add({ id: 'impact-first-person', category: 'impact', severity: 'minor', title: t('Remove "I" and "my" from bullet points'), detail: t('Resume bullets are written without pronouns: "Led the team", not "I led the team".'), target: { sectionId: firstPerson[0].section.id, itemId: firstPerson[0].item.id }, aiFixable: true, points: Math.min(3, firstPerson.length) });
   }
 
   /* ---------- summary ---------- */
@@ -294,12 +295,12 @@ export const analyzeResume = (resume: Resume): AtsReport => {
   if (summaryText) {
     earned.summary += 4;
     if (summaryWords >= 25 && summaryWords <= 90) earned.summary += 3;
-    else add({ id: 'summary-length', category: 'summary', severity: 'minor', title: summaryWords < 25 ? 'Expand your profile summary' : 'Shorten your profile summary', detail: `It has ${summaryWords} words; 30–80 reads best.`, target: { sectionId: summarySection?.id }, aiFixable: true, points: 3 });
+    else add({ id: 'summary-length', category: 'summary', severity: 'minor', title: summaryWords < 25 ? t('Expand your profile summary') : t('Shorten your profile summary'), detail: t('It has {n} words; 30–80 reads best.', { n: summaryWords }), target: { sectionId: summarySection?.id }, aiFixable: true, points: 3 });
     const headlineWords = words(p.headline.toLowerCase()).filter((word) => word.length > 3);
     if (headlineWords.length === 0 || headlineWords.some((word) => summaryText.toLowerCase().includes(word))) earned.summary += 3;
-    else add({ id: 'summary-role', category: 'summary', severity: 'minor', title: 'Mention your target role in the summary', detail: `Name your role ("${p.headline}") in the first sentence so it matches the job title.`, target: { sectionId: summarySection?.id }, aiFixable: true, points: 3 });
+    else add({ id: 'summary-role', category: 'summary', severity: 'minor', title: t('Mention your target role in the summary'), detail: t('Name your role ("{role}") in the first sentence so it matches the job title.', { role: p.headline }), target: { sectionId: summarySection?.id }, aiFixable: true, points: 3 });
   } else {
-    add({ id: 'summary-missing', category: 'summary', severity: 'major', title: 'Add a profile summary', detail: '2–3 sentences at the top: your role, years of experience and what you are best at. It is the first thing recruiters read.', target: { sectionId: summarySection?.id }, aiFixable: true, points: MAX.summary });
+    add({ id: 'summary-missing', category: 'summary', severity: 'major', title: t('Add a profile summary'), detail: t('2–3 sentences at the top: your role, years of experience and what you are best at. It is the first thing recruiters read.'), target: { sectionId: summarySection?.id }, aiFixable: true, points: MAX.summary });
   }
 
   /* ---------- skills ---------- */
@@ -311,8 +312,11 @@ export const analyzeResume = (resume: Resume): AtsReport => {
       id: 'skills-count',
       category: 'skills',
       severity: skillCount < 5 ? 'major' : 'minor',
-      title: skillCount > 25 ? 'Trim your skills list' : 'List more skills',
-      detail: skillCount > 25 ? `${skillCount} skills dilute the important ones. Keep the 10–20 most relevant.` : `You list ${skillCount}. 8–20 specific skills (tools, technologies, methods) work best.`,
+      title: skillCount > 25 ? t('Trim your skills list') : t('List more skills'),
+      detail:
+        skillCount > 25
+          ? t('{n} skills dilute the important ones. Keep the 10–20 most relevant.', { n: skillCount })
+          : t('You list {n}. 8–20 specific skills (tools, technologies, methods) work best.', { n: skillCount }),
       target: { sectionId: skills[0]?.id },
       aiFixable: true,
       points: 10 - skillPoints
@@ -322,13 +326,13 @@ export const analyzeResume = (resume: Resume): AtsReport => {
   /* ---------- readability ---------- */
   const totalWords = words(text).length;
   if (totalWords >= 250 && totalWords <= 1100) earned.readability += 4;
-  else add({ id: 'readability-length', category: 'readability', severity: totalWords < 150 ? 'major' : 'minor', title: totalWords < 250 ? 'Your resume is too short' : 'Your resume is too long', detail: `${totalWords} words. Aim for 400–900 (one to two pages).${totalWords < 250 ? ' Describe each job in more detail: projects, tools and results.' : ''}`, target: { sectionId: experience?.id }, aiFixable: totalWords > 1100, points: 4 });
+  else add({ id: 'readability-length', category: 'readability', severity: totalWords < 150 ? 'major' : 'minor', title: totalWords < 250 ? t('Your resume is too short') : t('Your resume is too long'), detail: `${t('{n} words. Aim for 400–900 (one to two pages).', { n: totalWords })}${totalWords < 250 ? ` ${t('Describe each job in more detail: projects, tools and results.')}` : ''}`, target: { sectionId: experience?.id }, aiFixable: totalWords > 1100, points: 4 });
   const longBullets = bullets.filter((bullet) => words(bullet.line).length > 35);
   if (longBullets.length === 0) earned.readability += 3;
-  else add({ id: 'readability-long-bullets', category: 'readability', severity: 'minor', title: 'Shorten long bullet points', detail: `${longBullets.length} bullet point${longBullets.length === 1 ? ' is' : 's are'} over 35 words. Keep each to one or two lines.`, target: { sectionId: longBullets[0].section.id, itemId: longBullets[0].item.id }, aiFixable: true, points: 3 });
+  else add({ id: 'readability-long-bullets', category: 'readability', severity: 'minor', title: t('Shorten long bullet points'), detail: t('{count} bullet point is over 35 words. Keep each to one or two lines.|{count} bullet points are over 35 words. Keep each to one or two lines.', { count: longBullets.length }), target: { sectionId: longBullets[0].section.id, itemId: longBullets[0].item.id }, aiFixable: true, points: 3 });
   const placeholders = (text.match(new RegExp(PLACEHOLDER.source, 'g')) ?? []).length;
   if (placeholders === 0) earned.readability += 3;
-  else add({ id: 'readability-placeholders', category: 'readability', severity: 'critical', title: `Fill in ${placeholders} placeholder${placeholders === 1 ? '' : 's'} like [X%]`, detail: 'Replace each bracket with your real number, or remove it. Never send a resume with placeholders.', aiFixable: false, points: 3 });
+  else add({ id: 'readability-placeholders', category: 'readability', severity: 'critical', title: t('Fill in {count} placeholder like [X%]|Fill in {count} placeholders like [X%]', { count: placeholders }), detail: t('Replace each bracket with your real number, or remove it. Never send a resume with placeholders.'), aiFixable: false, points: 3 });
 
   /* ---------- keywords ---------- */
   const { ats } = resume;
@@ -344,8 +348,8 @@ export const analyzeResume = (resume: Resume): AtsReport => {
         id: 'keywords-missing',
         category: 'keywords',
         severity: matched.length / keywordList.length < 0.6 ? 'critical' : 'major',
-        title: `Missing ${missing.length} keyword${missing.length === 1 ? '' : 's'} from the job ad`,
-        detail: `Add the ones that are true for you, in your skills or bullet points: ${missing.slice(0, 12).join(', ')}${missing.length > 12 ? '…' : ''}.`,
+        title: t('Missing {count} keyword from the job ad|Missing {count} keywords from the job ad', { count: missing.length }),
+        detail: t('Add the ones that are true for you, in your skills or bullet points: {list}.', { list: `${missing.slice(0, 12).join(', ')}${missing.length > 12 ? '…' : ''}` }),
         aiFixable: true,
         points: Math.round(MAX.keywords - earned.keywords)
       });
@@ -353,11 +357,11 @@ export const analyzeResume = (resume: Resume): AtsReport => {
 
   /* ---------- formatting advice (not scored) ---------- */
   if (resume.design.template === 'creative' || resume.design.template === 'compact')
-    add({ id: 'format-columns', category: 'structure', severity: 'minor', title: 'Consider a single-column template', detail: 'Two-column layouts are fine for modern ATS systems, but older ones may read columns out of order. "Classic" is the safest choice.', aiFixable: false, points: 0 });
+    add({ id: 'format-columns', category: 'structure', severity: 'minor', title: t('Consider a single-column template'), detail: t('Two-column layouts are fine for modern ATS systems, but older ones may read columns out of order. "Classic" is the safest choice.'), aiFixable: false, points: 0 });
 
   const categories = (Object.keys(MAX) as CategoryId[])
     .filter((id) => id !== 'keywords' || hasKeywords)
-    .map((id) => ({ id, label: CATEGORY_LABELS[id], score: Math.round(Math.min(MAX[id], earned[id]) * 10) / 10, max: MAX[id] }));
+    .map((id) => ({ id, label: t(CATEGORY_LABELS[id]), score: Math.round(Math.min(MAX[id], earned[id]) * 10) / 10, max: MAX[id] }));
   const total = categories.reduce((sum, category) => sum + category.score, 0);
   const possible = categories.reduce((sum, category) => sum + category.max, 0);
   const severityRank: Record<Severity, number> = { critical: 0, major: 1, minor: 2 };
@@ -372,6 +376,6 @@ export const analyzeResume = (resume: Resume): AtsReport => {
 };
 
 export const scoreLabel = (score: number) =>
-  score >= 95 ? 'Excellent' : score >= 85 ? 'Very good' : score >= 70 ? 'Good' : score >= 50 ? 'Needs work' : 'Weak';
+  t(score >= 95 ? 'Excellent' : score >= 85 ? 'Very good' : score >= 70 ? 'Good' : score >= 50 ? 'Needs work' : 'Weak');
 
 export const sectionTitle = (section: ResumeSection) => section.title || SECTION_KINDS[section.kind].title;

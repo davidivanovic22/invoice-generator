@@ -12,12 +12,14 @@ import type { Suggestion } from './ai';
 import { FixWizard } from './FixWizard';
 import { ScoreRing, scoreColor } from './ScoreRing';
 import { TARGET_SCORE, useAts } from './useAts';
+import { t } from '../../i18n';
 
 const SEVERITY_STYLE: Record<Severity, { dot: string; label: string }> = {
   critical: { dot: 'bg-red-500', label: 'Critical' },
   major: { dot: 'bg-amber-500', label: 'Important' },
   minor: { dot: 'bg-slate-300', label: 'Tip' }
 };
+// Labels are translated where they are rendered.
 
 type Props = {
   resume: Resume;
@@ -47,7 +49,7 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
   const handleError = (error: unknown) => {
     if (error instanceof DOMException && error.name === 'AbortError') return;
     if (error instanceof AiError && error.kind === 'no-key') openSettings();
-    toast(error instanceof Error ? error.message : 'Something went wrong.', 'error');
+    toast(error instanceof Error ? error.message : t('Something went wrong.'), 'error');
   };
 
   const startWizard = async () => {
@@ -77,7 +79,7 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
     }
     try {
       const result = await ats.autoImprove();
-      toast(`ATS score ${result.before} → ${result.after}`);
+      toast(t('ATS score {before} → {after}', { before: result.before, after: result.after }));
       // Hand over to the wizard for what only the user can do.
       setWizard(result.pendingSkills);
     } catch (error) {
@@ -93,14 +95,14 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
         <div className="flex items-center gap-5">
           <ScoreRing score={report.score} size={104} />
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">ATS score</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t('ATS score')}</div>
             <div className="mt-0.5 text-xl font-bold" style={{ color: scoreColor(report.score) }}>
               {scoreLabel(report.score)}
             </div>
             <p className="mt-1 text-[13px] text-slate-500">
               {report.score >= TARGET_SCORE
-                ? 'Ready to send. ATS systems will read it correctly and rank it well.'
-                : `${fixable.length} thing${fixable.length === 1 ? '' : 's'} to fix to reach ${TARGET_SCORE}+.`}
+                ? t('Ready to send. ATS systems will read it correctly and rank it well.')
+                : t('{count} thing to fix to reach {target}+.|{count} things to fix to reach {target}+.', { count: fixable.length, target: TARGET_SCORE })}
             </p>
           </div>
         </div>
@@ -124,10 +126,10 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <Button variant="accent" size="lg" icon="sparkle" onClick={autoImprove} disabled={Boolean(ats.busy)}>
-            Improve with AI to {TARGET_SCORE}+
+            {t('Improve with AI to {target}+', { target: TARGET_SCORE })}
           </Button>
           <Button size="lg" icon="list" onClick={startWizard} disabled={Boolean(ats.busy)}>
-            Fix step by step
+            {t('Fix step by step')}
           </Button>
         </div>
         {ats.busy && (
@@ -135,24 +137,24 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
             <span className="flex items-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-300 border-t-indigo-700" />
               {ats.busy.label}
-              {ats.busy.round && ats.busy.round > 1 ? ` (round ${ats.busy.round})` : ''}
+              {ats.busy.round && ats.busy.round > 1 ? ` (${t('round {n}', { n: ats.busy.round })})` : ''}
             </span>
             <button type="button" onClick={ats.cancel} className="text-xs font-medium underline">
-              Cancel
+              {t('Cancel')}
             </button>
           </div>
         )}
         {ats.canUndo && !ats.busy && (
           <button type="button" onClick={ats.undo} className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-900">
             <Icon name="refresh" className="h-3.5 w-3.5" />
-            Undo all AI changes
+            {t('Undo all AI changes')}
           </button>
         )}
         {!hasKey && (
           <p className="mt-3 text-xs text-slate-500">
-            The score and checks work offline. AI rewriting needs Claude:{' '}
+            {t('The score and checks work offline. AI rewriting needs Claude:')}{' '}
             <button type="button" onClick={openSettings} className="font-medium text-indigo-600 hover:underline">
-              connect it in one minute
+              {t('connect it in one minute')}
             </button>
             .
           </p>
@@ -160,24 +162,28 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
       </section>
 
       <Section
-        title="Target job"
+        title={t('Target job')}
         icon="briefcase"
-        description={resume.ats.jobDescription ? `${report.keywords.matched.length} of ${report.keywords.matched.length + report.keywords.missing.length} keywords matched` : 'Paste a job ad to tailor your resume'}
+        description={
+          resume.ats.jobDescription
+            ? t('{matched} of {total} keywords matched', { matched: report.keywords.matched.length, total: report.keywords.matched.length + report.keywords.missing.length })
+            : t('Paste a job ad to tailor your resume')
+        }
       >
         <TextArea
           rows={5}
           value={jobDraft}
           onChange={setJobDraft}
-          placeholder="Paste the full job ad here. The checker then measures how many of its keywords your resume contains."
-          hint="Tailoring to each job is the single biggest factor in ATS ranking."
+          placeholder={t('Paste the full job ad here. The checker then measures how many of its keywords your resume contains.')}
+          hint={t('Tailoring to each job is the single biggest factor in ATS ranking.')}
         />
         {jobDraft.trim() && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button size="sm" icon="sparkle" onClick={() => (hasKey ? ats.analyzeJob().catch(handleError) : openSettings())} disabled={Boolean(ats.busy)}>
-              {report.keywords.source === 'ai' ? 'Re-analyse with AI' : 'Find keywords with AI'}
+              {report.keywords.source === 'ai' ? t('Re-analyse with AI') : t('Find keywords with AI')}
             </Button>
             <span className="text-xs text-slate-500">
-              {report.keywords.source === 'ai' ? 'Keywords extracted by Claude.' : 'Using a quick estimate. AI finds the keywords recruiters really screen for.'}
+              {report.keywords.source === 'ai' ? t('Keywords extracted by Claude.') : t('Using a quick estimate. AI finds the keywords recruiters really screen for.')}
             </span>
           </div>
         )}
@@ -200,25 +206,25 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
         )}
       </Section>
 
-      <Section title="What to fix" icon="alert" description={report.issues.length ? `${report.issues.length} finding${report.issues.length === 1 ? '' : 's'}, most important first` : 'Nothing left to fix'}>
+      <Section title={t('What to fix')} icon="alert" description={report.issues.length ? t('{count} finding, most important first|{count} findings, most important first', { count: report.issues.length }) : t('Nothing left to fix')}>
         {report.issues.length === 0 ? (
-          <p className="text-sm text-slate-500">Everything checks out.</p>
+          <p className="text-sm text-slate-500">{t('Everything checks out.')}</p>
         ) : (
           <ul className="-my-1 divide-y divide-slate-100">
             {report.issues.map((issue) => (
               <li key={issue.id} className="flex items-start gap-3 py-3">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${SEVERITY_STYLE[issue.severity].dot}`} title={SEVERITY_STYLE[issue.severity].label} />
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${SEVERITY_STYLE[issue.severity].dot}`} title={t(SEVERITY_STYLE[issue.severity].label)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
                     {issue.title}
-                    {issue.points > 0 && <span className="text-xs font-normal text-slate-400">+{issue.points} pts</span>}
-                    {issue.aiFixable && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">AI can fix</span>}
+                    {issue.points > 0 && <span className="text-xs font-normal text-slate-400">{t('+{n} pts', { n: issue.points })}</span>}
+                    {issue.aiFixable && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">{t('AI can fix')}</span>}
                   </div>
                   <p className="mt-0.5 text-[13px] text-slate-500">{issue.detail}</p>
                 </div>
                 {issue.target && (
                   <Button size="sm" variant="ghost" iconRight="chevronRight" onClick={() => onGoTo(issue.target)}>
-                    Go
+                    {t('Go')}
                   </Button>
                 )}
               </li>

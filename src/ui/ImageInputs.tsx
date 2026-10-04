@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
+import { t } from '../i18n';
 import { readImageAsDataUrl } from '../lib/files';
 import { Button } from './Button';
 import { useFeedback } from './Feedback';
@@ -24,7 +25,7 @@ export const ImagePicker = ({ value, onChange, label, hint, shape = 'wide', maxS
     try {
       onChange(await readImageAsDataUrl(file, maxSize));
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'The image could not be used.', 'error');
+      toast(error instanceof Error ? error.message : t('The image could not be used.'), 'error');
     }
   };
 
@@ -50,25 +51,25 @@ export const ImagePicker = ({ value, onChange, label, hint, shape = 'wide', maxS
           className={`flex ${frame} shrink-0 items-center justify-center overflow-hidden border-2 border-dashed transition ${
             dragging ? 'border-indigo-400 bg-indigo-50' : value ? 'border-transparent bg-slate-50' : 'border-slate-300 bg-slate-50 hover:border-slate-400'
           }`}
-          aria-label={value ? `Change ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
+          aria-label={value ? t('Change {label}', { label: label.toLowerCase() }) : t('Upload {label}', { label: label.toLowerCase() })}
         >
           {value ? (
             <img src={value} alt="" className={`h-full w-full ${shape === 'round' ? 'object-cover' : 'object-contain p-2'}`} />
           ) : (
             <span className="flex flex-col items-center gap-1 text-xs text-slate-500">
               <Icon name="upload" className="h-5 w-5" />
-              Upload
+              {t('Upload')}
             </span>
           )}
         </button>
         <div className="space-y-2">
           <div className="flex gap-2">
             <Button size="sm" onClick={() => inputRef.current?.click()}>
-              {value ? 'Change' : 'Choose image'}
+              {value ? t('Change') : t('Choose image')}
             </Button>
             {value && (
               <Button size="sm" variant="danger" onClick={() => onChange('')}>
-                Remove
+                {t('Remove')}
               </Button>
             )}
           </div>
@@ -138,12 +139,12 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
 
   return (
     <div>
-      <div className="mb-1.5 text-[13px] font-medium text-slate-700">Signature</div>
+      <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Signature')}</div>
       {drawing ? (
         <div>
           <div className="relative overflow-hidden rounded-xl bg-slate-50 ring-1 ring-inset ring-slate-200">
             <div className="pointer-events-none absolute bottom-7 left-6 right-6 border-t border-dashed border-slate-300" />
-            <span className="pointer-events-none absolute bottom-2 left-6 text-[11px] text-slate-400">Sign above the line with your mouse or finger</span>
+            <span className="pointer-events-none absolute bottom-2 left-6 text-[11px] text-slate-400">{t('Sign above the line with your mouse or finger')}</span>
             <SignatureCanvas
               ref={padRef}
               penColor="#1e293b"
@@ -154,17 +155,17 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button size="sm" variant="primary" onClick={save}>
-              Use this signature
+              {t('Use this signature')}
             </Button>
             <Button size="sm" onClick={() => padRef.current?.clear()}>
-              Clear
+              {t('Clear')}
             </Button>
             <Button size="sm" variant="ghost" icon="upload" onClick={() => uploadRef.current?.click()}>
-              Upload image instead
+              {t('Upload image instead')}
             </Button>
             {value && (
               <Button size="sm" variant="ghost" onClick={() => setDrawing(false)}>
-                Cancel
+                {t('Cancel')}
               </Button>
             )}
           </div>
@@ -172,14 +173,14 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
       ) : (
         <div className="flex items-center gap-4">
           <div className="flex h-24 w-56 items-center justify-center rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
-            <img src={value} alt="Your signature" className="max-h-full max-w-full object-contain" />
+            <img src={value} alt={t('Your signature')} className="max-h-full max-w-full object-contain" />
           </div>
           <div className="flex gap-2">
             <Button size="sm" icon="pen" onClick={() => setDrawing(true)}>
-              Redraw
+              {t('Redraw')}
             </Button>
             <Button size="sm" variant="danger" onClick={() => { onChange(''); setDrawing(true); }}>
-              Remove
+              {t('Remove')}
             </Button>
           </div>
         </div>
@@ -197,7 +198,7 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
             onChange(await readImageAsDataUrl(file, 500));
             setDrawing(false);
           } catch (error) {
-            toast(error instanceof Error ? error.message : 'The image could not be used.', 'error');
+            toast(error instanceof Error ? error.message : t('The image could not be used.'), 'error');
           }
         }}
       />

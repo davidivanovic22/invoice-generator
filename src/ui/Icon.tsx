@@ -37,7 +37,14 @@ export type IconName =
   | 'printer'
   | 'refresh'
   | 'cash'
-  | 'list';
+  | 'list'
+  | 'undo'
+  | 'redo'
+  | 'pointer'
+  | 'home'
+  | 'command'
+  | 'bolt'
+  | 'languages';
 
 const paths: Record<IconName, string> = {
   plus: 'M12 5v14M5 12h14',
@@ -80,7 +87,14 @@ const paths: Record<IconName, string> = {
   printer: 'M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z',
   refresh: 'M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4',
   cash: 'M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9v.01M18 15v.01',
-  list: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2'
+  list: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
+  undo: 'M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
+  redo: 'M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13',
+  pointer: 'M5 3l14 7-6 2-2 6z',
+  home: 'M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5',
+  command: 'M9 6v12M15 6v12M6 9h12M6 15h12',
+  bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
+  languages: 'M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3.5 7-7 9M13 21l4-9 4 9M14.5 18h5'
 };
 
 type Props = { name: IconName; className?: string; strokeWidth?: number };

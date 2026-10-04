@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { textSafe } from '../../../lib/color';
-import type { EntryItem, LanguageItem, PersonalInfo, ResumeDesign, ResumeFont } from '../model';
+import type { EntryItem, LanguageItem, PersonalInfo, ResumeDesign, ResumeFont, ResumeLanguage } from '../model';
 
 export type Theme = {
   accent: string;
@@ -13,6 +13,8 @@ export type Theme = {
   size: number;
   /** Spacing multiplier from the density setting. */
   space: number;
+  /** Language of fixed labels printed on the resume. */
+  language: ResumeLanguage;
 };
 
 const FONT_STACKS: Record<ResumeFont, { body: string; heading: string }> = {
@@ -42,7 +44,8 @@ export const makeTheme = (design: ResumeDesign): Theme => {
     body: fonts.body,
     heading: fonts.heading,
     size: density.size,
-    space: density.space
+    space: density.space,
+    language: design.language ?? 'en'
   };
 };
 

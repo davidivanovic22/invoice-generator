@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { t } from '../../../i18n';
 import { createId } from '../../../lib/files';
 import { Button, IconButton } from '../../../ui/Button';
 import { inputClass, TextArea, TextField } from '../../../ui/Field';
@@ -10,6 +11,7 @@ import {
   type EntriesSection,
   type EntryItem,
   type LanguagesSection,
+  type ResumeLanguage,
   type TagsSection,
   type TextSection
 } from '../model';
@@ -21,7 +23,7 @@ const moveItem = <T,>(items: T[], index: number, delta: number) => {
   return next;
 };
 
-export const BULLET_HINT = 'Start a line with "-" to make it a bullet point.';
+export const bulletHint = () => t('Start a line with "-" to make it a bullet point.');
 
 /* ------------------------------ Text ------------------------------ */
 
@@ -30,8 +32,12 @@ export const TextEditor = ({ section, onChange }: { section: TextSection; onChan
     rows={section.kind === 'summary' ? 4 : 5}
     value={section.text}
     onChange={(text) => onChange({ ...section, text })}
-    placeholder={section.kind === 'summary' ? 'Two or three sentences: your role, years of experience, what you are great at and what you want next.' : 'Write anything here.'}
-    hint={BULLET_HINT}
+    placeholder={
+      section.kind === 'summary'
+        ? t('Two or three sentences: your role, years of experience, what you are great at and what you want next.')
+        : t('Write anything here.')
+    }
+    hint={bulletHint()}
   />
 );
 
@@ -55,7 +61,7 @@ export const TagsEditor = ({ section, onChange }: { section: TagsSection; onChan
             {item}
             <button
               type="button"
-              aria-label={`Remove ${item}`}
+              aria-label={t('Remove {item}', { item })}
               onClick={() => onChange({ ...section, items: section.items.filter((_, other) => other !== index) })}
               className="rounded-full p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
             >
@@ -78,56 +84,67 @@ export const TagsEditor = ({ section, onChange }: { section: TagsSection; onChan
             }
           }}
           onBlur={() => draft.trim() && add(draft)}
-          placeholder={section.items.length ? 'Add more…' : section.kind === 'interests' ? 'e.g. Photography, then Enter' : 'e.g. React, then Enter'}
-          aria-label={`Add to ${section.title}`}
+          placeholder={section.items.length ? t('Add more…') : section.kind === 'interests' ? t('e.g. Photography, then Enter') : t('e.g. React, then Enter')}
+          aria-label={t('Add to {section}', { section: section.title })}
           className="min-w-[140px] flex-1 border-0 bg-transparent px-1 py-1 text-sm focus:outline-none focus:ring-0"
         />
       </div>
-      <p className="mt-1 text-xs text-slate-500">Press Enter or type a comma after each one.</p>
+      <p className="mt-1 text-xs text-slate-500">{t('Press Enter or type a comma after each one.')}</p>
     </div>
   );
 };
 
 /* ------------------------------ Languages ------------------------------ */
 
-export const LanguagesEditor = ({ section, onChange }: { section: LanguagesSection; onChange: (section: LanguagesSection) => void }) => {
+export const LanguagesEditor = ({
+  section,
+  language,
+  onChange
+}: {
+  section: LanguagesSection;
+  language: ResumeLanguage;
+  onChange: (section: LanguagesSection) => void;
+}) => {
   const update = (id: string, patch: Partial<LanguagesSection['items'][number]>) =>
     onChange({ ...section, items: section.items.map((item) => (item.id === id ? { ...item, ...patch } : item)) });
+  const listId = `language-levels-${section.id}`;
   return (
     <div className="space-y-2">
       {section.items.map((item) => (
         <div key={item.id} className="flex items-center gap-2">
           <input
-            aria-label="Language"
+            aria-label={t('Language')}
             value={item.name}
             onChange={(event) => update(item.id, { name: event.target.value })}
-            placeholder="English"
+            placeholder={language === 'sr' ? 'Engleski' : 'English'}
             className={`${inputClass} flex-1`}
           />
           <input
-            aria-label="Level"
-            list="language-levels"
+            aria-label={t('Level')}
+            list={listId}
             value={item.level}
             onChange={(event) => update(item.id, { level: event.target.value })}
-            placeholder="Level"
+            placeholder={t('Level')}
             className={`${inputClass} flex-1`}
           />
-          <IconButton icon="trash" tone="danger" label="Remove language" onClick={() => onChange({ ...section, items: section.items.filter((other) => other.id !== item.id) })} />
+          <IconButton icon="trash" tone="danger" label={t('Remove language')} onClick={() => onChange({ ...section, items: section.items.filter((other) => other.id !== item.id) })} />
         </div>
       ))}
-      <datalist id="language-levels">
-        {LANGUAGE_LEVELS.map((level) => (
+      <datalist id={listId}>
+        {LANGUAGE_LEVELS[language].map((level) => (
           <option key={level} value={level} />
         ))}
       </datalist>
       <Button size="sm" variant="ghost" icon="plus" onClick={() => onChange({ ...section, items: [...section.items, { id: createId(), name: '', level: '' }] })}>
-        Add language
+        {t('Add language')}
       </Button>
     </div>
   );
 };
 
 /* ------------------------------ Entries ------------------------------ */
+
+type Labels = NonNullable<(typeof SECTION_KINDS)[keyof typeof SECTION_KINDS]['labels']>;
 
 const EntryCard = ({
   item,
@@ -141,7 +158,7 @@ const EntryCard = ({
   canMoveDown
 }: {
   item: EntryItem;
-  labels: NonNullable<(typeof SECTION_KINDS)[keyof typeof SECTION_KINDS]['labels']>;
+  labels: Labels;
   open: boolean;
   onToggle: () => void;
   onChange: (item: EntryItem) => void;
@@ -152,39 +169,45 @@ const EntryCard = ({
 }) => {
   const set = (field: keyof EntryItem) => (value: string) => onChange({ ...item, [field]: value });
   const summary = [item.subtitle, [item.start, item.end].filter(Boolean).join(' – ')].filter(Boolean).join(' · ');
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [open]);
   return (
-    <div className="rounded-xl bg-slate-50/70 ring-1 ring-slate-200/70">
+    <div ref={ref} className="scroll-mt-32 rounded-xl bg-slate-50/70 ring-1 ring-slate-200/70">
       <div className="flex items-center gap-1 py-1.5 pl-3 pr-1.5">
         <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left">
           <Icon name="chevronDown" className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
           <span className="min-w-0">
-            <span className={`block truncate text-sm font-medium ${item.title ? 'text-slate-900' : 'text-slate-400'}`}>{item.title || `New ${labels.title.toLowerCase()}`}</span>
+            <span className={`block truncate text-sm font-medium ${item.title ? 'text-slate-900' : 'text-slate-400'}`}>
+              {item.title || t('New: {what}', { what: t(labels.title).toLowerCase() })}
+            </span>
             {summary && <span className="block truncate text-xs text-slate-500">{summary}</span>}
           </span>
         </button>
-        <IconButton icon="arrowUp" label="Move up" disabled={!canMoveUp} onClick={() => onMove(-1)} />
-        <IconButton icon="arrowDown" label="Move down" disabled={!canMoveDown} onClick={() => onMove(1)} />
-        <IconButton icon="trash" tone="danger" label="Remove" onClick={onRemove} />
+        <IconButton icon="arrowUp" label={t('Move up')} disabled={!canMoveUp} onClick={() => onMove(-1)} />
+        <IconButton icon="arrowDown" label={t('Move down')} disabled={!canMoveDown} onClick={() => onMove(1)} />
+        <IconButton icon="trash" tone="danger" label={t('Remove')} onClick={onRemove} />
       </div>
       {open && (
         <div className="grid grid-cols-2 gap-3 border-t border-slate-200/70 p-3">
-          <TextField label={labels.title} value={item.title} onChange={set('title')} placeholder={labels.titlePlaceholder} autoFocus={!item.title} />
-          <TextField label={labels.subtitle} value={item.subtitle} onChange={set('subtitle')} placeholder={labels.subtitlePlaceholder} />
+          <TextField label={t(labels.title)} value={item.title} onChange={set('title')} placeholder={labels.titlePlaceholder} autoFocus={!item.title} />
+          <TextField label={t(labels.subtitle)} value={item.subtitle} onChange={set('subtitle')} placeholder={labels.subtitlePlaceholder} />
           {labels.dates && (
             <>
-              <TextField label="Start" value={item.start} onChange={set('start')} placeholder="Mar 2022" />
-              <TextField label="End" value={item.end} onChange={set('end')} placeholder="Present" />
+              <TextField label={t('Start')} value={item.start} onChange={set('start')} placeholder={t('Mar 2022')} />
+              <TextField label={t('End')} value={item.end} onChange={set('end')} placeholder={t('Present')} />
             </>
           )}
-          {labels.location && <TextField wrapperClassName="col-span-2" label="Location" value={item.location} onChange={set('location')} placeholder="Belgrade, or Remote" />}
+          {labels.location && <TextField wrapperClassName="col-span-2" label={t('Location')} value={item.location} onChange={set('location')} placeholder={t('Belgrade, or Remote')} />}
           <TextArea
             wrapperClassName="col-span-2"
-            label="Description"
+            label={t('Description')}
             rows={4}
             value={item.description}
             onChange={set('description')}
-            placeholder={'- What you did and the result, with numbers if you can\n- Another achievement'}
-            hint={BULLET_HINT}
+            placeholder={t('- What you did and the result, with numbers if you can\n- Another achievement')}
+            hint={bulletHint()}
           />
         </div>
       )}
@@ -192,10 +215,24 @@ const EntryCard = ({
   );
 };
 
-export const EntriesEditor = ({ section, onChange }: { section: EntriesSection; onChange: (section: EntriesSection) => void }) => {
+export const EntriesEditor = ({
+  section,
+  onChange,
+  focus
+}: {
+  section: EntriesSection;
+  onChange: (section: EntriesSection) => void;
+  /** Opens this entry when the user clicks it in the preview. */
+  focus?: { itemId?: string; token: number };
+}) => {
   const labels = SECTION_KINDS[section.kind].labels ?? SECTION_KINDS.projects.labels!;
   const [openId, setOpenId] = useState<string | null>(null);
   const setItems = (items: EntryItem[]) => onChange({ ...section, items });
+
+  useEffect(() => {
+    if (focus?.itemId) setOpenId(focus.itemId);
+  }, [focus?.itemId, focus?.token]);
+
   return (
     <div className="space-y-2">
       {section.items.map((item, index) => (
@@ -223,7 +260,7 @@ export const EntriesEditor = ({ section, onChange }: { section: EntriesSection; 
           setOpenId(item.id);
         }}
       >
-        Add {labels.title.toLowerCase()}
+        {t('Add')} {t(labels.title).toLowerCase()}
       </Button>
     </div>
   );

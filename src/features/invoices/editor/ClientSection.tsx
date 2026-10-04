@@ -7,6 +7,7 @@ import { formatMinor } from '../../../lib/money';
 import { createParty, invoiceTotals, sameClient, type Client, type Invoice, type LineItem, type Party } from '../model';
 import { PartyFields } from './PartyFields';
 import { createId } from '../../../lib/files';
+import { t } from '../../../i18n';
 
 type Props = {
   invoice: Invoice;
@@ -58,7 +59,7 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
   const nameField = (
     <div className="relative">
       <label htmlFor="client-name" className="mb-1.5 block text-[13px] font-medium text-slate-700">
-        Name or company
+        {t('Name or company')}
       </label>
       <div className="relative">
         <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -114,7 +115,7 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-slate-900">{client.party.name}</span>
-                  <span className="block truncate text-xs text-slate-500">{[client.party.cityCountry, client.party.taxId].filter(Boolean).join(' · ') || 'Saved client'}</span>
+                  <span className="block truncate text-xs text-slate-500">{[client.party.cityCountry, client.party.taxId].filter(Boolean).join(' · ') || t('Saved client')}</span>
                 </span>
               </button>
             </li>
@@ -127,13 +128,13 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
   return (
     <Section
       id="client"
-      title="Bill to"
+      title={t('Bill to')}
       icon="users"
-      description={invoice.client.name ? invoice.client.name : 'Who is this invoice for?'}
+      description={invoice.client.name ? invoice.client.name : t('Who is this invoice for?')}
       actions={
         invoice.client.name ? (
           <Button size="sm" variant="ghost" onClick={() => onChange({ client: createParty(), clientId: null })}>
-            Clear
+            {t('Clear')}
           </Button>
         ) : undefined
       }
@@ -147,14 +148,14 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
       </div>
       <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
         <Icon name="check" className="h-3.5 w-3.5 text-emerald-500" />
-        Clients are saved automatically, so next time just start typing their name.
+        {t('Clients are saved automatically, so next time just start typing their name.')}
       </p>
       {previous && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-indigo-50 px-4 py-3 ring-1 ring-indigo-100">
           <div className="min-w-0 text-sm">
-            <div className="font-medium text-indigo-900">Same work as last time?</div>
+            <div className="font-medium text-indigo-900">{t('Same work as last time?')}</div>
             <div className="truncate text-indigo-700/80">
-              Invoice {previous.number} · {previous.items.length} item{previous.items.length === 1 ? '' : 's'} ·{' '}
+              {t('Invoice')} {previous.number} · {t('{count} item|{count} items', { count: previous.items.length })} ·{' '}
               {formatMinor(invoiceTotals(previous).totalMinor, previous.currency)}
             </div>
           </div>
@@ -170,7 +171,7 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
               })
             }
           >
-            Repeat items
+            {t('Repeat items')}
           </Button>
         </div>
       )}

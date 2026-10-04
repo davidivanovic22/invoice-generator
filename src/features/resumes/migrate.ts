@@ -164,7 +164,8 @@ export const migrateLegacyResume = (legacy: Loose): Resume => {
     sections,
     design: createDesign({
       template: LEGACY_TEMPLATES[str(settings.template)] ?? 'modern',
-      accentColor: str(settings.accentColor) || '#4f46e5'
+      accentColor: str(settings.accentColor) || '#4f46e5',
+      language: 'en'
     }),
     ats: createAts(),
     createdAt: str(legacy.createdAt) || now,
@@ -179,7 +180,8 @@ const normalizeResume = (raw: Partial<Resume>): Resume => {
     name: raw.name ?? 'Untitled resume',
     personal: createPersonal(raw.personal),
     sections: Array.isArray(raw.sections) ? raw.sections : [],
-    design: createDesign(raw.design),
+    // Resumes saved before the language option existed were written in English.
+    design: createDesign({ language: 'en', ...raw.design }),
     ats: createAts(raw.ats),
     createdAt: raw.createdAt ?? now,
     updatedAt: raw.updatedAt ?? now

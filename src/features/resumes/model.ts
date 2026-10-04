@@ -1,8 +1,11 @@
+import { getLang } from '../../i18n';
 import { createId } from '../../lib/files';
 
 export type ResumeTemplateId = 'modern' | 'classic' | 'minimal' | 'executive' | 'creative' | 'compact';
 export type ResumeFont = 'sans' | 'dm' | 'grotesk' | 'serif' | 'elegant';
 export type ResumeDensity = 'compact' | 'normal' | 'relaxed';
+/** Language of the resume's own fixed labels (section titles, "Contact"). */
+export type ResumeLanguage = 'en' | 'sr';
 
 export type SectionKind =
   | 'summary'
@@ -59,6 +62,7 @@ export type ResumeDesign = {
   font: ResumeFont;
   density: ResumeDensity;
   showPhoto: boolean;
+  language: ResumeLanguage;
 };
 
 export type AtsSettings = {
@@ -164,6 +168,28 @@ export const SECTION_KINDS: Record<SectionKind, KindInfo> = {
   custom: { title: 'Custom section', type: 'text', column: 'main', description: 'Anything else, with your own title' }
 };
 
+/** Default section titles printed on the resume, in the resume's language. */
+const DOC_TITLES: Record<SectionKind, [string, string]> = {
+  summary: ['Profile', 'Profil'],
+  experience: ['Experience', 'Radno iskustvo'],
+  education: ['Education', 'Obrazovanje'],
+  skills: ['Skills', 'Veštine'],
+  languages: ['Languages', 'Jezici'],
+  projects: ['Projects', 'Projekti'],
+  certificates: ['Certificates', 'Sertifikati'],
+  courses: ['Courses', 'Kursevi'],
+  awards: ['Awards', 'Nagrade'],
+  volunteering: ['Volunteering', 'Volontiranje'],
+  internships: ['Internships', 'Prakse'],
+  references: ['References', 'Preporuke'],
+  interests: ['Interests', 'Interesovanja'],
+  custom: ['Additional information', 'Dodatne informacije']
+};
+
+export const docTitle = (kind: SectionKind, language: ResumeLanguage) => DOC_TITLES[kind][language === 'sr' ? 1 : 0];
+export const contactTitle = (language: ResumeLanguage) => (language === 'sr' ? 'Kontakt' : 'Contact');
+const defaultLanguage = (): ResumeLanguage => (getLang() === 'sr' ? 'sr' : 'en');
+
 export const createEntry = (overrides?: Partial<EntryItem>): EntryItem => ({
   id: createId(),
   title: '',
@@ -175,9 +201,9 @@ export const createEntry = (overrides?: Partial<EntryItem>): EntryItem => ({
   ...overrides
 });
 
-export const createSection = (kind: SectionKind, overrides?: Partial<ResumeSection>): ResumeSection => {
+export const createSection = (kind: SectionKind, overrides?: Partial<ResumeSection>, language: ResumeLanguage = defaultLanguage()): ResumeSection => {
   const info = SECTION_KINDS[kind];
-  const base = { id: createId(), kind, title: info.title, hidden: false };
+  const base = { id: createId(), kind, title: docTitle(kind, language), hidden: false };
   let section: ResumeSection;
   switch (info.type) {
     case 'entries':
@@ -215,6 +241,7 @@ export const createDesign = (overrides?: Partial<ResumeDesign>): ResumeDesign =>
   font: 'sans',
   density: 'normal',
   showPhoto: true,
+  language: defaultLanguage(),
   ...overrides
 });
 
@@ -225,23 +252,86 @@ export const createAts = (overrides?: Partial<AtsSettings>): AtsSettings => ({
   ...overrides
 });
 
-export const createEmptyResume = (): Resume => {
+export const createEmptyResume = (language: ResumeLanguage = defaultLanguage()): Resume => {
   const now = new Date().toISOString();
   return {
     id: createId(),
-    name: 'Untitled resume',
+    name: language === 'sr' ? 'Novi CV' : 'Untitled resume',
     personal: createPersonal(),
-    sections: (['summary', 'experience', 'education', 'skills', 'languages'] as SectionKind[]).map((kind) => createSection(kind)),
-    design: createDesign(),
+    sections: (['summary', 'experience', 'education', 'skills', 'languages'] as SectionKind[]).map((kind) => createSection(kind, undefined, language)),
+    design: createDesign({ language }),
     ats: createAts(),
     createdAt: now,
     updatedAt: now
   };
 };
 
+
+const SAMPLE_SR = (): Pick<Resume, 'personal' | 'sections' | 'name'> => ({
+  name: 'Primer CV-ja',
+  personal: createPersonal({
+    fullName: 'Ana Marković',
+    headline: 'Senior Product Designer',
+    email: 'ana.markovic@example.com',
+    phone: '+381 64 123 4567',
+    location: 'Beograd, Srbija',
+    website: 'anamarkovic.design',
+    linkedin: 'linkedin.com/in/anamarkovic'
+  }),
+  sections: [
+    createSection('summary', {
+      text: 'Produkt dizajnerka sa 8 godina iskustva u pretvaranju složenih procesa u jednostavne i prijatne proizvode. Vodim istraživanje korisnika, dizajn sisteme i konkretan UI rad, i volim blisku saradnju sa programerima kako bismo brzo isporučivali i učili od stvarnih korisnika.'
+    }, 'sr'),
+    createSection('experience', {
+      items: [
+        createEntry({
+          title: 'Senior Product Designer',
+          subtitle: 'Nordeus',
+          location: 'Beograd',
+          start: 'mar 2022.',
+          end: 'danas',
+          description:
+            '- Vodila dizajn onboarding tima; zadržavanje igrača u prvoj nedelji povećano za 14%\n- Izgradila i održavam dizajn sistem koji koristi 40+ dizajnera i programera\n- Vodim nedeljna istraživanja sa korisnicima i pretvaram nalaze u predloge za roadmap'
+        }),
+        createEntry({
+          title: 'Product Designer',
+          subtitle: 'Seven Bridges',
+          location: 'Beograd',
+          start: 'jun 2019.',
+          end: 'feb 2022.',
+          description:
+            '- Redizajnirala editor bioinformatičkih procesa koji koristi 30.000 istraživača\n- Vođenim šablonima smanjila broj prijava podršci za trećinu'
+        }),
+        createEntry({
+          title: 'UI dizajnerka',
+          subtitle: 'Frilens',
+          start: '2017.',
+          end: '2019.',
+          description: '- Sajtovi i vizuelni identiteti za 20+ malih firmi u regionu'
+        })
+      ]
+    }, 'sr'),
+    createSection('education', {
+      items: [createEntry({ title: 'Grafički dizajn (osnovne studije)', subtitle: 'Fakultet primenjenih umetnosti, Univerzitet umetnosti u Beogradu', start: '2013.', end: '2017.' })]
+    }, 'sr'),
+    createSection('skills', {
+      items: ['Produkt strategija', 'Istraživanje korisnika', 'Dizajn sistemi', 'Prototipovanje', 'Figma', 'Pristupačnost', 'HTML i CSS', 'Vođenje radionica']
+    }, 'sr'),
+    createSection('languages', {
+      items: [
+        { id: createId(), name: 'Srpski', level: 'Maternji' },
+        { id: createId(), name: 'Engleski', level: 'C2 · Napredni' },
+        { id: createId(), name: 'Nemački', level: 'B1 · Srednji' }
+      ]
+    }, 'sr'),
+    createSection('interests', { items: ['Analogna fotografija', 'Planinarenje', 'Tipografija'] }, 'sr')
+  ]
+});
+
 /** Neutral example content, so a new resume shows what a good one looks like. */
-export const createSampleResume = (): Resume => {
-  const resume = createEmptyResume();
+export const createSampleResume = (language: ResumeLanguage = defaultLanguage()): Resume => {
+  const resume = createEmptyResume(language);
+  if (language === 'sr') return { ...resume, ...SAMPLE_SR() };
   resume.name = 'Example resume';
   resume.personal = createPersonal({
     fullName: 'Ana Marković',
@@ -303,6 +393,9 @@ export const createSampleResume = (): Resume => {
   return resume;
 };
 
-export const LANGUAGE_LEVELS = ['Native', 'C2 · Proficient', 'C1 · Advanced', 'B2 · Upper intermediate', 'B1 · Intermediate', 'A2 · Elementary', 'A1 · Beginner'];
+export const LANGUAGE_LEVELS: Record<ResumeLanguage, string[]> = {
+  en: ['Native', 'C2 · Proficient', 'C1 · Advanced', 'B2 · Upper intermediate', 'B1 · Intermediate', 'A2 · Elementary', 'A1 · Beginner'],
+  sr: ['Maternji', 'C2 · Napredni', 'C1 · Napredni', 'B2 · Viši srednji', 'B1 · Srednji', 'A2 · Osnovni', 'A1 · Početni']
+};
 
 export const resumeDisplayName = (resume: Resume) => resume.personal.fullName.trim() || resume.name;

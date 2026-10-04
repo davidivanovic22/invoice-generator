@@ -38,6 +38,7 @@ export const Page = ({ children, style }: { children: ReactNode; style?: CSSProp
 export const Logo = ({ src, height = 56, align = 'left' }: { src: string; height?: number; align?: 'left' | 'right' }) =>
   src ? (
     <img
+      data-edit="from"
       src={src}
       alt=""
       style={{ maxHeight: height, maxWidth: 200, objectFit: 'contain', objectPosition: align, display: 'block' }}
@@ -48,14 +49,17 @@ export const PartyBlock = ({
   label,
   party,
   labelStyle,
-  nameStyle
+  nameStyle,
+  edit
 }: {
   label: string;
   party: InvoiceView['issuer'];
   labelStyle?: CSSProperties;
   nameStyle?: CSSProperties;
+  /** Editor section opened when this block is clicked in the preview. */
+  edit?: 'from' | 'client';
 }) => (
-  <div style={{ minWidth: 0 }}>
+  <div data-edit={edit} style={{ minWidth: 0 }}>
     <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', marginBottom: 6, ...labelStyle }}>
       {label}
     </div>
@@ -96,7 +100,7 @@ export const ItemsTable = ({ view, style = {} }: { view: InvoiceView; style?: Ta
   };
   const radius = style.radius ?? 0;
   return (
-    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontFamily: style.font }}>
+    <table data-edit="items" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontFamily: style.font }}>
       <thead>
         <tr>
           <th style={{ ...head, borderTopLeftRadius: radius, borderBottomLeftRadius: radius }}>{t('description')}</th>
@@ -153,7 +157,7 @@ export const TotalsRows = ({
 }) => {
   const row: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 16, padding: '6px 0' };
   return (
-    <div style={{ width, marginLeft: 'auto' }}>
+    <div data-edit="items" style={{ width, marginLeft: 'auto' }}>
       {view.tax !== null && (
         <>
           <div style={row}>
@@ -187,7 +191,7 @@ export const TotalsRows = ({
 
 export const PaymentBlock = ({ view, labelStyle }: { view: InvoiceView; labelStyle?: CSSProperties }) =>
   view.payment.length ? (
-    <div>
+    <div data-edit="from">
       <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', marginBottom: 8, ...labelStyle }}>
         {view.t('paymentDetails')}
       </div>
@@ -206,7 +210,7 @@ export const PaymentBlock = ({ view, labelStyle }: { view: InvoiceView; labelSty
 
 export const NoteBlock = ({ view, labelStyle }: { view: InvoiceView; labelStyle?: CSSProperties }) =>
   view.note ? (
-    <div>
+    <div data-edit="details">
       <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', marginBottom: 8, ...labelStyle }}>
         {view.t('notes')}
       </div>
@@ -216,7 +220,7 @@ export const NoteBlock = ({ view, labelStyle }: { view: InvoiceView; labelStyle?
 
 export const SignatureBlock = ({ view, lineColor = '#cbd5e1' }: { view: InvoiceView; lineColor?: string }) =>
   view.signature ? (
-    <div style={{ width: 200, textAlign: 'center' }}>
+    <div data-edit="from" style={{ width: 200, textAlign: 'center' }}>
       <img src={view.signature} alt="" style={{ height: 64, maxWidth: 200, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
       <div style={{ borderTop: `1px solid ${lineColor}`, paddingTop: 6, fontSize: 10.5, color: '#64748b' }}>{view.t('signature')}</div>
     </div>

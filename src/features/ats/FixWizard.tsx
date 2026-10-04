@@ -7,6 +7,7 @@ import { useResumeStore } from '../resumes/store';
 import { analyzeResume, scoreLabel, type AtsIssue } from './analyze';
 import { applySuggestion, suggestionBefore, suggestionLabel, type Suggestion } from './ai';
 import { ScoreRing } from './ScoreRing';
+import { t } from '../../i18n';
 
 type Step =
   | { kind: 'suggestion'; id: string; suggestion: Suggestion }
@@ -82,7 +83,7 @@ export const FixWizard = ({ resumeId, suggestions, onClose, onGoTo }: Props) => 
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Fix your resume step by step"
+        aria-label={t('Fix your resume step by step')}
         className="flex h-full w-full max-w-3xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
@@ -90,16 +91,16 @@ export const FixWizard = ({ resumeId, suggestions, onClose, onGoTo }: Props) => 
           <ScoreRing score={report.score} size={52} />
           <div className="min-w-0 flex-1">
             <div className="text-[15px] font-semibold text-slate-900">
-              {done ? 'All done' : `Step ${Math.min(index + 1, visibleTotal)} of ${visibleTotal}`}
+              {done ? t('All done') : t('Step {n} of {total}', { n: Math.min(index + 1, visibleTotal), total: visibleTotal })}
             </div>
             <div className="text-[13px] text-slate-500">
-              ATS score {startScore} → <span className="font-semibold text-slate-900">{report.score}</span> · {scoreLabel(report.score)}
+              {t('ATS score')} {startScore} → <span className="font-semibold text-slate-900">{report.score}</span> · {scoreLabel(report.score)}
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${(Math.min(index, visibleTotal) / Math.max(1, visibleTotal)) * 100}%` }} />
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button type="button" onClick={onClose} aria-label={t('Close')} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <Icon name="x" />
           </button>
         </div>
@@ -137,7 +138,7 @@ const StepHeader = ({ eyebrow, title, reason }: { eyebrow: string; title: string
 const StepActions = ({ onPrimary, primaryLabel, onSkip, disabled }: { onPrimary: () => void; primaryLabel: string; onSkip: () => void; disabled?: boolean }) => (
   <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
     <Button variant="ghost" onClick={onSkip}>
-      Skip
+      {t('Skip')}
     </Button>
     <Button variant="accent" icon="check" onClick={onPrimary} disabled={disabled}>
       {primaryLabel}
@@ -156,9 +157,9 @@ const SuggestionStep = ({ resume, suggestion, onApply, onSkip }: { resume: Resum
     return (
       <div>
         <StepHeader
-          eyebrow={suggestion.type === 'skills_confirm' ? 'Confirm skills' : 'Add skills'}
+          eyebrow={suggestion.type === 'skills_confirm' ? t('Confirm skills') : t('Add skills')}
           title={label}
-          reason={suggestion.type === 'skills_confirm' ? 'The job ad asks for these. Tick only the ones you really have; honesty matters in interviews.' : suggestion.reason}
+          reason={suggestion.type === 'skills_confirm' ? t('The job ad asks for these. Tick only the ones you really have; honesty matters in interviews.') : suggestion.reason}
         />
         <div className="flex flex-wrap gap-2">
           {suggestion.skills.map((skill) => {
@@ -177,39 +178,39 @@ const SuggestionStep = ({ resume, suggestion, onApply, onSkip }: { resume: Resum
             );
           })}
         </div>
-        <StepActions onPrimary={() => onApply('', chosen)} primaryLabel={chosen.length ? `Add ${chosen.length} skill${chosen.length === 1 ? '' : 's'}` : 'Add skills'} onSkip={onSkip} disabled={!chosen.length} />
+        <StepActions onPrimary={() => onApply('', chosen)} primaryLabel={chosen.length ? t('Add {count} skill|Add {count} skills', { count: chosen.length }) : t('Add skills')} onSkip={onSkip} disabled={!chosen.length} />
       </div>
     );
   }
 
   return (
     <div>
-      <StepHeader eyebrow="Claude suggests" title={label} reason={suggestion.reason} />
+      <StepHeader eyebrow={t('Claude suggests')} title={label} reason={suggestion.reason} />
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Now</div>
-          <div className="min-h-[120px] whitespace-pre-line rounded-xl bg-slate-50 p-3 text-sm leading-relaxed text-slate-500">{before || <em>Empty</em>}</div>
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('Now')}</div>
+          <div className="min-h-[120px] whitespace-pre-line rounded-xl bg-slate-50 p-3 text-sm leading-relaxed text-slate-500">{before || <em>{t('Empty')}</em>}</div>
         </div>
         <div>
           <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-emerald-600">
-            Improved <span className="font-normal normal-case text-slate-400">you can edit it</span>
+            {t('Improved')} <span className="font-normal normal-case text-slate-400">{t('you can edit it')}</span>
           </div>
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
             rows={Math.max(5, text.split('\n').length + 1)}
             className={`${inputClass} leading-relaxed ring-emerald-200`}
-            aria-label="Improved text"
+            aria-label={t('Improved text')}
           />
           {PLACEHOLDER.test(text) && (
             <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700">
               <Icon name="alert" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Replace the [brackets] with your real numbers, here or in the last step.
+              {t('Replace the [brackets] with your real numbers, here or in the last step.')}
             </p>
           )}
         </div>
       </div>
-      <StepActions onPrimary={() => onApply(text)} primaryLabel="Use this" onSkip={onSkip} disabled={!text.trim()} />
+      <StepActions onPrimary={() => onApply(text)} primaryLabel={t('Use this')} onSkip={onSkip} disabled={!text.trim()} />
     </div>
   );
 };
@@ -218,7 +219,7 @@ const CONTACT_FIELDS: { field: keyof PersonalInfo; label: string; placeholder: s
   { field: 'fullName', label: 'Full name', placeholder: 'Ana Marković' },
   { field: 'email', label: 'Email', placeholder: 'ana@example.com', type: 'email' },
   { field: 'phone', label: 'Phone', placeholder: '+381 64 123 4567', type: 'tel' },
-  { field: 'location', label: 'Location', placeholder: 'Belgrade, Serbia' },
+  { field: 'location', label: 'City', placeholder: 'Beograd, Srbija' },
   { field: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/in/you' }
 ];
 
@@ -227,13 +228,13 @@ const ContactStep = ({ personal, onSave, onSkip }: { personal: PersonalInfo; onS
   const missing = CONTACT_FIELDS.filter(({ field }) => !String(personal[field] ?? '').trim());
   return (
     <div>
-      <StepHeader eyebrow="Only you can fill this in" title="Complete your contact details" reason="Recruiters and ATS systems need a way to reach you." />
+      <StepHeader eyebrow={t('Only you can fill this in')} title={t('Complete your contact details')} reason={t('Recruiters and ATS systems need a way to reach you.')} />
       <div className="grid gap-3 sm:grid-cols-2">
         {missing.map(({ field, label, placeholder, type }) => (
-          <TextField key={field} label={label} type={type} placeholder={placeholder} value={String(draft[field] ?? '')} onChange={(value) => setDraft((current) => ({ ...current, [field]: value }))} />
+          <TextField key={field} label={t(label)} type={type} placeholder={placeholder} value={String(draft[field] ?? '')} onChange={(value) => setDraft((current) => ({ ...current, [field]: value }))} />
         ))}
       </div>
-      <StepActions onPrimary={() => onSave(draft)} primaryLabel="Save" onSkip={onSkip} />
+      <StepActions onPrimary={() => onSave(draft)} primaryLabel={t('Save')} onSkip={onSkip} />
     </div>
   );
 };
@@ -252,7 +253,7 @@ const DatesStep = ({ resume, onSave, onSkip }: { resume: Resume; onSave: (resume
     }));
   return (
     <div>
-      <StepHeader eyebrow="Only you can fill this in" title="Add dates to your experience" reason='ATS systems calculate your years of experience from dates. Use a format like "Mar 2022" and "Present".' />
+      <StepHeader eyebrow={t('Only you can fill this in')} title={t('Add dates to your experience')} reason={t('ATS systems calculate your years of experience from dates. Use a format like "Mar 2022" and "Present".')} />
       <div className="space-y-3">
         {entries.map(({ section, item }) => (
           <div key={item.id} className="grid items-end gap-3 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_120px_120px]">
@@ -260,12 +261,12 @@ const DatesStep = ({ resume, onSave, onSkip }: { resume: Resume; onSave: (resume
               <div className="font-medium text-slate-900">{item.title || item.subtitle}</div>
               <div className="text-slate-500">{item.subtitle}</div>
             </div>
-            <TextField label="Start" value={item.start} onChange={(value) => set(section.id, item.id, 'start', value)} placeholder="Mar 2022" />
-            <TextField label="End" value={item.end} onChange={(value) => set(section.id, item.id, 'end', value)} placeholder="Present" />
+            <TextField label={t('Start')} value={item.start} onChange={(value) => set(section.id, item.id, 'start', value)} placeholder={t('Mar 2022')} />
+            <TextField label={t('End')} value={item.end} onChange={(value) => set(section.id, item.id, 'end', value)} placeholder={t('Present')} />
           </div>
         ))}
       </div>
-      <StepActions onPrimary={() => onSave(draft)} primaryLabel="Save dates" onSkip={onSkip} />
+      <StepActions onPrimary={() => onSave(draft)} primaryLabel={t('Save dates')} onSkip={onSkip} />
     </div>
   );
 };
@@ -316,9 +317,9 @@ const PlaceholderStep = ({ resume, onSave, onSkip }: { resume: Resume; onSave: (
   return (
     <div>
       <StepHeader
-        eyebrow="Only you know these numbers"
-        title={`Fill in ${lines.length} placeholder${lines.length === 1 ? '' : 's'}`}
-        reason="Replace each [bracket] with your real number. If you don't know it, rewrite the sentence without it or clear the line."
+        eyebrow={t('Only you know these numbers')}
+        title={t('Fill in {count} placeholder|Fill in {count} placeholders', { count: lines.length })}
+        reason={t("Replace each [bracket] with your real number. If you don't know it, rewrite the sentence without it or clear the line.")}
       />
       <div className="space-y-3">
         {lines.map((entry) => {
@@ -338,20 +339,20 @@ const PlaceholderStep = ({ resume, onSave, onSkip }: { resume: Resume; onSave: (
           );
         })}
       </div>
-      <StepActions onPrimary={save} primaryLabel={stillOpen ? `Save (${stillOpen} left)` : 'Save'} onSkip={onSkip} />
+      <StepActions onPrimary={save} primaryLabel={stillOpen ? t('Save ({n} left)', { n: stillOpen }) : t('Save')} onSkip={onSkip} />
     </div>
   );
 };
 
 const ManualStep = ({ issue, onGoTo, onSkip }: { issue: AtsIssue; onGoTo: () => void; onSkip: () => void }) => (
   <div>
-    <StepHeader eyebrow="Needs your input" title={issue.title} reason={issue.detail} />
+    <StepHeader eyebrow={t('Needs your input')} title={issue.title} reason={issue.detail} />
     <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
       <Button variant="ghost" onClick={onSkip}>
-        Skip
+        {t('Skip')}
       </Button>
       <Button variant="accent" iconRight="chevronRight" onClick={onGoTo}>
-        Take me there
+        {t('Take me there')}
       </Button>
     </div>
   </div>
@@ -363,10 +364,10 @@ const FinishedStep = ({ score, start, remaining, onGoTo }: { score: number; star
       <ScoreRing score={score} size={120} />
     </div>
     <h3 className="mt-4 text-xl font-semibold text-slate-900">
-      {score >= 95 ? 'Your resume is ATS-ready' : score > start ? `Up from ${start} to ${score}` : 'Review finished'}
+      {score >= 95 ? t('Your resume is ATS-ready') : score > start ? t('Up from {start} to {score}', { start, score }) : t('Review finished')}
     </h3>
     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-      {score >= 95 ? 'It reads well for both ATS systems and recruiters. Download the PDF and apply.' : 'A few things still need your input. They are listed below.'}
+      {score >= 95 ? t('It reads well for both ATS systems and recruiters. Download the PDF and apply.') : t('A few things still need your input. They are listed below.')}
     </p>
     {remaining.length > 0 && (
       <ul className="mx-auto mt-5 max-w-lg space-y-2 text-left">
@@ -378,7 +379,7 @@ const FinishedStep = ({ score, start, remaining, onGoTo }: { score: number; star
             </span>
             {issue.target && (
               <Button size="sm" onClick={() => onGoTo(issue.target)}>
-                Fix
+                {t('Fix')}
               </Button>
             )}
           </li>

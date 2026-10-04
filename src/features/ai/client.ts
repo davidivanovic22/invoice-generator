@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import { t } from '../../i18n';
 
 /**
  * Claude access for a backend-less app: the user brings their own API key,
@@ -50,7 +51,7 @@ let sdk: typeof import('@anthropic-ai/sdk') | null = null;
 
 export const getClient = async (): Promise<Anthropic> => {
   const key = getApiKey();
-  if (!key) throw new AiError('no-key', 'Connect Claude first: add your Anthropic API key.');
+  if (!key) throw new AiError('no-key', t('Connect Claude first: add your Anthropic API key.'));
   if (cachedClient?.key === key) return cachedClient.client;
   sdk = sdk ?? (await import('@anthropic-ai/sdk'));
   // The key belongs to the person using this browser; it never touches a server of ours.
@@ -64,20 +65,20 @@ export const toAiError = (error: unknown): AiError => {
   if (error instanceof AiError) return error;
   const Sdk = sdk?.default;
   if (Sdk) {
-    if (error instanceof Sdk.APIUserAbortError) return new AiError('other', 'Cancelled.');
+    if (error instanceof Sdk.APIUserAbortError) return new AiError('other', t('Cancelled.'));
     if (error instanceof Sdk.AuthenticationError || error instanceof Sdk.PermissionDeniedError)
-      return new AiError('auth', 'Your Anthropic API key was rejected. Check it in AI settings.');
-    if (error instanceof Sdk.RateLimitError) return new AiError('rate', 'Too many requests right now. Wait a minute and try again.');
-    if (error instanceof Sdk.InternalServerError) return new AiError('overloaded', 'Claude is busy at the moment. Please try again shortly.');
+      return new AiError('auth', t('Your Anthropic API key was rejected. Check it in AI settings.'));
+    if (error instanceof Sdk.RateLimitError) return new AiError('rate', t('Too many requests right now. Wait a minute and try again.'));
+    if (error instanceof Sdk.InternalServerError) return new AiError('overloaded', t('Claude is busy at the moment. Please try again shortly.'));
     if (error instanceof Sdk.BadRequestError) {
       const message = error.message.toLowerCase();
-      if (message.includes('credit') || message.includes('billing')) return new AiError('auth', 'Your Anthropic account has no credit left. Add credit in the Anthropic Console.');
-      return new AiError('invalid', 'Claude could not process this request. Try again with less text.');
+      if (message.includes('credit') || message.includes('billing')) return new AiError('auth', t('Your Anthropic account has no credit left. Add credit in the Anthropic Console.'));
+      return new AiError('invalid', t('Claude could not process this request. Try again with less text.'));
     }
-    if (error instanceof Sdk.APIConnectionError) return new AiError('network', 'Could not reach Claude. Check your internet connection.');
-    if (error instanceof Sdk.APIError) return new AiError('other', `Claude returned an error (${error.status ?? 'unknown'}). Please try again.`);
+    if (error instanceof Sdk.APIConnectionError) return new AiError('network', t('Could not reach Claude. Check your internet connection.'));
+    if (error instanceof Sdk.APIError) return new AiError('other', t('Claude returned an error ({status}). Please try again.', { status: error.status ?? '?' }));
   }
-  return new AiError('other', error instanceof Error ? error.message : 'Something went wrong with the AI request.');
+  return new AiError('other', error instanceof Error ? error.message : t('Something went wrong with the AI request.'));
 };
 
 /** Checks a key with a tiny request. */
