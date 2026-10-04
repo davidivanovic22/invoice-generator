@@ -1,6 +1,6 @@
 import { addDaysIso, daysBetween, monthLabel, todayIso } from '../../lib/dates';
 import { createId } from '../../lib/files';
-import { computeTotals, fromMinor } from '../../utils/money';
+import { computeTotals, fromMinor } from '../../lib/money';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid';
 export type DocLanguage = 'en' | 'sr' | 'en-sr';

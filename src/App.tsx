@@ -3,7 +3,9 @@ import { InvoiceStoreProvider } from './features/invoices/store';
 import { InvoiceListPage } from './features/invoices/pages/InvoiceListPage';
 import { InvoiceEditorPage } from './features/invoices/pages/InvoiceEditorPage';
 import { ProfilePage } from './features/profile/ProfilePage';
-import { ResumePage } from './modules/resume/ResumePage';
+import { ResumeStoreProvider } from './features/resumes/store';
+import { ResumeListPage } from './features/resumes/pages/ResumeListPage';
+import { ResumeEditorPage } from './features/resumes/pages/ResumeEditorPage';
 import { FeedbackProvider } from './ui/Feedback';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Icon } from './ui/Icon';
@@ -46,21 +48,24 @@ function App() {
     <BrowserRouter>
       <FeedbackProvider>
         <InvoiceStoreProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex flex-1 flex-col">
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/invoices" replace />} />
-                  <Route path="/invoices" element={<InvoiceListPage />} />
-                  <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/resumes/*" element={<ResumePage />} />
-                  <Route path="*" element={<Navigate to="/invoices" replace />} />
-                </Routes>
-              </ErrorBoundary>
-            </main>
-          </div>
+          <ResumeStoreProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex flex-1 flex-col">
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/invoices" replace />} />
+                    <Route path="/invoices" element={<InvoiceListPage />} />
+                    <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/resumes" element={<ResumeListPage />} />
+                    <Route path="/resumes/:id" element={<ResumeEditorPage />} />
+                    <Route path="*" element={<Navigate to="/invoices" replace />} />
+                  </Routes>
+                </ErrorBoundary>
+              </main>
+            </div>
+          </ResumeStoreProvider>
         </InvoiceStoreProvider>
       </FeedbackProvider>
     </BrowserRouter>

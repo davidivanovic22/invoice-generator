@@ -1,5 +1,5 @@
 import { formatDate, formatDateNumeric } from '../../../lib/dates';
-import { formatMinor, formatAmount } from '../../../utils/money';
+import { formatMinor, formatAmount } from '../../../lib/money';
 import { invoiceTotals, type BusinessProfile, type Invoice, type Party } from '../model';
 import { makeTranslator, numberLocale } from './labels';
 

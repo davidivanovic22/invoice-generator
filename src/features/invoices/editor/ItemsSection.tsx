@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Button, IconButton } from '../../../ui/Button';
 import { inputClass, NumberField } from '../../../ui/Field';
 import { Section } from '../../../ui/Layout';
-import { formatMinor } from '../../../utils/money';
+import { formatMinor } from '../../../lib/money';
 import { createLineItem, invoiceTotals, UNITS, type Invoice, type LineItem } from '../model';
 
 type Props = {

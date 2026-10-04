@@ -1,17 +1,24 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-
 /**
- * Renders every `[data-pdf-page]` inside `root` to one A4 PDF page each.
- * Pages are laid out at 794×1123 CSS px (A4 at 96 dpi), so the canvas maps
- * onto the PDF page without distortion.
+ * PDF export through the browser's own print engine.
+ *
+ * Unlike canvas screenshots, this produces real, selectable text (which ATS
+ * resume parsers and accounting tools need), exact fonts and tiny files.
+ * Every `[data-pdf-page]` inside `root` becomes one A4 page. The document
+ * title becomes the suggested file name in the save dialog.
  */
 
-const waitForAssets = async (element: HTMLElement) => {
-  const images = Array.from(element.querySelectorAll('img'));
+const PAGE_CSS = `
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  [data-pdf-page] { break-after: page; page-break-after: always; box-shadow: none !important; margin: 0 !important; }
+  [data-pdf-page]:last-child { break-after: auto; page-break-after: auto; }
+`;
+
+const waitForAssets = async (doc: Document) => {
   await Promise.all(
-    images.map((img) =>
-      img.complete && img.naturalWidth > 0
+    Array.from(doc.images).map((img) =>
+      img.complete
         ? Promise.resolve()
         : new Promise<void>((resolve) => {
             img.addEventListener('load', () => resolve(), { once: true });
@@ -20,65 +27,55 @@ const waitForAssets = async (element: HTMLElement) => {
     )
   );
   try {
-    await document.fonts.ready;
+    await doc.fonts.ready;
   } catch {
-    // Older browsers: fonts are almost certainly loaded by the time a user clicks export.
+    // Fonts are almost certainly loaded already.
   }
-  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 };
 
-const buildPdf = async (root: HTMLElement) => {
-  await waitForAssets(root);
-  const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'));
-  if (pages.length === 0) throw new Error('Nothing to export.');
-
-  const pdf = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4', compress: true });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  let first = true;
-  for (const page of pages) {
-    const canvas = await html2canvas(page, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      width: page.offsetWidth,
-      height: page.offsetHeight,
-      windowWidth: page.offsetWidth,
-      windowHeight: page.offsetHeight
-    });
-
-    // Scale to the A4 width; content taller than one sheet continues on the next PDF page.
-    const ratio = pageWidth / canvas.width;
-    const sliceHeight = Math.floor(pageHeight / ratio);
-    for (let offset = 0; offset < canvas.height - 2; offset += sliceHeight) {
-      const height = Math.min(sliceHeight, canvas.height - offset);
-      const slice = document.createElement('canvas');
-      slice.width = canvas.width;
-      slice.height = height;
-      slice.getContext('2d')?.drawImage(canvas, 0, offset, canvas.width, height, 0, 0, canvas.width, height);
-      if (!first) pdf.addPage();
-      first = false;
-      pdf.addImage(slice.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, height * ratio, undefined, 'FAST');
-    }
-  }
-  return pdf;
+/** A standalone HTML document with the app's styles and the given pages. */
+export const buildPrintHtml = (root: HTMLElement, title: string) => {
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => (node instanceof HTMLLinkElement ? `<link rel="stylesheet" href="${node.href}">` : node.outerHTML))
+    .join('\n');
+  const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'))
+    .map((page) => page.outerHTML)
+    .join('\n');
+  const safeTitle = title.replace(/[<&>]/g, '');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${safeTitle}</title><base href="${document.baseURI}">${styles}<style>${PAGE_CSS}</style></head><body>${pages}</body></html>`;
 };
 
-export const downloadPdf = async (root: HTMLElement, fileName: string) => {
-  const pdf = await buildPdf(root);
-  pdf.save(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
-};
+export const printToPdf = async (root: HTMLElement, fileName: string) => {
+  if (!root.querySelector('[data-pdf-page]')) throw new Error('Nothing to export.');
+  const title = fileName.replace(/\.pdf$/i, '');
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
 
-/** Opens the PDF in a new tab; falls back to downloading if a popup blocker interferes. */
-export const previewPdf = async (root: HTMLElement, fileName: string) => {
-  const popup = window.open('', '_blank');
-  const pdf = await buildPdf(root);
-  const url = pdf.output('bloburl').toString();
-  if (popup) {
-    popup.location.href = url;
-  } else {
-    pdf.save(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!doc || !win) {
+    iframe.remove();
+    throw new Error('Printing is not available in this browser.');
   }
+  doc.open();
+  doc.write(buildPrintHtml(root, title));
+  doc.close();
+  await waitForAssets(doc);
+
+  // Chrome suggests the top-level document title as the PDF file name.
+  const previousTitle = document.title;
+  document.title = title;
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    document.title = previousTitle;
+    iframe.remove();
+  };
+  win.addEventListener('afterprint', () => setTimeout(cleanup, 100), { once: true });
+  win.focus();
+  win.print();
+  setTimeout(cleanup, 120_000);
 };

@@ -3,7 +3,7 @@ import { Button } from '../../../ui/Button';
 import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { Section } from '../../../ui/Layout';
-import { formatMinor } from '../../../utils/money';
+import { formatMinor } from '../../../lib/money';
 import { createParty, invoiceTotals, sameClient, type Client, type Invoice, type LineItem, type Party } from '../model';
 import { PartyFields } from './PartyFields';
 import { createId } from '../../../lib/files';

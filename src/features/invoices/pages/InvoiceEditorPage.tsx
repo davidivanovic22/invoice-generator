@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { downloadPdf, previewPdf } from '../../../lib/pdf';
+import { printToPdf } from '../../../lib/pdf';
 import { safeFileName } from '../../../lib/files';
 import { A4Preview } from '../../../ui/A4Preview';
 import { Button, IconButton } from '../../../ui/Button';
@@ -24,7 +24,7 @@ export const InvoiceEditorPage = () => {
   const { confirm, toast } = useFeedback();
   const invoice = store.invoices.find((candidate) => candidate.id === id);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
-  const [exporting, setExporting] = useState<null | 'download' | 'preview'>(null);
+  const [exporting, setExporting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   const onChange = useCallback((update: Partial<Invoice>) => updateInvoice(id, update), [id, updateInvoice]);
@@ -50,22 +50,6 @@ export const InvoiceEditorPage = () => {
     }
   }, [id, profileParty, profileBank, updateInvoice]);
 
-  useEffect(() => {
-    const invoice = latest.current;
-    if (!exporting || !invoice) return;
-    const node = exportRef.current;
-    if (!node) return;
-    const fileName = safeFileName(`${invoice.design.language === 'en' ? 'Invoice' : 'Faktura'}-${invoice.number}`, 'invoice');
-    (exporting === 'download' ? downloadPdf(node, fileName) : previewPdf(node, fileName))
-      .then(() => {
-        if (exporting === 'download') toast('PDF downloaded');
-      })
-      .catch((error) => {
-        console.error(error);
-        toast('The PDF could not be created. Please try again.', 'error');
-      })
-      .finally(() => setExporting(null));
-  }, [exporting, toast]);
 
   if (!invoice) {
     return (
@@ -84,9 +68,19 @@ export const InvoiceEditorPage = () => {
     );
   }
 
-  const exportPdf = (mode: 'download' | 'preview') => {
+  const exportPdf = async () => {
     saveClient();
-    setExporting(mode);
+    const node = exportRef.current;
+    if (!node) return;
+    setExporting(true);
+    try {
+      await printToPdf(node, safeFileName(`${invoice.design.language === 'en' ? 'Invoice' : 'Faktura'}-${invoice.number}`, 'invoice'));
+    } catch (error) {
+      console.error(error);
+      toast('The PDF could not be created. Please try again.', 'error');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDuplicate = () => {
@@ -127,11 +121,8 @@ export const InvoiceEditorPage = () => {
             <StatusMenu invoice={invoice} onChange={(status) => setStatus(invoice.id, status)} />
             <IconButton icon="copy" label="Duplicate as new invoice" onClick={handleDuplicate} className="hidden sm:inline-flex" />
             <IconButton icon="trash" label="Delete invoice" tone="danger" onClick={handleDelete} />
-            <Button icon="eye" onClick={() => exportPdf('preview')} disabled={exporting !== null} className="hidden md:inline-flex">
-              Preview
-            </Button>
-            <Button variant="primary" icon="download" onClick={() => exportPdf('download')} disabled={exporting !== null}>
-              {exporting === 'download' ? 'Creating…' : 'Download PDF'}
+            <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting} title="Opens the save dialog: choose “Save as PDF”">
+              Download PDF
             </Button>
           </div>
         </div>
@@ -160,7 +151,7 @@ export const InvoiceEditorPage = () => {
           <div className="sticky top-[124px] max-h-[calc(100vh-140px)] overflow-y-auto rounded-xl pb-2 lg:pr-1">
             <div className="overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08),0_12px_40px_-12px_rgba(15,23,42,0.25)] ring-1 ring-slate-200">
               <A4Preview>
-                <InvoiceDocument invoice={invoice} profile={store.profile} />
+                <InvoiceDocument ref={exportRef} invoice={invoice} profile={store.profile} />
               </A4Preview>
             </div>
             <p className="mt-3 text-center text-xs text-slate-400">Live preview · saved automatically in this browser</p>
@@ -168,11 +159,6 @@ export const InvoiceEditorPage = () => {
         </div>
       </div>
 
-      {exporting && (
-        <div aria-hidden="true" style={{ position: 'fixed', left: -10000, top: 0 }}>
-          <InvoiceDocument ref={exportRef} invoice={invoice} profile={store.profile} />
-        </div>
-      )}
     </div>
   );
 };

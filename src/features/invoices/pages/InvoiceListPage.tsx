@@ -7,7 +7,7 @@ import { useFeedback } from '../../../ui/Feedback';
 import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
-import { formatMinor } from '../../../utils/money';
+import { formatMinor } from '../../../lib/money';
 import { StatusBadge } from '../components/Status';
 import { displayStatus, invoiceTotals, type DisplayStatus, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
