@@ -75,7 +75,7 @@ export const ItemsSection = ({ invoice, defaultUnit, onChange }: Props) => {
                 <IconButton icon="arrowDown" label="Move down" disabled={index === invoice.items.length - 1} onClick={() => move(index, 1)} />
               </div>
             </div>
-            <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto] items-end gap-2">
+            <div className="mt-2 grid grid-cols-2 items-end gap-2 sm:grid-cols-[1fr_auto_1fr_auto]">
               <NumberField
                 label="Quantity"
                 value={item.quantity}
@@ -87,7 +87,7 @@ export const ItemsSection = ({ invoice, defaultUnit, onChange }: Props) => {
                 <select
                   value={item.unit}
                   onChange={(event) => update(item.id, { unit: event.target.value })}
-                  className={`${inputClass} w-[92px]`}
+                  className={`${inputClass} sm:w-[92px]`}
                   aria-label="Unit"
                 >
                   {(UNITS.includes(item.unit) ? UNITS : [item.unit, ...UNITS]).map((unit) => (
@@ -106,7 +106,7 @@ export const ItemsSection = ({ invoice, defaultUnit, onChange }: Props) => {
                   if (event.key === 'Enter' && index === invoice.items.length - 1) add();
                 }}
               />
-              <div className="flex h-9 items-center gap-1">
+              <div className="flex h-9 items-center justify-end gap-1">
                 <span className="min-w-[88px] text-right text-sm font-semibold tabular-nums text-slate-900">{money(totals.linesMinor[index] ?? 0)}</span>
                 <IconButton icon="trash" label="Remove item" tone="danger" onClick={() => remove(item.id)} />
               </div>

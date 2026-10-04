@@ -61,7 +61,7 @@ export const ResumeListPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Resumes</h1>
           <p className="mt-1 text-sm text-slate-500">Keep a version per job or language. Everything is saved in this browser.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button icon="upload" onClick={() => fileRef.current?.click()} title="Restore a backup file made with this app">
             Restore backup
           </Button>

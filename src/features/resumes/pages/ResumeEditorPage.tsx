@@ -195,7 +195,7 @@ export const ResumeEditorPage = () => {
       </div>
 
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(420px,560px)_1fr]">
-        <div className={`space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
+        <div className={`min-w-0 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
           <div className="flex rounded-xl bg-slate-200/60 p-1" role="tablist" aria-label="Editor mode">
             {(['content', 'ats'] as const).map((value) => (
               <button
@@ -249,7 +249,7 @@ export const ResumeEditorPage = () => {
             </>
           )}
         </div>
-        <div className={mobileView === 'edit' ? 'hidden lg:block' : ''}>
+        <div className={`min-w-0 ${mobileView === 'edit' ? 'hidden lg:block' : ''}`}>
           <div className="sticky top-[124px] max-h-[calc(100vh-140px)] overflow-y-auto rounded-xl pb-2 lg:pr-1">
             <div ref={previewRef} className="[&_[data-pdf-page]]:shadow-[0_1px_3px_rgba(15,23,42,0.08),0_12px_40px_-12px_rgba(15,23,42,0.25)] [&_[data-pdf-page]]:ring-1 [&_[data-pdf-page]]:ring-slate-200">
               <A4Preview>

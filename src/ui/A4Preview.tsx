@@ -30,7 +30,9 @@ export const A4Preview = ({ children, maxScale = 1 }: { children: ReactNode; max
   }, [maxScale]);
 
   return (
-    <div ref={outerRef} className="flex w-full justify-center" style={{ height: height * scale }}>
+    // items-start matters: with the default stretch, the inner box would take the outer box's height,
+    // which is itself derived from the inner box, and the two would collapse to zero.
+    <div ref={outerRef} className="flex w-full items-start justify-center" style={{ height: height * scale }}>
       <div ref={innerRef} style={{ width: A4_WIDTH, flexShrink: 0, transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {children}
       </div>

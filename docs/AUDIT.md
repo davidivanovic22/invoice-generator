@@ -1,5 +1,24 @@
 # Audit — invoice-generator
 
+## Status (updated 2026-10-04)
+
+| Risk | Status |
+|---|---|
+| R1 totals disagree with lines | ✅ Fixed: `src/lib/money.ts`, unit tested |
+| R2 corrupted storage overwritten | ✅ Fixed: unreadable data is backed up first (`src/lib/storage.ts`) |
+| R3 import replaces everything | ✅ Fixed: imports merge and never overwrite |
+| R4 quota crash | ✅ Fixed: write errors show a banner; images are downscaled and stored once on the profile; error boundary added |
+| R5 invoice numbers | ✅ Fixed: sequential per year with duplicate warning |
+| R6 UTC dates | ✅ Fixed: `src/lib/dates.ts` |
+| R7 validation | 🟡 Partly: numbers can't go negative, duplicate numbers flagged; no schema validation of every field yet |
+| R8 inconsistent formatting | ✅ Fixed: one formatter, locale per document language |
+| R9 raster PDFs | ✅ Fixed: browser print engine, real text |
+| R10 build ships unused assets | ⏳ Open: move `public/invoice-watermarks`, `monthly-themes` and zips out of `public/` locally |
+| R11 tests / CI | 🟡 Partly: 41 unit tests pass; no CI or E2E yet |
+| R12–R14 duplication, dead code, big files | ✅ Fixed: legacy code deleted, features rebuilt |
+| R15 personal defaults | ✅ Fixed: neutral sample data |
+| Deps | 🟡 TypeScript 5.9; still on CRA (Vite migration open); react-router not yet upgraded |
+
 Date: 2026-10-04 · Branch: `new-design` (`f422d5f`) · Scope: invoice module in depth, resume module and tooling at a high level.
 
 ## How this was verified

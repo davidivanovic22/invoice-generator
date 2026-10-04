@@ -85,7 +85,7 @@ export const InvoiceListPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Invoices</h1>
           <p className="mt-1 text-sm text-slate-500">Everything is saved in this browser. Export a backup now and then.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button icon="upload" onClick={() => fileRef.current?.click()}>
             Import
           </Button>

@@ -113,7 +113,7 @@ export const InvoiceEditorPage = () => {
             <Icon name="chevronLeft" />
             <span className="hidden sm:inline">Invoices</span>
           </Link>
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="hidden min-w-0 items-center gap-2 sm:flex">
             <h1 className="truncate text-[15px] font-semibold text-slate-900">Invoice {invoice.number}</h1>
             <StatusBadge invoice={invoice} />
           </div>
@@ -140,14 +140,14 @@ export const InvoiceEditorPage = () => {
       </div>
 
       <div className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(420px,560px)_1fr]">
-        <div className={`space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
+        <div className={`min-w-0 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : ''}`}>
           <ClientSection invoice={invoice} clients={store.clients} invoices={store.invoices} onChange={onChange} onCommit={saveClient} />
           <ItemsSection invoice={invoice} defaultUnit={store.profile.defaults.unit} onChange={onChange} />
           <DetailsSection invoice={invoice} invoices={store.invoices} numberPrefix={store.profile.defaults.numberPrefix} onChange={onChange} />
           <DesignSection invoice={invoice} profile={store.profile} onChange={(design) => onChange({ design })} />
           <FromSection invoice={invoice} profile={store.profile} onChange={onChange} />
         </div>
-        <div className={mobileView === 'edit' ? 'hidden lg:block' : ''}>
+        <div className={`min-w-0 ${mobileView === 'edit' ? 'hidden lg:block' : ''}`}>
           <div className="sticky top-[124px] max-h-[calc(100vh-140px)] overflow-y-auto rounded-xl pb-2 lg:pr-1">
             <div className="overflow-hidden rounded-xl shadow-[0_1px_3px_rgba(15,23,42,0.08),0_12px_40px_-12px_rgba(15,23,42,0.25)] ring-1 ring-slate-200">
               <A4Preview>
