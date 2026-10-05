@@ -142,7 +142,7 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
       <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Signature')}</div>
       {drawing ? (
         <div>
-          <div className="relative overflow-hidden rounded-xl bg-slate-50 ring-1 ring-inset ring-slate-200">
+          <div className="light-scope relative overflow-hidden rounded-xl bg-slate-50 ring-1 ring-inset ring-slate-200">
             <div className="pointer-events-none absolute bottom-7 left-6 right-6 border-t border-dashed border-slate-300" />
             <span className="pointer-events-none absolute bottom-2 left-6 text-[11px] text-slate-400">{t('Sign above the line with your mouse or finger')}</span>
             <SignatureCanvas

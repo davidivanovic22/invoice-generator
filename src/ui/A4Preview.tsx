@@ -33,7 +33,7 @@ export const A4Preview = ({ children, maxScale = 1 }: { children: ReactNode; max
     // items-start matters: with the default stretch, the inner box would take the outer box's height,
     // which is itself derived from the inner box, and the two would collapse to zero.
     <div ref={outerRef} className="flex w-full items-start justify-center" style={{ height: height * scale }}>
-      <div ref={innerRef} style={{ width: A4_WIDTH, flexShrink: 0, transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+      <div ref={innerRef} className="light-scope" style={{ width: A4_WIDTH, flexShrink: 0, transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {children}
       </div>
     </div>
@@ -44,7 +44,7 @@ export const A4Preview = ({ children, maxScale = 1 }: { children: ReactNode; max
 export const A4Thumbnail = ({ children, width = 150 }: { children: ReactNode; width?: number }) => {
   const scale = width / A4_WIDTH;
   return (
-    <div style={{ width, height: A4_HEIGHT * scale, overflow: 'hidden', position: 'relative' }} aria-hidden="true">
+    <div className="light-scope" style={{ width, height: A4_HEIGHT * scale, overflow: 'hidden', position: 'relative' }} aria-hidden="true">
       <div
         style={{ width: A4_WIDTH, height: A4_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left', pointerEvents: 'none' }}
         // Thumbnails must not be picked up by the PDF exporter.

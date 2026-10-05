@@ -906,5 +906,12 @@ export const SR: Record<string, string> = {
   "Writing…": "Pišem…",
   "Your cover letter will appear here. You can also write or paste it yourself.": "Ovde će se pojaviti propratno pismo. Možeš ga i sam napisati ili zalepiti.",
   "Write again": "Napiši ponovo",
-  "Write with AI": "Napiši uz AI"
+  "Write with AI": "Napiši uz AI",
+
+  // Theme and updates
+  "Dark theme": "Tamna tema (klikni: prati sistem)",
+  "Light theme": "Svetla tema (klikni: tamna)",
+  "Theme follows the system": "Tema prati sistem (klikni: svetla)",
+  "A new version is ready.": "Nova verzija je spremna.",
+  "Update": "Osveži"
 };

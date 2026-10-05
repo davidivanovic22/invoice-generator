@@ -5,6 +5,11 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { registerServiceWorker } from './serviceWorkerRegistration';
+import { applyTheme, watchSystemTheme } from './ui/theme';
+
+// Before the first paint, so dark mode does not flash white.
+applyTheme();
+watchSystemTheme();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

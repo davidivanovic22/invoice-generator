@@ -94,7 +94,7 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
           </div>
         </div>
       </div>
-      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
+      <div className="light-scope pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
         <div ref={printRef}>
           <div data-pdf-page className="box-border w-[210mm] bg-white px-[22mm] py-[20mm] font-sans text-[11pt] leading-relaxed text-slate-900" style={{ minHeight: '297mm' }}>
             <div className="border-b border-slate-200 pb-4">

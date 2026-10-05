@@ -47,7 +47,10 @@ export type IconName =
   | 'languages'
   | 'lock'
   | 'shield'
-  | 'folder';
+  | 'folder'
+  | 'sun'
+  | 'moon'
+  | 'monitor';
 
 const paths: Record<IconName, string> = {
   plus: 'M12 5v14M5 12h14',
@@ -60,6 +63,9 @@ const paths: Record<IconName, string> = {
   x: 'M6 6l12 12M18 6L6 18',
   lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
   shield: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4',
+  sun: 'M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
+  monitor: 'M3 5h18v11H3zM8 20h8M12 16v4',
   folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   chevronDown: 'M6 9l6 6 6-6',
   chevronLeft: 'M15 6l-6 6 6 6',

@@ -286,7 +286,7 @@ export const KpoPage = () => {
       </div>
 
       {/* Printable copy for the PDF export */}
-      <div className="pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
+      <div className="light-scope pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
         <div ref={printRef}>
           <KpoPrint book={book} year={year} includePlanned={includePlanned} />
         </div>

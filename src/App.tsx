@@ -21,6 +21,7 @@ import { LanguageProvider, t, useLanguage } from './i18n';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { FeedbackProvider, useFeedback } from './ui/Feedback';
 import { Icon } from './ui/Icon';
+import { readTheme, saveTheme, type ThemeChoice } from './ui/theme';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
@@ -86,6 +87,28 @@ const AccountButton = () => {
   );
 };
 
+const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
+
+const ThemeSwitch = () => {
+  const [choice, setChoice] = useState<ThemeChoice>(readTheme);
+  const label = choice === 'dark' ? t('Dark theme') : choice === 'light' ? t('Light theme') : t('Theme follows the system');
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const next = THEME_NEXT[choice];
+        saveTheme(next);
+        setChoice(next);
+      }}
+      title={label}
+      aria-label={label}
+      className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+    >
+      <Icon name={choice === 'dark' ? 'moon' : choice === 'light' ? 'sun' : 'monitor'} />
+    </button>
+  );
+};
+
 const Header = ({ onSearch }: { onSearch: () => void }) => (
   <header className="sticky top-0 z-30 h-14 border-b border-slate-200 bg-white/90 backdrop-blur print:hidden">
     <div className="mx-auto flex h-full max-w-[1600px] items-center gap-2 px-4 sm:gap-4 sm:px-6">
@@ -120,6 +143,7 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <kbd className="hidden rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-400 shadow-sm sm:inline">Ctrl K</kbd>
       </button>
       <LanguageSwitch />
+      <ThemeSwitch />
       <AiStatus />
       <NavLink
         to="/profile"
