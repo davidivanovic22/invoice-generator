@@ -10,11 +10,15 @@ type Props = {
   /** Replaces the plain name input, e.g. with the client search. */
   nameSlot?: ReactNode;
   showEmail?: boolean;
+  /** Your own business in Serbia: always PIB and Matični broj, so the label fields are hidden. */
+  ownBusiness?: boolean;
 };
 
-export const PartyFields = ({ party, onChange, nameSlot, showEmail = true }: Props) => {
+export const PartyFields = ({ party, onChange, nameSlot, showEmail = true, ownBusiness = false }: Props) => {
   const set = (field: keyof Party) => (value: string) => onChange({ ...party, [field]: value });
-  const [more, setMore] = useState(Boolean(party.regNo || party.email || party.taxIdLabel || party.regIdLabel));
+  const [more, setMore] = useState(Boolean(party.regNo || party.email || (!ownBusiness && (party.taxIdLabel || party.regIdLabel))));
+  const taxLabel = ownBusiness ? t('Tax ID (PIB)') : party.taxIdLabel || t('Tax ID (PIB)');
+  const regLabel = ownBusiness ? t('Company reg. no. (MB)') : party.regIdLabel || t('Company reg. no. (MB)');
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="col-span-2">
@@ -22,16 +26,32 @@ export const PartyFields = ({ party, onChange, nameSlot, showEmail = true }: Pro
       </div>
       <TextField wrapperClassName="col-span-2" label={t('Street address')} value={party.address} onChange={set('address')} placeholder="Knez Mihailova 1" autoComplete="street-address" />
       <TextField label={t('City and country')} value={party.cityCountry} onChange={set('cityCountry')} placeholder="11000 Beograd, Srbija" />
-      <TextField label={party.taxIdLabel || t('Tax ID (PIB / VAT)')} value={party.taxId} onChange={set('taxId')} placeholder="123456789" inputMode="numeric" />
+      <TextField label={taxLabel} value={party.taxId} onChange={set('taxId')} placeholder="123456789" inputMode="numeric" />
       <div className="col-span-2">
         <MoreToggle open={more} onToggle={() => setMore((value) => !value)} label={t('Registration number, email and more')} />
       </div>
       {more && (
         <>
-          <TextField label={party.regIdLabel || t('Company reg. no. (MB)')} value={party.regNo} onChange={set('regNo')} placeholder="12345678" inputMode="numeric" />
+          <TextField label={regLabel} value={party.regNo} onChange={set('regNo')} placeholder="12345678" inputMode="numeric" />
           {showEmail && <TextField type="email" label={t('Email')} value={party.email} onChange={set('email')} placeholder="billing@acme.com" />}
-          <TextField label={t('Label for tax ID')} hint={t('e.g. OIB for Croatia, VAT for the EU')} value={party.taxIdLabel} onChange={set('taxIdLabel')} placeholder={t('Tax ID')} />
-          <TextField label={t('Label for reg. no.')} value={party.regIdLabel} onChange={set('regIdLabel')} placeholder={t('Reg. no.')} />
+          {!ownBusiness && (
+            <>
+              <TextField
+                label={t('Label for tax ID')}
+                hint={t('Printed before the number. Leave empty for "PIB" (Serbian invoice) or "Tax ID" (English invoice); for a foreign client you can write e.g. VAT ID.')}
+                value={party.taxIdLabel}
+                onChange={set('taxIdLabel')}
+                placeholder="PIB"
+              />
+              <TextField
+                label={t('Label for reg. no.')}
+                hint={t('Leave empty for "Matični broj".')}
+                value={party.regIdLabel}
+                onChange={set('regIdLabel')}
+                placeholder={t('Company reg. no. (MB)')}
+              />
+            </>
+          )}
         </>
       )}
     </div>

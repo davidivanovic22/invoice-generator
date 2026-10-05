@@ -48,7 +48,7 @@ export const exportForAccountant = async (store: InvoiceStore, year: number) => 
     { header: 'Datum prometa', key: 'serviceDate', width: 16 },
     { header: 'Rok plaćanja', key: 'dueDate', width: 14 },
     { header: 'Klijent', key: 'client', width: 32 },
-    { header: 'PIB / VAT klijenta', key: 'clientTaxId', width: 18 },
+    { header: 'PIB klijenta', key: 'clientTaxId', width: 18 },
     { header: 'Mesto i država', key: 'clientCountry', width: 24 },
     { header: 'Valuta', key: 'currency', width: 9 },
     { header: 'Iznos', key: 'total', width: 14 },

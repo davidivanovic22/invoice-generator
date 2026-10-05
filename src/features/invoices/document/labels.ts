@@ -22,8 +22,9 @@ const dictionary = {
   reference: ['Reference', 'Poziv na broj'],
   notes: ['Notes', 'Napomena'],
   signature: ['Authorized signature', 'Potpis'],
-  taxId: ['VAT ID', 'PIB'],
-  regNo: ['Reg. no.', 'MB'],
+  // PIB is a tax ID, not a VAT number: flat-rate businesses are outside the VAT system.
+  taxId: ['Tax ID', 'PIB'],
+  regNo: ['Company reg. no.', 'Matični broj'],
   email: ['Email', 'Email'],
   paid: ['Paid', 'Plaćeno'],
   thankYou: ['Thank you for your business.', 'Hvala na saradnji.']

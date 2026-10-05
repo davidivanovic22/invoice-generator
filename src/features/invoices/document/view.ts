@@ -13,12 +13,13 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
   const date = (iso: string) => (language === 'en' ? formatDate(iso, 'en-GB') : formatDateNumeric(iso));
   const quantity = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 4 }).format(value);
 
-  const partyLines = (party: Party) =>
+  /** Your own business always shows PIB / Tax ID and Matični broj; a client may use its own labels. */
+  const partyLines = (party: Party, own = false) =>
     [
       party.address,
       party.cityCountry,
-      party.taxId && `${party.taxIdLabel || t('taxId')}: ${party.taxId}`,
-      party.regNo && `${party.regIdLabel || t('regNo')}: ${party.regNo}`,
+      party.taxId && `${(!own && party.taxIdLabel) || t('taxId')}: ${party.taxId}`,
+      party.regNo && `${(!own && party.regIdLabel) || t('regNo')}: ${party.regNo}`,
       party.email
     ].filter(Boolean) as string[];
 
@@ -54,7 +55,7 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
     accent: invoice.design.accentColor,
     number: invoice.number,
     isPaid: invoice.status === 'paid',
-    issuer: { name: invoice.issuer.name, lines: partyLines(invoice.issuer) },
+    issuer: { name: invoice.issuer.name, lines: partyLines(invoice.issuer, true) },
     client: { name: invoice.client.name, lines: partyLines(invoice.client) },
     meta,
     lines,

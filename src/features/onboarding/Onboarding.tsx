@@ -160,7 +160,7 @@ export const Onboarding = () => {
               <TextField wrapperClassName="col-span-2" label={t('Name or company')} value={party.name} onChange={set('name')} placeholder={t('e.g. Marko Petrović PR')} autoFocus />
               <TextField wrapperClassName="col-span-2" label={t('Street address')} value={party.address} onChange={set('address')} placeholder="Knez Mihailova 1" />
               <TextField label={t('City and country')} value={party.cityCountry} onChange={set('cityCountry')} placeholder="11000 Beograd, Srbija" />
-              <TextField label={t('Tax ID (PIB / VAT)')} value={party.taxId} onChange={set('taxId')} placeholder="123456789" inputMode="numeric" />
+              <TextField label={t('Tax ID (PIB)')} value={party.taxId} onChange={set('taxId')} placeholder="123456789" inputMode="numeric" />
               <TextField label={t('IBAN / account number')} value={iban} onChange={setIban} placeholder="RS35 1050 0812 3123 1231 23" />
               <SelectField
                 label={t('Usual currency')}

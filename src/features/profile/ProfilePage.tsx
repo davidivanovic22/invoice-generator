@@ -38,7 +38,7 @@ export const ProfilePage = () => {
 
       <div className="mt-6 space-y-4">
         <Section title={t('Your business')} icon="building" description={t('Shown as the issuer on every invoice')}>
-          <PartyFields party={profile.party} onChange={(party) => set({ party })} />
+          <PartyFields party={profile.party} onChange={(party) => set({ party })} ownBusiness />
         </Section>
 
         <Section title={t('Bank account')} icon="cash" description={t('Printed in the payment details')}>

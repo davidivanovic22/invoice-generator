@@ -40,7 +40,7 @@ export const FromSection = ({ invoice, profile, onChange, onProfileChange, force
         </Link>
         . {t('Changes here apply to this invoice only.')}
       </p>
-      <PartyFields party={invoice.issuer} onChange={(issuer: Party) => onChange({ issuer })} />
+      <PartyFields party={invoice.issuer} onChange={(issuer: Party) => onChange({ issuer })} ownBusiness />
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
         <TextField wrapperClassName="col-span-2" label={t('IBAN / account number')} value={invoice.bank.iban} onChange={setBank('iban')} placeholder="RS35 1050 0812 3123 1231 23" />
         <TextField label="SWIFT / BIC" value={invoice.bank.swift} onChange={setBank('swift')} />
