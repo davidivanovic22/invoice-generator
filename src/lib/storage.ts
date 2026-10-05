@@ -64,7 +64,15 @@ const isQuotaError = (error: unknown) =>
   error instanceof DOMException &&
   (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED' || error.code === 22);
 
+let writesSuspended = false;
+
+/** Stops all saving until the page reloads, so a restore is not overwritten by the open app. */
+export const suspendWrites = () => {
+  writesSuspended = true;
+};
+
 export const writeJson = (key: string, value: unknown): boolean => {
+  if (writesSuspended) return false;
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;

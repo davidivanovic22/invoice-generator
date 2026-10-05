@@ -1,5 +1,8 @@
 import { useCallback, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
+import { AccountGate, useAccount } from './features/account/AccountGate';
+import { AccountPage } from './features/account/AccountPage';
+import { AutoBackup } from './features/account/AutoBackup';
 import { AiProvider, useAi } from './features/ai/AiSettings';
 import { CommandPalette, useCommandShortcut } from './features/command/CommandPalette';
 import { HomePage } from './features/home/HomePage';
@@ -55,6 +58,31 @@ const LanguageSwitch = () => {
   );
 };
 
+const AccountButton = () => {
+  const { lock, lockNow } = useAccount();
+  return (
+    <div className="flex items-center">
+      <NavLink
+        to="/account"
+        title={t('Account & backup')}
+        className={({ isActive }) => `flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+      >
+        {lock?.name ? (
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-semibold uppercase text-indigo-700">{lock.name.slice(0, 1)}</span>
+        ) : (
+          <Icon name="shield" />
+        )}
+        <span className="hidden xl:inline">{lock?.name || t('Account')}</span>
+      </NavLink>
+      {lock && (
+        <button type="button" onClick={lockNow} title={t('Lock now')} aria-label={t('Lock now')} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
+          <Icon name="lock" />
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Header = ({ onSearch }: { onSearch: () => void }) => (
   <header className="sticky top-0 z-30 h-14 border-b border-slate-200 bg-white/90 backdrop-blur print:hidden">
     <div className="mx-auto flex h-full max-w-[1600px] items-center gap-2 px-4 sm:gap-4 sm:px-6">
@@ -92,6 +120,7 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <Icon name="building" />
         <span className="hidden xl:inline">{t('Business profile')}</span>
       </NavLink>
+      <AccountButton />
     </div>
   </header>
 );
@@ -103,6 +132,7 @@ const Shell = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header onSearch={openSearch} />
+      <AutoBackup />
       <main className="flex flex-1 flex-col">
         <ErrorBoundary>
           <Routes>
@@ -110,6 +140,7 @@ const Shell = () => {
             <Route path="/invoices" element={<InvoiceListPage />} />
             <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -125,17 +156,19 @@ const Shell = () => {
 function App() {
   return (
     <LanguageProvider>
-      <BrowserRouter>
-        <FeedbackProvider>
-          <AiProvider>
-            <InvoiceStoreProvider>
-              <ResumeStoreProvider>
-                <Shell />
-              </ResumeStoreProvider>
-            </InvoiceStoreProvider>
-          </AiProvider>
-        </FeedbackProvider>
-      </BrowserRouter>
+      <AccountGate>
+        <BrowserRouter>
+          <FeedbackProvider>
+            <AiProvider>
+              <InvoiceStoreProvider>
+                <ResumeStoreProvider>
+                  <Shell />
+                </ResumeStoreProvider>
+              </InvoiceStoreProvider>
+            </AiProvider>
+          </FeedbackProvider>
+        </BrowserRouter>
+      </AccountGate>
     </LanguageProvider>
   );
 }
