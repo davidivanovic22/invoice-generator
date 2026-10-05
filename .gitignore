@@ -22,9 +22,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# large/unused design assets (kept locally, not shipped)
-/public/invoice-watermarks/
-/public/monthly-themes/
+# large source design assets, kept locally outside public/ so they are never shipped
+/design-assets/
 /public/*.zip
 /design-review/
 /sample-invoices-2026/

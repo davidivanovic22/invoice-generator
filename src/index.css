@@ -10,7 +10,8 @@
   }
 
   body {
-    @apply bg-slate-100 text-slate-900 antialiased;
+    @apply text-slate-900 antialiased;
+    background-color: rgb(var(--c-page));
   }
 }
 
@@ -21,5 +22,29 @@
 
   body {
     background: white !important;
+  }
+}
+@layer utilities {
+  /* Clickable parts of the live preview. */
+  .editable-preview [data-edit] {
+    cursor: pointer;
+    border-radius: 6px;
+    transition: box-shadow 120ms ease;
+  }
+  .editable-preview [data-edit]:hover {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45);
+  }
+  .flash-highlight {
+    animation: flash-highlight 1.5s ease-out;
+  }
+}
+
+@keyframes flash-highlight {
+  0%,
+  35% {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0);
   }
 }

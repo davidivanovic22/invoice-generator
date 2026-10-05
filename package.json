@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@supabase/supabase-js": "^2.117.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -11,22 +18,40 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.13.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",
     "react-scripts": "5.0.1",
     "react-signature-canvas": "^1.1.0-alpha.2",
-    "typescript": "^4.9.5",
-    "web-vitals": "^2.1.4"
+    "typescript": "5.9",
+    "web-vitals": "^2.1.4",
+    "workbox-core": "^6.6.0",
+    "workbox-expiration": "^6.6.0",
+    "workbox-precaching": "^6.6.0",
+    "workbox-routing": "^6.6.0",
+    "workbox-strategies": "^6.6.0",
+    "zod": "^4.6.5"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false",
+    "typecheck": "tsc --noEmit",
     "eject": "react-scripts eject",
-    "eslint-fix": "eslint --fix"
+    "eslint-fix": "eslint --fix",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,storage-api,realtime,postgres-meta,supavisor",
+    "db:stop": "supabase stop",
+    "db:test": "node supabase/tests/rls.test.mjs"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/node_modules/react-router-dom/dist/index.js",
+      "^react-router$": "<rootDir>/node_modules/react-router/dist/development/index.js",
+      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js"
+    }
   },
   "eslintConfig": {
     "extends": [
@@ -48,7 +73,14 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.27",
+    "playwright": "^1.63.0",
     "postcss": "^8.5.8",
+    "supabase": "^2.119.0",
     "tailwindcss": "^3.4.19"
+  },
+  "overrides": {
+    "react-scripts": {
+      "typescript": "$typescript"
+    }
   }
 }
