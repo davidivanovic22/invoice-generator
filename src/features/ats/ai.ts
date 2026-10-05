@@ -179,6 +179,89 @@ export const suggestionLabel = (resume: Resume, suggestion: Suggestion): string 
   return item ? [item.title, item.subtitle].filter(Boolean).join(' · ') : t('Experience');
 };
 
+/* ------------------------------ tailor to a job ad ------------------------------ */
+
+export type TailorStep = 'reading' | 'rewriting' | 'letter';
+
+export type TailorResult = {
+  resume: Resume;
+  applied: number;
+  /** Job-ad skills the resume does not prove; the user decides whether to add them. */
+  unproven: string[];
+  roleTitle: string;
+};
+
+/**
+ * Makes a copy of the resume tailored to one job ad: extracts the ad's
+ * keywords, then applies every safe rewrite (headline, summary, bullets,
+ * skills already shown). Unproven skills are returned, never added.
+ */
+export const tailorResume = async (
+  resume: Resume,
+  jobDescription: string,
+  company: string,
+  onStep: (step: TailorStep) => void,
+  analyze: (resume: Resume) => AtsReport,
+  signal?: AbortSignal
+): Promise<TailorResult> => {
+  onStep('reading');
+  const keywords = await extractJobKeywords(resume, jobDescription, signal);
+  const now = new Date().toISOString();
+  const label = [keywords.roleTitle.trim(), company.trim()].filter(Boolean).join(' — ');
+  let copy: Resume = {
+    ...resume,
+    id: createId(),
+    name: label || `${resume.name} (${resume.design.language === 'sr' ? 'prilagođen' : 'tailored'})`,
+    ats: { jobDescription, keywords: keywords.keywords, keywordsSource: jobDescription },
+    coverLetter: undefined,
+    createdAt: now,
+    updatedAt: now
+  };
+  onStep('rewriting');
+  const suggestions = await suggestImprovements(copy, analyze(copy), signal);
+  let applied = 0;
+  const unproven: string[] = [];
+  for (const suggestion of suggestions) {
+    if (suggestion.type === 'skills_confirm') {
+      unproven.push(...suggestion.skills);
+      continue;
+    }
+    copy = applySuggestion(copy, suggestion);
+    applied += 1;
+  }
+  return { resume: copy, applied, unproven: Array.from(new Set(unproven)), roleTitle: keywords.roleTitle };
+};
+
+const LetterSchema = z.object({
+  letter: z.string().describe('The complete cover letter: greeting, 3-4 short paragraphs, closing and the candidate name. Plain text, paragraphs separated by a blank line.')
+});
+
+const LETTER_SYSTEM = `You write short, specific cover letters that recruiters actually read.
+
+Rules:
+1. 180-280 words. Greeting, 3-4 short paragraphs, a closing line and the candidate's name.
+2. Open with the exact role and one concrete reason this candidate fits; no clichés such as "I am writing to apply" or "I believe I would be a great fit".
+3. Connect 2-3 real achievements or skills from the resume to the most important requirements in the job ad. Never invent facts, employers, numbers or skills.
+4. If the company name is known, use it and mention something from the ad about the team or product; otherwise address the hiring team.
+5. Confident, warm, plain language. No bullet points.
+6. Write the letter in the language of the job ad (Serbian Latin script for Serbian ads).`;
+
+export const writeCoverLetter = (resume: Resume, jobDescription: string, company: string, signal?: AbortSignal) =>
+  callStructured({
+    schema: LetterSchema,
+    effort: 'medium',
+    maxTokens: 6000,
+    signal,
+    system: LETTER_SYSTEM,
+    content: [
+      { type: 'text', text: `<job_ad${company.trim() ? ` company="${company.trim().replace(/"/g, "'")}"` : ''}>\n${jobDescription}\n</job_ad>` },
+      {
+        type: 'text',
+        text: `<resume>\n${JSON.stringify({ ...resumeForPrompt(resume), contact: { email: resume.personal.email, phone: resume.personal.phone } })}\n</resume>\nWrite the cover letter.`
+      }
+    ]
+  }).then((result) => result.letter.trim());
+
 /* ------------------------------ import ------------------------------ */
 
 const IMPORT_KINDS = Object.keys(SECTION_KINDS) as [SectionKind, ...SectionKind[]];

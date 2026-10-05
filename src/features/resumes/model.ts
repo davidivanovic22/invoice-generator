@@ -82,6 +82,8 @@ export type Resume = {
   sections: ResumeSection[];
   design: ResumeDesign;
   ats: AtsSettings;
+  /** Cover letter written for this resume's job ad. */
+  coverLetter?: string;
   createdAt: string;
   updatedAt: string;
 };

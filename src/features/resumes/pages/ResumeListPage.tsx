@@ -11,6 +11,7 @@ import { Menu } from '../../../ui/Menu';
 import { ResumeDocument } from '../document/ResumeDocument';
 import { RESUME_TEMPLATES } from '../document/templates';
 import { resumeDisplayName } from '../model';
+import { TailorDialog } from '../../ats/TailorDialog';
 import { NewResumeDialog } from '../NewResumeDialog';
 import { useResumeStore } from '../store';
 
@@ -19,6 +20,7 @@ export const ResumeListPage = () => {
   const { toast } = useFeedback();
   const navigate = useNavigate();
   const [choosing, setChoosing] = useState<false | 'choose' | 'import'>(false);
+  const [tailoring, setTailoring] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -102,6 +104,7 @@ export const ResumeListPage = () => {
                 label={t('Resume options')}
                 items={[
                   { label: t('Open'), icon: 'pen', onSelect: () => navigate(`/resumes/${resume.id}`) },
+                  { label: t('Tailor to a job ad'), icon: 'sparkle', onSelect: () => setTailoring(resume.id) },
                   {
                     label: t('Duplicate'),
                     icon: 'copy',
@@ -127,6 +130,9 @@ export const ResumeListPage = () => {
         ))}
       </div>
 
+      {tailoring && store.resumes.some((resume) => resume.id === tailoring) && (
+        <TailorDialog resume={store.resumes.find((resume) => resume.id === tailoring)!} onClose={() => setTailoring(null)} />
+      )}
       {choosing && <NewResumeDialog startWithImport={choosing === 'import'} onClose={() => setChoosing(false)} />}
     </div>
   );

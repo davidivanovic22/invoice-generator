@@ -183,6 +183,7 @@ const normalizeResume = (raw: Partial<Resume>): Resume => {
     // Resumes saved before the language option existed were written in English.
     design: createDesign({ language: 'en', ...raw.design }),
     ats: createAts(raw.ats),
+    ...(typeof raw.coverLetter === 'string' && raw.coverLetter ? { coverLetter: raw.coverLetter } : {}),
     createdAt: raw.createdAt ?? now,
     updatedAt: raw.updatedAt ?? now
   };

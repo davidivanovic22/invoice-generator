@@ -10,6 +10,8 @@ import { useFeedback } from '../../../ui/Feedback';
 import { Icon } from '../../../ui/Icon';
 import { EmptyState } from '../../../ui/Layout';
 import { AtsPanel } from '../../ats/AtsPanel';
+import { CoverLetterDialog } from '../../ats/CoverLetterDialog';
+import { TailorDialog } from '../../ats/TailorDialog';
 import { analyzeResume, type AtsIssue } from '../../ats/analyze';
 import { scoreColor } from '../../ats/ScoreRing';
 import { ResumeDocument } from '../document/ResumeDocument';
@@ -73,6 +75,7 @@ export const ResumeEditorPage = () => {
   const [focus, setFocus] = useState<Focus | null>(null);
   const atsScore = useMemo(() => (resume ? analyzeResume(resume).score : 0), [resume]);
   const [exporting, setExporting] = useState(false);
+  const [dialog, setDialog] = useState<null | 'tailor' | 'letter'>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
@@ -181,6 +184,9 @@ export const ResumeEditorPage = () => {
           </>
         }
         menu={[
+          { label: t('Tailor to a job ad'), icon: 'sparkle', onSelect: () => setDialog('tailor') },
+          { label: t('Cover letter'), icon: 'mail', onSelect: () => setDialog('letter') },
+          'divider',
           {
             label: t('Duplicate'),
             icon: 'copy',
@@ -196,6 +202,9 @@ export const ResumeEditorPage = () => {
           { label: t('Delete resume'), icon: 'trash', danger: true, onSelect: handleDelete }
         ]}
       >
+        <Button icon="sparkle" onClick={() => setDialog('tailor')} title={t('Tailor to a job ad')} aria-label={t('Tailor to a job ad')}>
+          <span className="hidden md:inline">{t('Tailor to job')}</span>
+        </Button>
         <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting}>
           <span className="hidden sm:inline">{t('Download PDF')}</span>
           <span className="sm:hidden">PDF</span>
@@ -287,6 +296,8 @@ export const ResumeEditorPage = () => {
           </div>
         </div>
       </div>
+      {dialog === 'tailor' && <TailorDialog resume={resume} onClose={() => setDialog(null)} />}
+      {dialog === 'letter' && <CoverLetterDialog resume={resume} onClose={() => setDialog(null)} />}
     </div>
   );
 };
