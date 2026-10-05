@@ -134,6 +134,25 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
   </header>
 );
 
+/** Offers to switch to a newly downloaded version of the app. */
+const UpdateBanner = () => {
+  const [activate, setActivate] = useState<(() => void) | null>(null);
+  useEffect(() => {
+    const onUpdate = (event: Event) => setActivate(() => (event as CustomEvent<() => void>).detail);
+    window.addEventListener('app-update', onUpdate);
+    return () => window.removeEventListener('app-update', onUpdate);
+  }, []);
+  if (!activate) return null;
+  return (
+    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-xl print:hidden">
+      {t('A new version is ready.')}
+      <button type="button" onClick={activate} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100">
+        {t('Update')}
+      </button>
+    </div>
+  );
+};
+
 /** Prepares due recurring invoices once per app start (and hourly while open). */
 const RecurringInvoices = () => {
   const { runRecurring } = useInvoiceStore();
@@ -159,6 +178,7 @@ const Shell = () => {
       <Header onSearch={openSearch} />
       <AutoBackup />
       <RecurringInvoices />
+      <UpdateBanner />
       <main className="flex flex-1 flex-col">
         <ErrorBoundary>
           <Routes>
