@@ -198,14 +198,15 @@ const NUMBER_PATTERN = /^(.*?)(\d{4})-(\d+)$/;
 export const nextInvoiceNumber = (invoices: Invoice[], prefix: string, issueDate = todayIso()): string => {
   const year = issueDate.slice(0, 4);
   let highest = 0;
-  let width = 3;
+  // Follow the user's own style (2026-01 vs 2026-001); three digits only for a new series.
+  let width = 0;
   for (const invoice of invoices) {
     const match = NUMBER_PATTERN.exec(invoice.number.trim());
     if (!match || match[1] !== prefix || match[2] !== year) continue;
     highest = Math.max(highest, Number(match[3]));
     width = Math.max(width, match[3].length);
   }
-  return `${prefix}${year}-${String(highest + 1).padStart(width, '0')}`;
+  return `${prefix}${year}-${String(highest + 1).padStart(width || 3, '0')}`;
 };
 
 export const isNumberTaken = (invoices: Invoice[], number: string, exceptId?: string) =>
@@ -375,3 +376,39 @@ export const paidIncomeEur = (invoices: Invoice[], year: number, rsdPerEur: numb
   }
   return { total, skipped };
 };
+
+/* ---------- Invoicing abroad ---------- */
+
+/** Ready-made notes for invoices, per document language. */
+export const NOTE_PRESETS: { id: string; label: string; text: Record<DocLanguage, string> }[] = [
+  {
+    id: 'vat',
+    label: 'Not in the VAT system',
+    text: {
+      sr: 'Obveznik nije u sistemu PDV-a.',
+      en: 'The issuer is not registered for VAT.',
+      'en-sr': 'Obveznik nije u sistemu PDV-a. / The issuer is not registered for VAT.'
+    }
+  },
+  {
+    id: 'reference',
+    label: 'Quote the invoice number',
+    text: {
+      sr: 'Prilikom uplate navedite broj fakture.',
+      en: 'Please quote the invoice number with your payment.',
+      'en-sr': 'Prilikom uplate navedite broj fakture. / Please quote the invoice number with your payment.'
+    }
+  },
+  {
+    id: 'stamp',
+    label: 'Valid without stamp and signature',
+    text: {
+      sr: 'Faktura je važeća bez pečata i potpisa.',
+      en: 'This invoice is valid without a stamp or signature.',
+      'en-sr': 'Faktura je važeća bez pečata i potpisa. / This invoice is valid without a stamp or signature.'
+    }
+  }
+];
+
+/** A client in Serbia: invoices to Serbian businesses go through SEF, not this app. */
+export const isDomesticClient = (party: Party) => /(^|[^a-z])(srbija|serbia|србија)([^a-z]|$)/i.test(party.cityCountry);

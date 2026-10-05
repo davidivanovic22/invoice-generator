@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { writeJson } from '../../lib/storage';
 import { createId } from '../../lib/files';
+import { logAudit } from '../../lib/audit';
 import { DocHistory } from '../../lib/history';
 import { todayIso } from '../../lib/dates';
 import { loadInvoiceStore, migrateLegacy, normalizeStore, STORE_KEY } from './migrate';
@@ -93,6 +94,7 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   const createInvoiceAction = useCallback((overrides?: Partial<Invoice>) => {
     const invoice = createInvoice(storeRef.current, overrides);
     setStore((current) => ({ ...current, invoices: [invoice, ...current.invoices] }));
+    logAudit('invoice.created', invoice.number);
     return invoice;
   }, []);
 
@@ -101,6 +103,7 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
     if (!source) return null;
     const copy = duplicateInvoice(storeRef.current, source);
     setStore((current) => ({ ...current, invoices: [copy, ...current.invoices] }));
+    logAudit('invoice.created', copy.number, `copy of ${source.number}`);
     return copy;
   }, []);
 
@@ -108,7 +111,10 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
 
   const updateInvoice = useCallback((id: string, update: Updater<Invoice>, options?: { record?: boolean }) => {
     const before = storeRef.current.invoices.find((invoice) => invoice.id === id);
-    if (before && options?.record !== false) history.record(id, before);
+    if (before && options?.record !== false) {
+      history.record(id, before);
+      logAudit('invoice.edited', before.number);
+    }
     setStore((current) => ({
       ...current,
       invoices: current.invoices.map((invoice) => (invoice.id === id ? touch(apply(invoice, update)) : invoice))
@@ -118,10 +124,12 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   const deleteInvoice = useCallback((id: string) => {
     const removed = storeRef.current.invoices.find((invoice) => invoice.id === id);
     setStore((current) => ({ ...current, invoices: current.invoices.filter((invoice) => invoice.id !== id) }));
+    if (removed) logAudit('invoice.deleted', removed.number);
     return removed;
   }, []);
 
   const restoreInvoice = useCallback((invoice: Invoice) => {
+    logAudit('invoice.restored', invoice.number);
     setStore((current) => (current.invoices.some((item) => item.id === invoice.id) ? current : { ...current, invoices: [invoice, ...current.invoices] }));
   }, []);
 
@@ -151,12 +159,19 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   const canRedo = useCallback((id: string) => history.canRedo(id), [history]);
 
   const setStatus = useCallback(
-    (id: string, status: InvoiceStatus) =>
-      updateInvoice(id, (invoice) => ({ ...invoice, status, paidAt: status === 'paid' ? invoice.paidAt ?? todayIso() : null })),
-    [updateInvoice]
+    (id: string, status: InvoiceStatus) => {
+      const invoice = storeRef.current.invoices.find((item) => item.id === id);
+      if (!invoice) return;
+      // Undoable, but logged as a status change rather than an edit.
+      history.record(id, invoice);
+      if (invoice.status !== status) logAudit('invoice.status', invoice.number, status);
+      updateInvoice(id, (current) => ({ ...current, status, paidAt: status === 'paid' ? current.paidAt ?? todayIso() : null }), { record: false });
+    },
+    [updateInvoice, history]
   );
 
   const updateProfile = useCallback((update: Updater<BusinessProfile>) => {
+    logAudit('profile.edited', 'profile');
     setStore((current) => ({ ...current, profile: apply(current.profile, update) }));
   }, []);
 
@@ -208,6 +223,7 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
       clients: [...current.clients, ...newClients],
       profile: current.profile.party.name ? current.profile : incoming.profile
     });
+    if (fresh.length) logAudit('invoice.imported', String(fresh.length));
     return { added: fresh.length, skipped: incoming.invoices.length - fresh.length };
   }, []);
 

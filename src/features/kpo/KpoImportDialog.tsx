@@ -7,6 +7,7 @@ import { useFeedback } from '../../ui/Feedback';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
 import { importKpoFile, type ParsedBook } from './importKpo';
+import { logAudit } from '../../lib/audit';
 import { useInvoiceStore } from '../invoices/store';
 import { bookableInvoices, createEntry, entryTotal, round2, type KpoBook, type KpoHeader } from './model';
 import { useKpo } from './store';
@@ -88,6 +89,7 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
         ...chosen.map((row) => createEntry({ date: row.date!, description: row.description, products: row.products, services: row.services, source: 'import' }))
       ]
     }));
+    logAudit('kpo.imported', String(chosen.length), fileName);
     toast(t('{count} entry imported|{count} entries imported', { count: chosen.length }));
     const years = chosen.map((row) => Number(row.date!.slice(0, 4)));
     onImported(years.length ? Math.max(...years) : null);

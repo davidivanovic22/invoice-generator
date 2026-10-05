@@ -8,6 +8,7 @@ import { startCloud } from './lib/cloud';
 import { AiProvider, useAi } from './features/ai/AiSettings';
 import { FirmProvider, useFirm } from './features/firms/FirmContext';
 import { FirmsPage } from './features/firms/FirmsPage';
+import { HistoryPage } from './features/firms/HistoryPage';
 import { FirmSwitcher } from './features/firms/FirmSwitcher';
 import { CommandPalette, useCommandShortcut } from './features/command/CommandPalette';
 import { HomePage } from './features/home/HomePage';
@@ -122,6 +123,9 @@ const AccountButton = () => {
           <button type="button" role="menuitem" className={item} onClick={() => go('/firms')}>
             <Icon name="list" className="h-4 w-4 text-slate-400" /> {t('All firms')}
           </button>
+          <button type="button" role="menuitem" className={item} onClick={() => go('/history')}>
+            <Icon name="refresh" className="h-4 w-4 text-slate-400" /> {t('History of changes')}
+          </button>
           {lock && (
             <>
               <div className="my-1 border-t border-slate-100" />
@@ -220,6 +224,9 @@ const MobileTabBar = () => {
             </NavLink>
             <NavLink to="/profile" className={sheetLink} onClick={close}>
               <Icon name="building" /> {t('Business profile')}
+            </NavLink>
+            <NavLink to="/history" className={sheetLink} onClick={close}>
+              <Icon name="refresh" /> {t('History of changes')}
             </NavLink>
             <NavLink to="/account" className={sheetLink} onClick={close}>
               <Icon name="shield" /> {t('Account & backup')}
@@ -377,6 +384,7 @@ const Shell = () => {
             <Route path="/kpo" element={<KpoPage />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/firms" element={<FirmsPage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

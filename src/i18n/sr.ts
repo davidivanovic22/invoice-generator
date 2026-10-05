@@ -996,5 +996,28 @@ export const SR: Record<string, string> = {
   "All firms": "Sve firme",
 
   // Firm name
-  "Firm name": "Naziv firme"
+  "Firm name": "Naziv firme",
+
+  // Invoicing abroad
+  "Not in the VAT system": "Nije u sistemu PDV-a",
+  "Quote the invoice number": "Navesti broj fakture",
+  "Valid without stamp and signature": "Važi bez pečata i potpisa",
+  "Invoices to businesses in Serbia must be issued through SEF (the e-invoice system). This app does not send to SEF — use it for invoices abroad, or issue this one in SEF.": "Fakture firmama u Srbiji moraju da se izdaju kroz SEF (sistem e-faktura). Ova aplikacija ne šalje u SEF — koristi je za fakture u inostranstvo, a ovu izdaj u SEF-u.",
+
+  // History
+  "Invoice {target} created": "Napravljena faktura {target}",
+  "Invoice {target} edited": "Izmenjena faktura {target}",
+  "Invoice {target} marked as {detail}": "Faktura {target} označena kao {detail}",
+  "Invoice {target} deleted": "Obrisana faktura {target}",
+  "Invoice {target} restored": "Vraćena faktura {target}",
+  "{target} invoices imported": "Uvezeno faktura: {target}",
+  "KPO entry added: {target}": "Dodat KPO unos: {target}",
+  "KPO entry edited: {target}": "Izmenjen KPO unos: {target}",
+  "KPO entry deleted: {target}": "Obrisan KPO unos: {target}",
+  "{target} KPO entries imported": "Uvezeno KPO unosa: {target}",
+  "Business profile edited": "Izmenjen poslovni profil",
+  "History of changes": "Istorija izmena",
+  "Every change to invoices, the KPO book and the business profile of this firm, with who made it.": "Svaka izmena faktura, KPO knjige i poslovnog profila ove firme, i ko ju je napravio.",
+  "No changes yet": "Još nema izmena",
+  "Changes appear here from now on.": "Izmene će se od sada pojavljivati ovde."
 };

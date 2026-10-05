@@ -4,7 +4,7 @@ import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { Section } from '../../../ui/Layout';
 import { formatMinor } from '../../../lib/money';
-import { createParty, invoiceTotals, sameClient, type Client, type Invoice, type LineItem, type Party } from '../model';
+import { createParty, invoiceTotals, isDomesticClient, sameClient, type Client, type Invoice, type LineItem, type Party } from '../model';
 import { PartyFields } from './PartyFields';
 import { createId } from '../../../lib/files';
 import { t } from '../../../i18n';
@@ -146,6 +146,17 @@ export const ClientSection = ({ invoice, clients, invoices, onChange, onCommit }
       >
         <PartyFields party={invoice.client} onChange={setParty} nameSlot={nameField} />
       </div>
+      {isDomesticClient(invoice.client) && (
+        <p className="mt-3 flex gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-900 ring-1 ring-amber-200">
+          <Icon name="alert" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            {t('Invoices to businesses in Serbia must be issued through SEF (the e-invoice system). This app does not send to SEF — use it for invoices abroad, or issue this one in SEF.')}{' '}
+            <a href="https://efaktura.mfin.gov.rs" target="_blank" rel="noreferrer" className="font-medium underline">
+              efaktura.mfin.gov.rs
+            </a>
+          </span>
+        </p>
+      )}
       <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
         <Icon name="check" className="h-3.5 w-3.5 text-emerald-500" />
         {t('Clients are saved automatically, so next time just start typing their name.')}

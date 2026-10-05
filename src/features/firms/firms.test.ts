@@ -12,7 +12,7 @@ describe('firms', () => {
     const firm = addFirm('Petar Petrović PR');
     expect(readFirms().activeId).toBe(firm.id);
     expect(firmKey('studio.kpo.v1', firm.id)).toBe(`studio.kpo.v1@${firm.id}`);
-    expect(allFirmKeys()).toEqual(['studio.invoices.v2', 'studio.kpo.v1', `studio.invoices.v2@${firm.id}`, `studio.kpo.v1@${firm.id}`]);
+    expect(allFirmKeys()).toEqual(['studio.invoices.v2', 'studio.kpo.v1', 'studio.audit.v1', `studio.invoices.v2@${firm.id}`, `studio.kpo.v1@${firm.id}`, `studio.audit.v1@${firm.id}`]);
     expect(isFirmKey(`studio.invoices.v2@${firm.id}`)).toBe(true);
     expect(isFirmKey('studio.ai.key')).toBe(false);
     setActiveFirm(DEFAULT_FIRM);

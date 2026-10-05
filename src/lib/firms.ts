@@ -10,7 +10,7 @@ import { createId } from './files';
 export const FIRMS_KEY = 'studio.firms';
 export const DEFAULT_FIRM = 'default';
 /** Storage keys that belong to a firm. */
-export const FIRM_BASE_KEYS = ['studio.invoices.v2', 'studio.kpo.v1'] as const;
+export const FIRM_BASE_KEYS = ['studio.invoices.v2', 'studio.kpo.v1', 'studio.audit.v1'] as const;
 export type FirmBaseKey = (typeof FIRM_BASE_KEYS)[number];
 
 export type Firm = { id: string; name: string; createdAt: string };

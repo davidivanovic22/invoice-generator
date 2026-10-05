@@ -3,7 +3,7 @@ import { t } from '../../../i18n';
 import { addDaysIso, daysBetween } from '../../../lib/dates';
 import { SelectField, TextArea, TextField } from '../../../ui/Field';
 import { Chips, MoreToggle, Section } from '../../../ui/Layout';
-import { CURRENCIES, isDefaultPeriod, isNumberTaken, nextInvoiceNumber, periodLabel, type Invoice } from '../model';
+import { CURRENCIES, isDefaultPeriod, isNumberTaken, nextInvoiceNumber, NOTE_PRESETS, periodLabel, type Invoice } from '../model';
 
 type Props = {
   invoice: Invoice;
@@ -110,6 +110,18 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
               onChange={(note) => onChange({ note })}
               placeholder={t('e.g. Not in the VAT system. Payment within 14 days.')}
             />
+            <div className="col-span-2 -mt-1 flex flex-wrap gap-1.5">
+              {NOTE_PRESETS.filter((preset) => !invoice.note.includes(preset.text[invoice.design.language])).map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onChange({ note: [invoice.note.trim(), preset.text[invoice.design.language]].filter(Boolean).join('\n') })}
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  + {t(preset.label)}
+                </button>
+              ))}
+            </div>
           </>
         )}
       </div>

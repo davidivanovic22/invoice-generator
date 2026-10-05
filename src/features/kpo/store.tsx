@@ -1,9 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { logAudit } from '../../lib/audit';
+import { formatDateNumeric } from '../../lib/dates';
 import { readJson, writeJson } from '../../lib/storage';
 import { useInvoiceStore } from '../invoices/store';
 import { createBook, createEntry, createHeader, DEFAULT_TEMPLATE, type KpoBook, type KpoEntry } from './model';
 
 export const KPO_KEY = 'studio.kpo.v1';
+
+const entryLabel = (entry: KpoEntry) => `${formatDateNumeric(entry.date)} ${entry.description} (${entry.products + entry.services})`;
 
 type KpoContextValue = {
   book: KpoBook;
@@ -70,17 +74,24 @@ export const KpoStoreProvider = ({ children, storageKey = KPO_KEY }: { children:
     setBook((current) => (typeof patch === 'function' ? patch(current) : { ...current, ...patch }));
   }, []);
 
-  const addEntries = useCallback((entries: KpoEntry[]) => setBook((current) => ({ ...current, entries: [...current.entries, ...entries] })), []);
+  const addEntries = useCallback((entries: KpoEntry[]) => {
+    entries.forEach((entry) => logAudit('kpo.added', entryLabel(entry)));
+    setBook((current) => ({ ...current, entries: [...current.entries, ...entries] }));
+  }, []);
 
   const updateEntry = useCallback(
-    (id: string, patch: Partial<KpoEntry>) =>
-      setBook((current) => ({ ...current, entries: current.entries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)) })),
+    (id: string, patch: Partial<KpoEntry>) => {
+      const entry = bookRef.current.entries.find((item) => item.id === id);
+      if (entry) logAudit('kpo.edited', entryLabel({ ...entry, ...patch }));
+      setBook((current) => ({ ...current, entries: current.entries.map((item) => (item.id === id ? { ...item, ...patch } : item)) }));
+    },
     []
   );
 
   const removeEntry = useCallback((id: string) => {
     const removed = bookRef.current.entries.find((entry) => entry.id === id) ?? null;
     setBook((current) => ({ ...current, entries: current.entries.filter((entry) => entry.id !== id) }));
+    if (removed) logAudit('kpo.deleted', entryLabel(removed));
     return removed;
   }, []);
 

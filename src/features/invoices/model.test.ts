@@ -6,6 +6,7 @@ import {
   duplicateInvoice,
   generateRecurring,
   invoiceTotals,
+  isDomesticClient,
   isNumberTaken,
   dueTaxMonths,
   nextInvoiceNumber,
@@ -163,5 +164,22 @@ describe('recurring invoices', () => {
 
   it('does nothing before the next date', () => {
     expect(generateRecurring(base().store, '2026-09-29').created).toHaveLength(0);
+  });
+});
+
+describe('isDomesticClient', () => {
+  it('spots clients in Serbia', () => {
+    const party = (cityCountry: string) => ({ ...createEmptyStore().profile.party, cityCountry });
+    expect(isDomesticClient(party('18210 Prćilovica, Srbija'))).toBe(true);
+    expect(isDomesticClient(party('Belgrade, Serbia'))).toBe(true);
+    expect(isDomesticClient(party('Zagreb, Croatia'))).toBe(false);
+    expect(isDomesticClient(party(''))).toBe(false);
+  });
+});
+
+describe('nextInvoiceNumber style', () => {
+  it('keeps two-digit numbering when the user uses it', () => {
+    const invoices = ['2026-01', '2026-12'].map((number) => ({ ...createInvoice(createEmptyStore()), number }));
+    expect(nextInvoiceNumber(invoices, '', '2026-10-04')).toBe('2026-13');
   });
 });
