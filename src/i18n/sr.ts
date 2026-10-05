@@ -633,5 +633,22 @@ export const SR: Record<string, string> = {
   'Your signature': 'Tvoj potpis',
   Redraw: 'Ponovo nacrtaj',
 
-  'Marked as sent. Mark it paid when the money arrives.': 'Označena kao poslata. Označi je kao plaćenu kad legne novac.'
+  'Marked as sent. Mark it paid when the money arrives.': 'Označena kao poslata. Označi je kao plaćenu kad legne novac.',
+
+  // ---------- Yearly tax ----------
+  'Tax for {year}': 'Porez za {year}.',
+  'Enter the fixed monthly amount you pay this year (e.g. the flat-rate tax).': 'Unesi fiksni mesečni iznos koji plaćaš ove godine (npr. paušal).',
+  'Per month': 'Mesečno',
+  'Exchange rate (RSD for 1 EUR)': 'Kurs (dinara za 1 €)',
+  'Used to show the amounts in euros.': 'Koristi se za prikaz iznosa u evrima.',
+  'So far in {year}: {months} × {monthly} = {total}': 'Do sada u {year}.: {months} × {monthly} = {total}',
+  'Edit the tax for {year}': 'Izmeni porez za {year}.',
+  'Tax in {year}': 'Porez u {year}.',
+  '{months} × {monthly}': '{months} × {monthly}',
+  'Enter your tax': 'Unesi porez',
+  'e.g. 400 € per month': 'npr. 400 € mesečno',
+  'Earned after tax in {year}': 'Zarada bez taksi u {year}.',
+  'Paid minus tax': 'Plaćeno minus porez',
+  '{count} invoice in another currency is not included.|{count} invoices in other currencies are not included.':
+    '{count} faktura u drugoj valuti nije uračunata.|{count} fakture u drugim valutama nisu uračunate.|{count} faktura u drugim valutama nije uračunato.'
 };

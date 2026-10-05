@@ -178,6 +178,7 @@ export const normalizeStore = (raw: Partial<InvoiceStore>): InvoiceStore => {
     ...raw.profile,
     party: createParty(raw.profile?.party),
     bank: createBank(raw.profile?.bank),
+    yearlyTax: raw.profile?.yearlyTax && typeof raw.profile.yearlyTax === 'object' ? raw.profile.yearlyTax : {},
     defaults: { ...empty.profile.defaults, ...raw.profile?.defaults }
   });
   const now = new Date().toISOString();

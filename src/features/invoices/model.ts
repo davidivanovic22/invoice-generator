@@ -93,11 +93,16 @@ export type Invoice = {
 
 export type Client = { id: string; party: Party; currency: string; lastUsedAt: string };
 
+/** The fixed monthly tax ("paušal") for one year; it changes every year. */
+export type YearTax = { monthly: number; currency: 'EUR' | 'RSD'; /** RSD for 1 EUR, used when the amount is in RSD. */ rsdPerEur: number };
+
 export type BusinessProfile = {
   party: Party;
   bank: BankDetails;
   logo: string;
   signature: string;
+  /** Keyed by year, e.g. "2026". */
+  yearlyTax: Record<string, YearTax>;
   defaults: {
     currency: string;
     vatPercent: number;
@@ -145,6 +150,7 @@ export const createProfile = (overrides?: Partial<BusinessProfile>): BusinessPro
   bank: createBank(),
   logo: '',
   signature: '',
+  yearlyTax: {},
   ...overrides,
   defaults: {
     currency: 'EUR',
@@ -279,3 +285,31 @@ export const displayStatus = (invoice: Invoice, today = todayIso()): DisplayStat
 export const partyIsEmpty = (party: Party) => !party.name.trim() && !party.address.trim() && !party.taxId.trim();
 
 export const sameClient = (a: Party, b: Party) => a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+
+/* ---------- Yearly tax ---------- */
+
+const toEur = (amount: number, currency: string, rsdPerEur: number): number | null =>
+  currency === 'EUR' ? amount : currency === 'RSD' && rsdPerEur > 0 ? amount / rsdPerEur : null;
+
+/** Months of the year that have started: all 12 for past years, none for future ones. */
+export const monthsSoFar = (year: number, today = new Date()) =>
+  year < today.getFullYear() ? 12 : year > today.getFullYear() ? 0 : today.getMonth() + 1;
+
+/** Tax paid so far in the year, in EUR (monthly amount × months so far). */
+export const taxSpentEur = (tax: YearTax | undefined, year: number, today = new Date()) => {
+  if (!tax || tax.monthly <= 0) return 0;
+  return (toEur(tax.monthly, tax.currency, tax.rsdPerEur) ?? 0) * monthsSoFar(year, today);
+};
+
+/** Paid income for the year in EUR (RSD converted with the year's rate); other currencies are left out. */
+export const paidIncomeEur = (invoices: Invoice[], year: number, rsdPerEur: number) => {
+  let total = 0;
+  let skipped = 0;
+  for (const invoice of invoices) {
+    if (invoice.status !== 'paid' || !invoice.issueDate.startsWith(String(year))) continue;
+    const eur = toEur(invoiceTotals(invoice).total, invoice.currency, rsdPerEur);
+    if (eur === null) skipped += 1;
+    else total += eur;
+  }
+  return { total, skipped };
+};

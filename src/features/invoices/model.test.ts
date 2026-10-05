@@ -6,7 +6,10 @@ import {
   duplicateInvoice,
   invoiceTotals,
   isNumberTaken,
+  monthsSoFar,
   nextInvoiceNumber,
+  paidIncomeEur,
+  taxSpentEur,
   type Invoice
 } from './model';
 
@@ -82,5 +85,34 @@ describe('displayStatus', () => {
     expect(displayStatus(invoice, '2026-10-01')).toBe('sent');
     expect(displayStatus(invoice, '2026-10-02')).toBe('overdue');
     expect(displayStatus({ ...invoice, status: 'paid' }, '2026-12-01')).toBe('paid');
+  });
+});
+
+describe('yearly tax', () => {
+  const today = new Date(2026, 9, 5);
+
+  it('multiplies the monthly tax by the months so far', () => {
+    expect(taxSpentEur({ monthly: 400, currency: 'EUR', rsdPerEur: 117.2 }, 2026, today)).toBe(4000);
+    expect(taxSpentEur({ monthly: 400, currency: 'EUR', rsdPerEur: 117.2 }, 2025, today)).toBe(4800);
+    expect(taxSpentEur({ monthly: 46880, currency: 'RSD', rsdPerEur: 117.2 }, 2026, today)).toBeCloseTo(4000);
+    expect(taxSpentEur(undefined, 2026, today)).toBe(0);
+    expect(monthsSoFar(2027, today)).toBe(0);
+  });
+
+  it('sums paid income in EUR, converting RSD and skipping other currencies', () => {
+    const paid = (date: string, currency: string, price: number): Invoice => ({
+      ...withNumber('x'),
+      status: 'paid',
+      issueDate: date,
+      currency,
+      items: [createLineItem({ quantity: 1, unitPrice: price })]
+    });
+    const result = paidIncomeEur(
+      [paid('2026-01-31', 'EUR', 3300), paid('2026-02-28', 'RSD', 117200), paid('2026-03-31', 'USD', 500), paid('2025-12-31', 'EUR', 999), { ...paid('2026-04-30', 'EUR', 700), status: 'sent' }],
+      2026,
+      117.2
+    );
+    expect(result.total).toBeCloseTo(4300);
+    expect(result.skipped).toBe(1);
   });
 });

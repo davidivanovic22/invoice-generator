@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { t, uiLocale } from '../../../i18n';
 import { formatDate, todayIso } from '../../../lib/dates';
 import { downloadJson } from '../../../lib/files';
-import { formatMinor } from '../../../lib/money';
+import { formatAmount, formatMinor } from '../../../lib/money';
 import { Button } from '../../../ui/Button';
 import { useFeedback } from '../../../ui/Feedback';
 import { inputClass } from '../../../ui/Field';
@@ -11,7 +11,8 @@ import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
 import { StatusBadge } from '../components/Status';
-import { displayStatus, invoiceTotals, type DisplayStatus, type Invoice } from '../model';
+import { YearTaxDialog } from '../components/YearTaxDialog';
+import { displayStatus, invoiceTotals, monthsSoFar, paidIncomeEur, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
 import { useInvoiceStore } from '../store';
 
@@ -32,7 +33,8 @@ export const sumByCurrency = (invoices: Invoice[]) => {
 };
 
 export const InvoiceListPage = () => {
-  const { store, duplicateInvoice, deleteInvoice, restoreInvoice, importBackup, setStatus } = useInvoiceStore();
+  const { store, duplicateInvoice, deleteInvoice, restoreInvoice, importBackup, setStatus, updateProfile } = useInvoiceStore();
+  const [editingTax, setEditingTax] = useState(false);
   const { toast } = useFeedback();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -64,6 +66,10 @@ export const InvoiceListPage = () => {
   const overdue = unpaid.filter((invoice) => displayStatus(invoice, today) === 'overdue');
   const paidThisYear = store.invoices.filter((invoice) => invoice.status === 'paid' && invoice.issueDate.startsWith(today.slice(0, 4)));
   const profileMissing = !store.profile.party.name.trim();
+  const year = Number(today.slice(0, 4));
+  const yearTax = store.profile.yearlyTax[String(year)];
+  const taxSpent = taxSpentEur(yearTax, year);
+  const paidEur = paidIncomeEur(store.invoices, year, yearTax?.rsdPerEur ?? 117.2);
 
   const handleImport = async (file: File) => {
     try {
@@ -126,7 +132,7 @@ export const InvoiceListPage = () => {
       )}
 
       {store.invoices.length > 0 && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Stat label={t('Outstanding')} value={sumByCurrency(unpaid)} detail={t('{count} unpaid invoice|{count} unpaid invoices', { count: unpaid.length })} />
           <Stat
             label={t('Overdue')}
@@ -135,6 +141,36 @@ export const InvoiceListPage = () => {
             tone={overdue.length ? 'red' : 'default'}
           />
           <Stat label={t('Paid in {year}', { year: today.slice(0, 4) })} value={sumByCurrency(paidThisYear)} detail={t('{count} invoice|{count} invoices', { count: paidThisYear.length })} />
+          <button
+            type="button"
+            onClick={() => setEditingTax(true)}
+            className="group rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200/80 transition hover:ring-indigo-300"
+            title={t('Edit the tax for {year}', { year })}
+          >
+            <div className="flex items-center justify-between text-[13px] font-medium text-slate-500">
+              {t('Tax in {year}', { year })}
+              <Icon name="pen" className="h-3.5 w-3.5 text-slate-300 transition group-hover:text-indigo-500" />
+            </div>
+            {yearTax ? (
+              <>
+                <div className="mt-1 truncate text-xl font-bold tabular-nums text-slate-900">{formatAmount(taxSpent, 'EUR')}</div>
+                <div className="mt-0.5 text-xs text-slate-400">
+                  {t('{months} × {monthly}', { months: monthsSoFar(year), monthly: formatAmount(yearTax.monthly, yearTax.currency) })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-1 text-sm font-semibold text-indigo-600">{t('Enter your tax')}</div>
+                <div className="mt-0.5 text-xs text-slate-400">{t('e.g. 400 € per month')}</div>
+              </>
+            )}
+          </button>
+          <Stat
+            label={t('Earned after tax in {year}', { year })}
+            value={formatAmount(paidEur.total - taxSpent, 'EUR')}
+            detail={paidEur.skipped ? t('{count} invoice in another currency is not included.|{count} invoices in other currencies are not included.', { count: paidEur.skipped }) : t('Paid minus tax')}
+            tone={paidEur.total - taxSpent < 0 ? 'red' : 'green'}
+          />
         </div>
       )}
 
@@ -230,14 +266,29 @@ export const InvoiceListPage = () => {
       )}
 
       {creating && <QuickInvoiceDialog onClose={() => setCreating(false)} />}
+      {editingTax && (
+        <YearTaxDialog
+          year={year}
+          value={yearTax}
+          onClose={() => setEditingTax(false)}
+          onSave={(tax) =>
+            updateProfile((profile) => {
+              const yearlyTax = { ...profile.yearlyTax };
+              if (tax) yearlyTax[String(year)] = tax;
+              else delete yearlyTax[String(year)];
+              return { ...profile, yearlyTax };
+            })
+          }
+        />
+      )}
     </div>
   );
 };
 
-const Stat = ({ label, value, detail, tone = 'default' }: { label: string; value: string; detail: string; tone?: 'default' | 'red' }) => (
+const Stat = ({ label, value, detail, tone = 'default' }: { label: string; value: string; detail: string; tone?: 'default' | 'red' | 'green' }) => (
   <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
     <div className="text-[13px] font-medium text-slate-500">{label}</div>
-    <div className={`mt-1 truncate text-xl font-bold tabular-nums ${tone === 'red' ? 'text-red-600' : 'text-slate-900'}`}>{value}</div>
+    <div className={`mt-1 truncate text-xl font-bold tabular-nums ${tone === 'red' ? 'text-red-600' : tone === 'green' ? 'text-emerald-600' : 'text-slate-900'}`}>{value}</div>
     <div className="mt-0.5 text-xs text-slate-400">{detail}</div>
   </div>
 );
