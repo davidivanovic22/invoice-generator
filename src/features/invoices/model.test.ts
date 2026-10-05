@@ -6,9 +6,10 @@ import {
   duplicateInvoice,
   invoiceTotals,
   isNumberTaken,
-  monthsSoFar,
+  dueTaxMonths,
   nextInvoiceNumber,
   paidIncomeEur,
+  paidTaxMonths,
   taxSpentEur,
   type Invoice
 } from './model';
@@ -91,12 +92,24 @@ describe('displayStatus', () => {
 describe('yearly tax', () => {
   const today = new Date(2026, 9, 5);
 
-  it('multiplies the monthly tax by the months so far', () => {
-    expect(taxSpentEur({ monthly: 400, currency: 'EUR', rsdPerEur: 117.2 }, 2026, today)).toBe(4000);
+  it('counts a month once its 15th has passed', () => {
+    expect(dueTaxMonths(2026, new Date(2026, 9, 14))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(dueTaxMonths(2026, new Date(2026, 9, 15))).toHaveLength(10);
+    expect(dueTaxMonths(2025, today)).toHaveLength(12);
+    expect(dueTaxMonths(2027, today)).toEqual([]);
+  });
+
+  it('multiplies the monthly tax by the paid months', () => {
+    expect(taxSpentEur({ monthly: 400, currency: 'EUR', rsdPerEur: 117.2 }, 2026, today)).toBe(3600);
     expect(taxSpentEur({ monthly: 400, currency: 'EUR', rsdPerEur: 117.2 }, 2025, today)).toBe(4800);
-    expect(taxSpentEur({ monthly: 46880, currency: 'RSD', rsdPerEur: 117.2 }, 2026, today)).toBeCloseTo(4000);
+    expect(taxSpentEur({ monthly: 46880, currency: 'RSD', rsdPerEur: 117.2 }, 2026, today)).toBeCloseTo(3600);
     expect(taxSpentEur(undefined, 2026, today)).toBe(0);
-    expect(monthsSoFar(2027, today)).toBe(0);
+  });
+
+  it('uses the ticked months when the user marked them', () => {
+    const tax = { monthly: 400, currency: 'EUR' as const, rsdPerEur: 117.2, paidMonths: [1, 2, 3, 10] };
+    expect(paidTaxMonths(tax, 2026, today)).toEqual([1, 2, 3, 10]);
+    expect(taxSpentEur(tax, 2026, today)).toBe(1600);
   });
 
   it('sums paid income in EUR, converting RSD and skipping other currencies', () => {

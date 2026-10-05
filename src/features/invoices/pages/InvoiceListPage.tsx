@@ -12,11 +12,42 @@ import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
 import { StatusBadge } from '../components/Status';
 import { YearTaxDialog } from '../components/YearTaxDialog';
-import { displayStatus, invoiceTotals, monthsSoFar, paidIncomeEur, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
+import { displayStatus, invoiceTotals, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
 import { useInvoiceStore } from '../store';
 
 type Filter = 'all' | 'unpaid' | 'paid' | 'draft';
+type Sort = 'newest' | 'oldest' | 'number' | 'amount' | 'client';
+
+const SORT_KEY = 'studio.invoices.sort';
+const SORTS: Sort[] = ['newest', 'oldest', 'number', 'amount', 'client'];
+
+const readSort = (): Sort => {
+  try {
+    const saved = localStorage.getItem(SORT_KEY) as Sort | null;
+    return saved && SORTS.includes(saved) ? saved : 'newest';
+  } catch {
+    return 'newest';
+  }
+};
+
+const byNewest = (a: Invoice, b: Invoice) => b.issueDate.localeCompare(a.issueDate) || b.number.localeCompare(a.number, undefined, { numeric: true });
+
+export const sortInvoices = (invoices: Invoice[], sort: Sort) => {
+  const list = [...invoices];
+  switch (sort) {
+    case 'oldest':
+      return list.sort((a, b) => byNewest(b, a));
+    case 'number':
+      return list.sort((a, b) => b.number.localeCompare(a.number, undefined, { numeric: true }));
+    case 'amount':
+      return list.sort((a, b) => invoiceTotals(b).totalMinor - invoiceTotals(a).totalMinor || byNewest(a, b));
+    case 'client':
+      return list.sort((a, b) => a.client.name.localeCompare(b.client.name, uiLocale(), { sensitivity: 'base' }) || byNewest(a, b));
+    default:
+      return list.sort(byNewest);
+  }
+};
 
 const matchesFilter = (status: DisplayStatus, filter: Filter) => {
   if (filter === 'all') return true;
@@ -39,6 +70,15 @@ export const InvoiceListPage = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSortState] = useState<Sort>(readSort);
+  const setSort = (next: Sort) => {
+    setSortState(next);
+    try {
+      localStorage.setItem(SORT_KEY, next);
+    } catch {
+      // Sorting still works for this visit.
+    }
+  };
   const [creating, setCreating] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,10 +91,14 @@ export const InvoiceListPage = () => {
   }, [searchParams, setSearchParams]);
   const today = todayIso();
 
-  const sorted = useMemo(
-    () => [...store.invoices].sort((a, b) => b.issueDate.localeCompare(a.issueDate) || b.number.localeCompare(a.number)),
-    [store.invoices]
-  );
+  const sorted = useMemo(() => sortInvoices(store.invoices, sort), [store.invoices, sort]);
+
+  const handleDuplicate = (invoice: Invoice) => {
+    const copy = duplicateInvoice(invoice.id);
+    if (!copy) return;
+    toast(t('Created invoice {number}', { number: copy.number }));
+    navigate(`/invoices/${copy.id}`);
+  };
 
   const visible = sorted.filter((invoice) => {
     const needle = query.trim().toLowerCase();
@@ -155,7 +199,7 @@ export const InvoiceListPage = () => {
               <>
                 <div className="mt-1 truncate text-xl font-bold tabular-nums text-slate-900">{formatAmount(taxSpent, 'EUR')}</div>
                 <div className="mt-0.5 text-xs text-slate-400">
-                  {t('{months} × {monthly}', { months: monthsSoFar(year), monthly: formatAmount(yearTax.monthly, yearTax.currency) })}
+                  {t('{months} × {monthly}', { months: paidTaxMonths(yearTax, year).length, monthly: formatAmount(yearTax.monthly, yearTax.currency) })}
                 </div>
               </>
             ) : (
@@ -200,9 +244,21 @@ export const InvoiceListPage = () => {
                 { value: 'draft', label: t('Drafts') }
               ]}
             />
-            <div className="relative w-full sm:w-72">
-              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('Search number or client')} aria-label={t('Search invoices')} className={`${inputClass} pl-9`} />
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <label className="flex items-center gap-2 text-[13px] text-slate-500">
+                <span className="shrink-0">{t('Sort')}</span>
+                <select value={sort} onChange={(event) => setSort(event.target.value as Sort)} aria-label={t('Sort invoices')} className={`${inputClass} sm:w-48`}>
+                  <option value="newest">{t('Newest first')}</option>
+                  <option value="oldest">{t('Oldest first')}</option>
+                  <option value="number">{t('By number')}</option>
+                  <option value="amount">{t('By amount')}</option>
+                  <option value="client">{t('By client (A–Z)')}</option>
+                </select>
+              </label>
+              <div className="relative w-full sm:w-72">
+                <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('Search number or client')} aria-label={t('Search invoices')} className={`${inputClass} pl-9`} />
+              </div>
             </div>
           </div>
 
@@ -236,6 +292,9 @@ export const InvoiceListPage = () => {
                           {t('Mark paid')}
                         </Button>
                       )}
+                      <Button size="sm" icon="copy" title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')} onClick={() => handleDuplicate(invoice)}>
+                        <span className="hidden sm:inline">{t('Duplicate')}</span>
+                      </Button>
                       <Menu
                         label={t('Invoice options')}
                         items={[
@@ -243,10 +302,7 @@ export const InvoiceListPage = () => {
                           {
                             label: t('Duplicate as new invoice'),
                             icon: 'copy',
-                            onSelect: () => {
-                              const copy = duplicateInvoice(invoice.id);
-                              if (copy) navigate(`/invoices/${copy.id}`);
-                            }
+                            onSelect: () => handleDuplicate(invoice)
                           },
                           status === 'paid'
                             ? { label: t('Mark as unpaid'), icon: 'refresh', onSelect: () => setStatus(invoice.id, 'sent') }

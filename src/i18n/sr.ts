@@ -650,5 +650,20 @@ export const SR: Record<string, string> = {
   'Earned after tax in {year}': 'Zarada bez taksi u {year}.',
   'Paid minus tax': 'Plaćeno minus porez',
   '{count} invoice in another currency is not included.|{count} invoices in other currencies are not included.':
-    '{count} faktura u drugoj valuti nije uračunata.|{count} fakture u drugim valutama nisu uračunate.|{count} faktura u drugim valutama nije uračunato.'
+    '{count} faktura u drugoj valuti nije uračunata.|{count} fakture u drugim valutama nisu uračunate.|{count} faktura u drugim valutama nije uračunato.',
+
+  // Invoice list sorting
+  'Sort': 'Sortiraj',
+  'Sort invoices': 'Sortiraj fakture',
+  'Newest first': 'Najnovije prvo',
+  'Oldest first': 'Najstarije prvo',
+  'By number': 'Po broju',
+  'By amount': 'Po iznosu',
+  'By client (A–Z)': 'Po klijentu (A–Ž)',
+  'Paid months': 'Plaćeni meseci',
+  'Back to automatic': 'Vrati na automatski',
+  'Automatic: from the {day}th of each month': 'Automatski: od {day}. u mesecu',
+  'Tap a month to mark it paid or unpaid.': 'Klikni na mesec da ga označiš kao plaćen ili neplaćen.',
+  'Click to edit': 'Klikni za izmenu',
+  'This cannot be empty.': 'Ne može biti prazno.'
 };

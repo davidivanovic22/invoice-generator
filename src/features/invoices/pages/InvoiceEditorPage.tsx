@@ -7,6 +7,7 @@ import { A4Preview } from '../../../ui/A4Preview';
 import { Button } from '../../../ui/Button';
 import { EditorToolbar, editTargetFrom, flash, MobileViewSwitch, PreviewHint, useUndoShortcuts } from '../../../ui/EditorChrome';
 import { useFeedback } from '../../../ui/Feedback';
+import { InlineEdit } from '../../../ui/InlineEdit';
 import { EmptyState } from '../../../ui/Layout';
 import { StatusMenu } from '../components/Status';
 import { InvoiceDocument } from '../document/InvoiceDocument';
@@ -15,7 +16,7 @@ import { DesignSection } from '../editor/DesignSection';
 import { DetailsSection } from '../editor/DetailsSection';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
-import { isDefaultPeriod, periodLabel, type Invoice } from '../model';
+import { isDefaultPeriod, isNumberTaken, periodLabel, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
 
 const SECTION_IDS: Record<string, string> = { client: 'client', items: 'items', details: 'details', from: 'from', design: 'design' };
@@ -145,8 +146,14 @@ export const InvoiceEditorPage = () => {
         canRedo={canRedo(id)}
         title={
           <>
-            <h1 className="hidden truncate text-[15px] font-semibold text-slate-900 sm:block">
-              {t('Invoice')} {invoice.number}
+            <h1 className="hidden min-w-0 text-[15px] font-semibold text-slate-900 sm:block">
+              <InlineEdit
+                label={t('Invoice number')}
+                value={invoice.number}
+                display={`${t('Invoice')} ${invoice.number}`}
+                validate={(number) => (isNumberTaken(store.invoices, number, invoice.id) ? t('Another invoice already uses this number.') : undefined)}
+                onSave={(number) => onChange({ number })}
+              />
             </h1>
             <StatusMenu invoice={invoice} onChange={(status) => setStatus(invoice.id, status)} />
           </>
@@ -158,6 +165,9 @@ export const InvoiceEditorPage = () => {
           { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
         ]}
       >
+        <Button icon="copy" onClick={handleDuplicate} title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')}>
+          <span className="hidden sm:inline">{t('Duplicate')}</span>
+        </Button>
         <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting}>
           <span className="hidden sm:inline">{t('Download PDF')}</span>
           <span className="sm:hidden">PDF</span>

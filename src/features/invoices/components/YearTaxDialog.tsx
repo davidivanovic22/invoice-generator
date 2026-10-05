@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { t } from '../../../i18n';
+import { t, uiLocale } from '../../../i18n';
 import { formatAmount } from '../../../lib/money';
 import { Button } from '../../../ui/Button';
 import { NumberField } from '../../../ui/Field';
+import { Icon } from '../../../ui/Icon';
 import { Segmented } from '../../../ui/Layout';
-import { monthsSoFar, taxSpentEur, type YearTax } from '../model';
+import { dueTaxMonths, TAX_DUE_DAY, taxSpentEur, type YearTax } from '../model';
 
 type Props = {
   year: number;
@@ -18,8 +19,16 @@ export const YearTaxDialog = ({ year, value, onSave, onClose }: Props) => {
   const [monthly, setMonthly] = useState(value?.monthly ?? 0);
   const [currency, setCurrency] = useState<'EUR' | 'RSD'>(value?.currency ?? 'EUR');
   const [rsdPerEur, setRsdPerEur] = useState(value?.rsdPerEur ?? 117.2);
-  const draft: YearTax = { monthly, currency, rsdPerEur };
-  const months = monthsSoFar(year);
+  // undefined = automatic: a month counts once its 15th has passed.
+  const [ticked, setTicked] = useState<number[] | undefined>(value?.paidMonths);
+  const due = dueTaxMonths(year);
+  const paid = ticked ?? due;
+  const draft: YearTax = { monthly, currency, rsdPerEur, ...(ticked ? { paidMonths: ticked } : {}) };
+  const monthLabel = (month: number) => new Intl.DateTimeFormat(uiLocale(), { month: 'short' }).format(new Date(year, month - 1, 1));
+  const toggle = (month: number) => {
+    const next = paid.includes(month) ? paid.filter((item) => item !== month) : [...paid, month].sort((a, b) => a - b);
+    setTicked(next);
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
@@ -50,11 +59,43 @@ export const YearTaxDialog = ({ year, value, onSave, onClose }: Props) => {
           {currency === 'RSD' && (
             <NumberField label={t('Exchange rate (RSD for 1 EUR)')} value={rsdPerEur} onChange={(rate) => rate > 0 && setRsdPerEur(rate)} min={1} hint={t('Used to show the amounts in euros.')} />
           )}
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm font-medium text-slate-700">{t('Paid months')}</span>
+              {ticked ? (
+                <button type="button" className="text-xs font-medium text-indigo-600 hover:underline" onClick={() => setTicked(undefined)}>
+                  {t('Back to automatic')}
+                </button>
+              ) : (
+                <span className="text-xs text-slate-400">{t('Automatic: from the {day}th of each month', { day: TAX_DUE_DAY })}</span>
+              )}
+            </div>
+            <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-6">
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => {
+                const on = paid.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(month)}
+                    className={`flex h-9 items-center justify-center gap-1 rounded-lg text-[13px] font-medium capitalize ring-1 ring-inset transition ${
+                      on ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100' : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {on && <Icon name="check" className="h-3.5 w-3.5" />}
+                    {monthLabel(month).replace('.', '')}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400">{t('Tap a month to mark it paid or unpaid.')}</p>
+          </div>
           {monthly > 0 && (
             <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
               {t('So far in {year}: {months} × {monthly} = {total}', {
                 year,
-                months,
+                months: paid.length,
                 monthly: formatAmount(monthly, currency),
                 total: formatAmount(taxSpentEur(draft, year), 'EUR')
               })}
