@@ -10,7 +10,7 @@ import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
-import { StatusBadge } from '../components/Status';
+import { StatusBadge, StatusSelect } from '../components/Status';
 import { YearTaxDialog } from '../components/YearTaxDialog';
 import { displayStatus, invoiceTotals, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
@@ -278,7 +278,7 @@ export const InvoiceListPage = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium text-slate-900">{invoice.client.name || t('No client yet')}</span>
-                            <StatusBadge invoice={invoice} />
+                            {status === 'overdue' && <StatusBadge invoice={invoice} />}
                           </div>
                           <div className="mt-0.5 truncate text-[13px] text-slate-500">
                             #{invoice.number} · {t('issued {date}', { date: formatDate(invoice.issueDate, uiLocale()) })} ·{' '}
@@ -287,11 +287,7 @@ export const InvoiceListPage = () => {
                         </div>
                         <span className="shrink-0 text-right font-semibold tabular-nums text-slate-900">{formatMinor(invoiceTotals(invoice).totalMinor, invoice.currency)}</span>
                       </Link>
-                      {(status === 'sent' || status === 'overdue') && (
-                        <Button size="sm" icon="check" className="hidden md:inline-flex" onClick={() => setStatus(invoice.id, 'paid')}>
-                          {t('Mark paid')}
-                        </Button>
-                      )}
+                      <StatusSelect invoice={invoice} onChange={(next) => setStatus(invoice.id, next)} />
                       <Button size="sm" icon="copy" title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')} onClick={() => handleDuplicate(invoice)}>
                         <span className="hidden sm:inline">{t('Duplicate')}</span>
                       </Button>
