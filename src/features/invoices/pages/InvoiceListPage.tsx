@@ -279,6 +279,11 @@ export const InvoiceListPage = () => {
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium text-slate-900">{invoice.client.name || t('No client yet')}</span>
                             {status === 'overdue' && <StatusBadge invoice={invoice} />}
+                            {invoice.repeatDay && (
+                              <span title={t('Repeats every month')} className="text-indigo-500">
+                                <Icon name="refresh" className="h-3.5 w-3.5" />
+                              </span>
+                            )}
                           </div>
                           <div className="mt-0.5 truncate text-[13px] text-slate-500">
                             #{invoice.number} · {t('issued {date}', { date: formatDate(invoice.issueDate, uiLocale()) })} ·{' '}

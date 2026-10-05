@@ -843,5 +843,12 @@ export const SR: Record<string, string> = {
   "Income comes from your KPO book; invoices that are not booked yet are added automatically.": "Prihod se uzima iz KPO knjige; fakture koje još nisu proknjižene dodaju se automatski.",
   "Open KPO book": "Otvori KPO knjigu",
   "Over the limit": "Preko limita",
-  "{percent}% · {amount} left": "{percent}% · ostalo {amount}"
+  "{percent}% · {amount} left": "{percent}% · ostalo {amount}",
+
+  // Recurring invoices
+  "Repeat every month": "Ponavljaj svakog meseca",
+  "On the {day}. of every month a new draft with the next number is created automatically.": "Svakog {day}. u mesecu automatski se pravi novi nacrt sa sledećim brojem.",
+  "For clients you invoice every month: the next invoice is prepared for you.": "Za klijente kojima fakturišeš svakog meseca — sledeća faktura se sama pripremi.",
+  "Repeats every month": "Ponavlja se svakog meseca",
+  "{count} recurring invoice is ready as a draft|{count} recurring invoices are ready as drafts": "{count} ponavljajuća faktura je spremna kao nacrt|{count} ponavljajuće fakture su spremne kao nacrti|{count} ponavljajućih faktura je spremno kao nacrti"
 };

@@ -63,6 +63,22 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
             options={TERMS.map((days) => ({ value: String(days), label: days === 0 ? t('On receipt') : t('{count} day|{count} days', { count: days }) }))}
           />
         </div>
+        <label className="col-span-2 flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200/70">
+          <input
+            type="checkbox"
+            checked={Boolean(invoice.repeatDay)}
+            onChange={(event) => onChange({ repeatDay: event.target.checked ? Number(invoice.issueDate.slice(8, 10)) : null })}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600"
+          />
+          <span className="text-sm">
+            <span className="font-medium text-slate-900">{t('Repeat every month')}</span>
+            <span className="block text-xs text-slate-500">
+              {invoice.repeatDay
+                ? t('On the {day}. of every month a new draft with the next number is created automatically.', { day: invoice.repeatDay })
+                : t('For clients you invoice every month: the next invoice is prepared for you.')}
+            </span>
+          </span>
+        </label>
         <div className="col-span-2">
           <MoreToggle open={more} onToggle={() => setMore((value) => !value)} label={t('Service date, period and note')} />
         </div>

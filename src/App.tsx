@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { AccountGate, useAccount } from './features/account/AccountGate';
 import { AccountPage } from './features/account/AccountPage';
@@ -8,7 +8,7 @@ import { CommandPalette, useCommandShortcut } from './features/command/CommandPa
 import { HomePage } from './features/home/HomePage';
 import { InvoiceEditorPage } from './features/invoices/pages/InvoiceEditorPage';
 import { InvoiceListPage } from './features/invoices/pages/InvoiceListPage';
-import { InvoiceStoreProvider } from './features/invoices/store';
+import { InvoiceStoreProvider, useInvoiceStore } from './features/invoices/store';
 import { KpoPage } from './features/kpo/KpoPage';
 import { OverviewPage } from './features/overview/OverviewPage';
 import { KpoStoreProvider } from './features/kpo/store';
@@ -19,7 +19,7 @@ import { ResumeListPage } from './features/resumes/pages/ResumeListPage';
 import { ResumeStoreProvider } from './features/resumes/store';
 import { LanguageProvider, t, useLanguage } from './i18n';
 import { ErrorBoundary } from './ui/ErrorBoundary';
-import { FeedbackProvider } from './ui/Feedback';
+import { FeedbackProvider, useFeedback } from './ui/Feedback';
 import { Icon } from './ui/Icon';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -134,6 +134,22 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
   </header>
 );
 
+/** Prepares due recurring invoices once per app start (and hourly while open). */
+const RecurringInvoices = () => {
+  const { runRecurring } = useInvoiceStore();
+  const { toast } = useFeedback();
+  useEffect(() => {
+    const run = () => {
+      const created = runRecurring();
+      if (created.length) toast(t('{count} recurring invoice is ready as a draft|{count} recurring invoices are ready as drafts', { count: created.length }));
+    };
+    run();
+    const timer = window.setInterval(run, 3_600_000);
+    return () => window.clearInterval(timer);
+  }, [runRecurring, toast]);
+  return null;
+};
+
 const Shell = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = useCallback(() => setSearchOpen(true), []);
@@ -142,6 +158,7 @@ const Shell = () => {
     <div className="flex min-h-screen flex-col">
       <Header onSearch={openSearch} />
       <AutoBackup />
+      <RecurringInvoices />
       <main className="flex flex-1 flex-col">
         <ErrorBoundary>
           <Routes>

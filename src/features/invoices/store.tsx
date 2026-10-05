@@ -7,6 +7,7 @@ import { loadInvoiceStore, migrateLegacy, normalizeStore, STORE_KEY } from './mi
 import {
   createInvoice,
   duplicateInvoice,
+  generateRecurring,
   sameClient,
   type BusinessProfile,
   type Client,
@@ -42,6 +43,8 @@ type InvoiceStoreValue = {
   rememberClient: (party: Party, currency: string, preferId?: string | null) => string | null;
   deleteClient: (id: string) => void;
   importBackup: (data: unknown) => ImportSummary;
+  /** Creates the drafts of recurring invoices that are due and returns them. */
+  runRecurring: () => Invoice[];
 };
 
 const Context = createContext<InvoiceStoreValue | null>(null);
@@ -203,6 +206,15 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
     return { added: fresh.length, skipped: incoming.invoices.length - fresh.length };
   }, []);
 
+  const runRecurring = useCallback(() => {
+    const { store: next, created } = generateRecurring(storeRef.current);
+    if (created.length) {
+      storeRef.current = next;
+      setStore(next);
+    }
+    return created;
+  }, []);
+
   const value = useMemo<InvoiceStoreValue>(
     () => ({
       store,
@@ -219,9 +231,10 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       rememberClient,
       deleteClient,
-      importBackup
+      importBackup,
+      runRecurring
     }),
-    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, restoreInvoice, undo, redo, canUndo, canRedo, setStatus, updateProfile, rememberClient, deleteClient, importBackup]
+    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, restoreInvoice, undo, redo, canUndo, canRedo, setStatus, updateProfile, rememberClient, deleteClient, importBackup, runRecurring]
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

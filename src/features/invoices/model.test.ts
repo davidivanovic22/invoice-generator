@@ -4,10 +4,12 @@ import {
   createLineItem,
   displayStatus,
   duplicateInvoice,
+  generateRecurring,
   invoiceTotals,
   isNumberTaken,
   dueTaxMonths,
   nextInvoiceNumber,
+  nextRecurringDate,
   paidIncomeEur,
   paidTaxMonths,
   taxSpentEur,
@@ -127,5 +129,39 @@ describe('yearly tax', () => {
     );
     expect(result.total).toBeCloseTo(4300);
     expect(result.skipped).toBe(1);
+  });
+});
+
+describe('recurring invoices', () => {
+  const base = () => {
+    const store = createEmptyStore();
+    const source: Invoice = { ...createInvoice(store), number: '2026-008', issueDate: '2026-08-31', serviceDate: '2026-08-31', dueDate: '2026-09-14', billingPeriod: 'avgust 2026.', repeatDay: 31 };
+    source.design.language = 'sr';
+    source.client.name = 'Wisteria d.o.o.';
+    store.invoices = [source];
+    return { store, source };
+  };
+
+  it('clamps to the end of shorter months and keeps the original day', () => {
+    expect(nextRecurringDate('2026-08-31', 31)).toBe('2026-09-30');
+    expect(nextRecurringDate('2026-09-30', 31)).toBe('2026-10-31');
+    expect(nextRecurringDate('2026-01-31', 31)).toBe('2026-02-28');
+  });
+
+  it('creates missed months as drafts and moves the series to the newest copy', () => {
+    const { store, source } = base();
+    const { store: next, created } = generateRecurring(store, '2026-10-31');
+    expect(created.map((invoice) => [invoice.number, invoice.issueDate, invoice.dueDate, invoice.billingPeriod])).toEqual([
+      ['2026-009', '2026-09-30', '2026-10-14', 'septembar 2026.'],
+      ['2026-010', '2026-10-31', '2026-11-14', 'oktobar 2026.']
+    ]);
+    expect(created.every((invoice) => invoice.status === 'draft' && invoice.client.name === 'Wisteria d.o.o.')).toBe(true);
+    expect(next.invoices.find((invoice) => invoice.id === source.id)?.repeatDay).toBeNull();
+    expect(next.invoices.filter((invoice) => invoice.repeatDay)).toHaveLength(1);
+    expect(generateRecurring(next, '2026-10-31').created).toHaveLength(0);
+  });
+
+  it('does nothing before the next date', () => {
+    expect(generateRecurring(base().store, '2026-09-29').created).toHaveLength(0);
   });
 });

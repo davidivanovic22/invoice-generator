@@ -87,6 +87,8 @@ export type Invoice = {
   signature: string;
   design: InvoiceDesign;
   paidAt: string | null;
+  /** Repeat monthly on this day of the month; the newest invoice of a series carries it. */
+  repeatDay?: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -267,6 +269,48 @@ export const duplicateInvoice = (store: InvoiceStore, source: Invoice): Invoice 
     signature: source.signature,
     design: { ...source.design, seasonalMonth: null, seasonalVariant: null }
   };
+};
+
+/* ---------- Recurring invoices ---------- */
+
+/** The date in the next month on `day` (or the month's last day). */
+export const nextRecurringDate = (iso: string, day: number) => {
+  const [year, month] = iso.split('-').map(Number);
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const date = new Date(year, month, Math.min(day, lastDay));
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+/**
+ * Creates the drafts for every recurring invoice whose next date has come,
+ * catching up on missed months. The series moves to the newest copy.
+ */
+export const generateRecurring = (store: InvoiceStore, today = todayIso()) => {
+  let invoices = [...store.invoices];
+  const created: Invoice[] = [];
+  for (const source of store.invoices) {
+    if (!source.repeatDay) continue;
+    let current = source;
+    for (let guard = 0; guard < 24; guard += 1) {
+      const issueDate = nextRecurringDate(current.issueDate, current.repeatDay!);
+      if (issueDate > today) break;
+      const term = Math.max(0, daysBetween(current.issueDate, current.dueDate));
+      const copy: Invoice = {
+        ...duplicateInvoice({ ...store, invoices }, current),
+        number: nextInvoiceNumber(invoices, store.profile.defaults.numberPrefix, issueDate),
+        issueDate,
+        serviceDate: issueDate,
+        dueDate: addDaysIso(issueDate, term),
+        billingPeriod: isDefaultPeriod(current.billingPeriod, current.issueDate) ? periodLabel(issueDate, current.design.language) : current.billingPeriod,
+        repeatDay: current.repeatDay
+      };
+      const previousId = current.id;
+      invoices = [copy, ...invoices.map((invoice) => (invoice.id === previousId ? { ...invoice, repeatDay: null } : invoice))];
+      created.push(copy);
+      current = copy;
+    }
+  }
+  return { store: created.length ? { ...store, invoices } : store, created };
 };
 
 export const invoiceTotals = (invoice: Pick<Invoice, 'items' | 'vatPercent' | 'currency'>) => {
