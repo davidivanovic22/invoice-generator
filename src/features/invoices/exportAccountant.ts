@@ -41,54 +41,94 @@ export const exportForAccountant = async (store: InvoiceStore, year: number) => 
 
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(`Fakture ${year}`, { views: [{ state: 'frozen', ySplit: 1, showGridLines: false }] });
-  sheet.columns = [
-    { header: 'Broj', key: 'number', width: 14 },
-    { header: 'Datum izdavanja', key: 'issueDate', width: 16 },
-    { header: 'Datum prometa', key: 'serviceDate', width: 16 },
-    { header: 'Rok plaćanja', key: 'dueDate', width: 14 },
-    { header: 'Klijent', key: 'client', width: 32 },
-    { header: 'PIB klijenta', key: 'clientTaxId', width: 18 },
-    { header: 'Mesto i država', key: 'clientCountry', width: 24 },
-    { header: 'Valuta', key: 'currency', width: 9 },
-    { header: 'Iznos', key: 'total', width: 14 },
-    { header: 'Kurs NBS', key: 'rate', width: 11 },
-    { header: 'Iznos u RSD', key: 'totalRsd', width: 16 },
-    { header: 'Status', key: 'status', width: 11 },
-    { header: 'Datum plaćanja', key: 'paidAt', width: 15 }
+  workbook.creator = 'Paperwork';
+  const sheet = workbook.addWorksheet(`Fakture ${year}`, {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } }
+  });
+  const FONT = 'Calibri';
+  const INK = 'FF0F172A';
+  const MUTED = 'FF64748B';
+  const LINE = { style: 'thin' as const, color: { argb: 'FFE2E8F0' } };
+  type Column = { title: string; key: keyof (typeof rows)[number]; width: number; align?: 'right' | 'center'; format?: string };
+  const columns: Column[] = [
+    { title: 'Broj', key: 'number', width: 13 },
+    { title: 'Datum izdavanja', key: 'issueDate', width: 16, align: 'center' },
+    { title: 'Datum prometa', key: 'serviceDate', width: 16, align: 'center' },
+    { title: 'Rok plaćanja', key: 'dueDate', width: 15, align: 'center' },
+    { title: 'Klijent', key: 'client', width: 30 },
+    { title: 'PIB klijenta', key: 'clientTaxId', width: 16 },
+    { title: 'Mesto i država', key: 'clientCountry', width: 24 },
+    { title: 'Valuta', key: 'currency', width: 9, align: 'center' },
+    { title: 'Iznos', key: 'total', width: 15, align: 'right', format: '#,##0.00' },
+    { title: 'Kurs NBS', key: 'rate', width: 12, align: 'right', format: '0.0000' },
+    { title: 'Iznos u RSD', key: 'totalRsd', width: 17, align: 'right', format: '#,##0.00' },
+    { title: 'Status', key: 'status', width: 12, align: 'center' },
+    { title: 'Datum plaćanja', key: 'paidAt', width: 16, align: 'center' }
   ];
-  for (const row of rows) {
-    sheet.addRow({
-      ...row,
-      issueDate: formatDateNumeric(row.issueDate),
-      serviceDate: formatDateNumeric(row.serviceDate),
-      dueDate: formatDateNumeric(row.dueDate),
-      paidAt: row.paidAt ? formatDateNumeric(row.paidAt) : ''
+  sheet.columns = columns.map((column) => ({ width: column.width }));
+  const lastColumn = columns.length;
+  const dateKeys = new Set(['issueDate', 'serviceDate', 'dueDate', 'paidAt']);
+
+  // Title block
+  sheet.mergeCells(1, 1, 1, lastColumn);
+  const title = sheet.getCell(1, 1);
+  title.value = `Fakture ${year}. — ${store.profile.party.name || ''}`.replace(/ — $/, '');
+  title.font = { name: FONT, size: 16, bold: true, color: { argb: INK } };
+  title.alignment = { vertical: 'middle' };
+  sheet.getRow(1).height = 28;
+  sheet.mergeCells(2, 1, 2, lastColumn);
+  const subtitle = sheet.getCell(2, 1);
+  subtitle.value = [store.profile.party.taxId && `PIB ${store.profile.party.taxId}`, 'Iznos u RSD: srednji kurs NBS na dan izdavanja fakture'].filter(Boolean).join('  ·  ');
+  subtitle.font = { name: FONT, size: 10, color: { argb: MUTED } };
+  sheet.getRow(2).height = 18;
+
+  // Table head
+  const HEAD = 4;
+  const head = sheet.getRow(HEAD);
+  columns.forEach((column, index) => {
+    const cell = head.getCell(index + 1);
+    cell.value = column.title;
+    cell.font = { name: FONT, bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    cell.alignment = { vertical: 'middle', horizontal: column.align ?? 'left', indent: column.align === 'center' ? 0 : 1, wrapText: true };
+  });
+  head.height = 24;
+
+  // Rows
+  rows.forEach((row, rowIndex) => {
+    const line = sheet.getRow(HEAD + 1 + rowIndex);
+    columns.forEach((column, index) => {
+      const cell = line.getCell(index + 1);
+      const value = row[column.key];
+      cell.value = dateKeys.has(column.key) ? (value ? formatDateNumeric(String(value)) : '') : (value ?? '');
+      cell.font = { name: FONT, size: 10, color: { argb: INK } };
+      cell.alignment = { vertical: 'middle', horizontal: column.align ?? 'left', indent: column.align === 'center' ? 0 : 1 };
+      cell.border = { bottom: LINE };
+      if (column.format) cell.numFmt = column.format;
+      if (rowIndex % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
     });
-  }
-  const totalRow = sheet.addRow({
-    number: 'Ukupno',
-    totalRsd: rows.every((row) => row.totalRsd !== null) ? rows.reduce((sum, row) => sum + (row.totalRsd ?? 0), 0) : null
+    line.height = 19;
   });
 
-  const header = sheet.getRow(1);
-  header.height = 22;
-  header.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
-    cell.alignment = { vertical: 'middle' };
-  });
-  sheet.eachRow((row, number) => {
-    if (number === 1) return;
-    row.getCell('total').numFmt = '#,##0.00';
-    row.getCell('rate').numFmt = '0.0000';
-    row.getCell('totalRsd').numFmt = '#,##0.00';
-    if (number % 2 === 1 && row !== totalRow) row.eachCell({ includeEmpty: true }, (cell) => (cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }));
-  });
-  totalRow.font = { bold: true };
-  totalRow.eachCell({ includeEmpty: true }, (cell) => {
+  // Total in RSD (only when every rate is known)
+  const totalRow = sheet.getRow(HEAD + 1 + rows.length);
+  const complete = rows.every((row) => row.totalRsd !== null);
+  const rsdColumn = columns.findIndex((column) => column.key === 'totalRsd') + 1;
+  columns.forEach((_column, index) => {
+    const cell = totalRow.getCell(index + 1);
+    cell.font = { name: FONT, bold: true, size: 11, color: { argb: index + 1 === rsdColumn ? 'FF4338CA' : INK } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index + 1 === rsdColumn ? 'FFEEF2FF' : 'FFE2E8F0' } };
     cell.border = { top: { style: 'medium', color: { argb: 'FF1E293B' } } };
+    cell.alignment = { vertical: 'middle', horizontal: index + 1 === rsdColumn ? 'right' : 'left', indent: 1 };
   });
+  totalRow.getCell(1).value = `Ukupno ${year}. (${rows.length})`;
+  totalRow.getCell(rsdColumn).value = complete ? rows.reduce((sum, row) => sum + (row.totalRsd ?? 0), 0) : '';
+  totalRow.getCell(rsdColumn).numFmt = '#,##0.00';
+  totalRow.height = 24;
+
+  sheet.views = [{ state: 'frozen', ySplit: HEAD, showGridLines: false }];
+  sheet.pageSetup.printTitlesRow = `${HEAD}:${HEAD}`;
+  sheet.pageSetup.printArea = `A1:${sheet.getColumn(lastColumn).letter}${HEAD + 1 + rows.length}`;
 
   const buffer = await workbook.xlsx.writeBuffer();
   const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));

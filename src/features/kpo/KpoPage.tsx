@@ -405,7 +405,8 @@ const KpoRow = ({ entry, number, planned, money, onSave, onDelete, onCancel, sta
 /** A4 copy of the book, used for the PDF export. */
 const KpoPrint = ({ book, year, includePlanned }: { book: KpoBook; year: number; includePlanned: boolean }) => {
   const rows = bookYear(book, year).filter((row) => includePlanned || !row.planned);
-  const totals = yearTotals(rows, includePlanned);
+  const totals = yearTotals(rows);
+  const plannedTotals = yearTotals(rows.filter((row) => row.planned), true);
   const money = (value: number) => formatAmount(value, book.currency, 'sr-Latn-RS');
   const header: [string, string][] = [
     ['PIB', book.header.pib],
@@ -471,6 +472,15 @@ const KpoPrint = ({ book, year, includePlanned }: { book: KpoBook; year: number;
             <td className="border border-slate-200 px-2 py-1.5 text-right">{money(totals.services)}</td>
             <td className="border border-slate-200 bg-indigo-50 px-2 py-1.5 text-right text-indigo-700">{money(totals.total)}</td>
           </tr>
+          {plannedTotals.total > 0 && (
+            <tr className="italic text-slate-400">
+              <td className="border border-slate-200" />
+              <td className="border border-slate-200 px-2 py-1">Planirano (još nije proknjiženo)</td>
+              <td className="border border-slate-200 px-2 py-1 text-right">{money(plannedTotals.products)}</td>
+              <td className="border border-slate-200 px-2 py-1 text-right">{money(plannedTotals.services)}</td>
+              <td className="border border-slate-200 px-2 py-1 text-right">{money(plannedTotals.total)}</td>
+            </tr>
+          )}
         </tfoot>
       </table>
     </div>

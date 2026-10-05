@@ -5,6 +5,8 @@
 import { safeFileName } from '../../lib/files';
 import { bookYear, describeWithDate, entryTotal, yearTotals, type KpoBook } from './model';
 
+const FONT = 'Calibri';
+
 const COLORS = {
   ink: 'FF0F172A',
   muted: 'FF64748B',
@@ -54,22 +56,25 @@ export const exportKpoXlsx = async (book: KpoBook, year: number, includePlanned:
   // Title
   sheet.mergeCells('A1:E1');
   const title = sheet.getCell('A1');
-  title.value = 'KPO';
-  title.font = { name: 'Calibri', size: 20, bold: true, color: { argb: COLORS.ink } };
-  title.alignment = { horizontal: 'right' };
+  title.value = `KPO ${year}.`;
+  title.font = { name: FONT, size: 20, bold: true, color: { argb: COLORS.ink } };
+  title.alignment = { horizontal: 'right', vertical: 'middle' };
   sheet.getRow(1).height = 30;
 
-  // Header block
+  // Header block: label and value share one merged cell (A:B), because column A is only as wide as "Redni broj".
   HEADER_ROWS.forEach(([label, field], index) => {
     const row = sheet.getRow(index + 2);
-    sheet.mergeCells(`B${index + 2}:C${index + 2}`);
-    row.getCell(1).value = label;
-    row.getCell(1).font = { bold: true, size: 10, color: { argb: COLORS.muted } };
-    row.getCell(2).value = book.header[field] || '';
-    row.getCell(2).font = { size: 11, color: { argb: COLORS.ink } };
-    row.getCell(1).border = { bottom: thin };
-    row.getCell(2).border = { bottom: thin };
-    row.height = 20;
+    sheet.mergeCells(`A${index + 2}:B${index + 2}`);
+    const cell = row.getCell(1);
+    cell.value = {
+      richText: [
+        { font: { name: FONT, bold: true, size: 10, color: { argb: COLORS.muted } }, text: `${label}  ` },
+        { font: { name: FONT, size: 11, color: { argb: COLORS.ink } }, text: book.header[field] || '' }
+      ]
+    };
+    cell.alignment = { vertical: 'middle', indent: 1 };
+    cell.border = { bottom: thin };
+    row.height = 21;
   });
 
   // Form title
@@ -77,7 +82,7 @@ export const exportKpoXlsx = async (book: KpoBook, year: number, includePlanned:
   sheet.mergeCells(`A${formRow}:E${formRow}`);
   const form = sheet.getCell(`A${formRow}`);
   form.value = 'KNJIGA O OSTVARENOM PROMETU PAUŠALNO OPOREZOVANIH OBVEZNIKA';
-  form.font = { size: 14, bold: true, color: { argb: COLORS.ink } };
+  form.font = { name: FONT, size: 14, bold: true, color: { argb: COLORS.ink } };
   form.alignment = { horizontal: 'center', vertical: 'middle' };
   sheet.getRow(formRow).height = 34;
 
@@ -103,7 +108,7 @@ export const exportKpoXlsx = async (book: KpoBook, year: number, includePlanned:
     for (let column = 1; column <= 5; column += 1) {
       const cell = sheet.getRow(rowNumber).getCell(column);
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowNumber === head ? COLORS.head : COLORS.subHead } };
-      cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+      cell.font = { name: FONT, bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       cell.border = { top: { style: 'thin', color: { argb: COLORS.head } }, bottom: { style: 'thin', color: { argb: COLORS.head } } };
     }
@@ -115,10 +120,11 @@ export const exportKpoXlsx = async (book: KpoBook, year: number, includePlanned:
   [1, 2, 3, 4, 5].forEach((number) => {
     const cell = numbering.getCell(number);
     cell.value = number;
-    cell.font = { size: 8, color: { argb: COLORS.muted } };
-    cell.alignment = { horizontal: 'center' };
+    cell.font = { name: FONT, size: 8, color: { argb: COLORS.muted } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
     cell.border = { bottom: thin };
   });
+  numbering.height = 14;
 
   // Entries
   const rows = bookYear(book, year).filter((row) => includePlanned || !row.planned);
@@ -129,30 +135,49 @@ export const exportKpoXlsx = async (book: KpoBook, year: number, includePlanned:
     for (let column = 1; column <= 5; column += 1) {
       const cell = row.getCell(column);
       cell.border = box;
-      cell.font = { size: 10, italic: planned, color: { argb: planned ? COLORS.muted : COLORS.ink } };
+      cell.font = { name: FONT, size: 10, italic: planned, color: { argb: planned ? COLORS.muted : COLORS.ink } };
       if (index % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.zebra } };
       if (column >= 3) cell.numFmt = money;
     }
-    row.getCell(1).alignment = { horizontal: 'center' };
+    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    row.getCell(2).alignment = { vertical: 'middle', indent: 1 };
+    for (const column of [3, 4, 5]) row.getCell(column).alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
     const total = row.getCell(5);
     total.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.totalFill } };
-    total.font = { size: 10, bold: true, italic: planned, color: { argb: planned ? COLORS.muted : COLORS.totalInk } };
-    row.height = 18;
+    total.font = { name: FONT, size: 10, bold: true, italic: planned, color: { argb: planned ? COLORS.muted : COLORS.totalInk } };
+    row.height = 20;
     rowNumber += 1;
   });
 
-  // Totals
-  const totals = yearTotals(rows, includePlanned);
-  const footer = sheet.getRow(rowNumber);
-  footer.values = ['', `Ukupno ${year}.`, totals.products, totals.services, totals.total];
-  for (let column = 1; column <= 5; column += 1) {
-    const cell = footer.getCell(column);
-    cell.font = { bold: true, size: 11, color: { argb: column === 5 ? COLORS.totalInk : COLORS.ink } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: column === 5 ? COLORS.totalFill : COLORS.footer } };
-    cell.border = { top: { style: 'medium', color: { argb: COLORS.head } }, bottom: thin };
-    if (column >= 3) cell.numFmt = money;
+  // Totals: only what is actually booked; planned entries get their own line.
+  const totals = yearTotals(rows);
+  const plannedTotals = yearTotals(rows.filter((row) => row.planned), true);
+  const summary: { label: string; values: typeof totals; planned: boolean }[] = [{ label: `Ukupno ${year}.`, values: totals, planned: false }];
+  if (plannedTotals.total > 0) summary.push({ label: 'Planirano (još nije proknjiženo)', values: plannedTotals, planned: true });
+  for (const line of summary) {
+    const footer = sheet.getRow(rowNumber);
+    footer.values = ['', line.label, line.values.products, line.values.services, line.values.total];
+    for (let column = 1; column <= 5; column += 1) {
+      const cell = footer.getCell(column);
+      cell.font = line.planned
+        ? { name: FONT, italic: true, size: 10, color: { argb: COLORS.muted } }
+        : { name: FONT, bold: true, size: 11, color: { argb: column === 5 ? COLORS.totalInk : COLORS.ink } };
+      if (!line.planned) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: column === 5 ? COLORS.totalFill : COLORS.footer } };
+        cell.border = { top: { style: 'medium', color: { argb: COLORS.head } }, bottom: thin };
+      }
+      cell.alignment = column >= 3 ? { horizontal: 'right', vertical: 'middle', indent: 1 } : { vertical: 'middle', indent: 1 };
+      if (column >= 3) cell.numFmt = money;
+    }
+    footer.height = line.planned ? 20 : 24;
+    rowNumber += 1;
   }
-  footer.height = 22;
+  rowNumber -= 1;
+  // Printing: the table head repeats on every page, and only the book is printed.
+  sheet.pageSetup.printTitlesRow = `${head}:${head + 2}`;
+  sheet.pageSetup.printArea = `A1:E${rowNumber}`;
+  // A normal year fits on one landscape page; long books flow onto more pages.
+  sheet.pageSetup.fitToHeight = rows.length <= 30 ? 1 : 0;
   sheet.views = [{ showGridLines: false, state: 'frozen', ySplit: head + 1 }];
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -170,8 +195,10 @@ export const exportKpoCsv = (book: KpoBook, year: number, includePlanned: boolea
     ['Redni broj', 'Datum i opis knjiženja', 'Od prodaje proizvoda', 'Od izvršenih usluga', 'Svega prihodi od delatnosti (3+4)'],
     ...rows.map(({ entry, number }) => [number ?? '', describeWithDate(entry), entry.products, entry.services, entryTotal(entry)])
   ];
-  const totals = yearTotals(rows, includePlanned);
+  const totals = yearTotals(rows);
   lines.push(['', `Ukupno ${year}.`, totals.products, totals.services, totals.total]);
+  const planned = yearTotals(rows.filter((row) => row.planned), true);
+  if (planned.total > 0) lines.push(['', 'Planirano (još nije proknjiženo)', planned.products, planned.services, planned.total]);
   // BOM + semicolons so Excel in Serbian locale opens it correctly.
   const csv = '﻿' + lines.map((line) => line.map(csvCell).join(';')).join('\r\n');
   download(new Blob([csv], { type: 'text/csv;charset=utf-8' }), kpoFileName(book, year, 'csv'));
