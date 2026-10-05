@@ -1,6 +1,7 @@
 /** Things that need attention today, shown on the home page. */
 import { daysBetween, todayIso } from '../../lib/dates';
 import { displayStatus, TAX_DUE_DAY, type InvoiceStore } from '../invoices/model';
+import { firmFigures } from '../firms/summary';
 import { invoicesMissingFromBook, type KpoBook } from '../kpo/model';
 
 export type Reminder =
@@ -8,6 +9,7 @@ export type Reminder =
   | { kind: 'tax-due'; month: number; days: number }
   | { kind: 'tax-missing'; year: number }
   | { kind: 'kpo'; count: number }
+  | { kind: 'limit'; percent: number }
   | { kind: 'drafts'; count: number; invoiceId: string };
 
 export const buildReminders = (store: InvoiceStore, book: KpoBook, today = todayIso()): Reminder[] => {
@@ -30,6 +32,10 @@ export const buildReminders = (store: InvoiceStore, book: KpoBook, today = today
   } else if (tax && day <= TAX_DUE_DAY && TAX_DUE_DAY - day <= 5 && !tax.paidMonths?.includes(month)) {
     reminders.push({ kind: 'tax-due', month, days: TAX_DUE_DAY - day });
   }
+
+  // Close to (or over) the yearly flat-rate limit.
+  const share = firmFigures(store, book, year, today).limitShare;
+  if (share >= 0.8) reminders.push({ kind: 'limit', percent: Math.round(share * 100) });
 
   const missing = invoicesMissingFromBook(store.invoices, book, year).length;
   if (missing) reminders.push({ kind: 'kpo', count: missing });

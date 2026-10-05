@@ -30,9 +30,11 @@ const parse = (raw: string | null) => {
   }
 };
 
-export const summarizeFirm = (invoicesRaw: string | null, kpoRaw: string | null, year: number, today: string): FirmSummary => {
-  const store: InvoiceStore = normalizeStore(parse(invoicesRaw) ?? {});
-  const book: KpoBook = normalizeBook(parse(kpoRaw));
+export const summarizeFirm = (invoicesRaw: string | null, kpoRaw: string | null, year: number, today: string): FirmSummary =>
+  firmFigures(normalizeStore(parse(invoicesRaw) ?? {}), normalizeBook(parse(kpoRaw)), year, today);
+
+/** The same figures from data that is already loaded. */
+export const firmFigures = (store: InvoiceStore, book: KpoBook, year: number, today: string): FirmSummary => {
   const fallbackRate = store.profile.yearlyTax[String(year)]?.rsdPerEur ?? 117.2;
   const eurRate = (date: string) => cachedRate('EUR', date) ?? fallbackRate;
   /** Amount in RSD on a date. */

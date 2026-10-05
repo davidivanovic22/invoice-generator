@@ -1068,5 +1068,11 @@ export const SR: Record<string, string> = {
   "View only: you can look at this firm and export, but not change it.": "Samo pregled: možeš da gledaš ovu firmu i izvoziš, ali ne i da je menjaš.",
   "Someone else changed this data while you were working. Their version is loaded; your last changes are kept in a backup.": "Neko drugi je izmenio ove podatke dok si ti radio. Učitana je njegova verzija; tvoje poslednje izmene su sačuvane u backup-u.",
   "Loaded the latest changes from the cloud.": "Učitane su najnovije izmene iz oblaka.",
-  "Open backups": "Otvori backup"
+  "Open backups": "Otvori backup",
+
+  // Report and limit
+  "Yearly report (PDF)": "Godišnji pregled (PDF)",
+  "Open overview": "Otvori pregled",
+  "You are over the yearly flat-rate limit of 6 million RSD ({percent}%). Talk to your accountant.": "Prešao si godišnji limit za paušal od 6 miliona dinara ({percent}%). Javi se knjigovođi.",
+  "You have used {percent}% of the yearly flat-rate limit of 6 million RSD.": "Iskoristio si {percent}% godišnjeg limita za paušal od 6 miliona dinara."
 };
