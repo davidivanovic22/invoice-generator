@@ -95,7 +95,7 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="kpo-import-title" className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <div className="border-b border-slate-100 px-6 py-5">
           <h2 id="kpo-import-title" className="text-lg font-semibold text-slate-900">

@@ -118,7 +118,7 @@ export const KpoPage = () => {
         </label>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
         <Card label={t('Booked in {year}', { year })} value={money(booked.total)} detail={t('{count} entry|{count} entries', { count: rows.filter((row) => !row.planned).length })} accent />
         <Card label={t('Planned')} value={money(planned.total)} detail={t('Future dates, not numbered yet')} />
         <Card label={t('Products / services')} value={`${money(booked.products)} / ${money(booked.services)}`} detail={t('Columns 3 and 4')} />
@@ -195,12 +195,13 @@ export const KpoPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="bg-slate-800 text-left text-[12px] font-semibold uppercase tracking-wide text-white">
+                {/* Fixed colours: the head stays dark slate in both themes. */}
+                <tr className="bg-[#1e293b] text-left text-[12px] font-semibold uppercase tracking-wide text-[#ffffff]">
                   <th className="w-16 px-4 py-3 text-center">{t('No.')}</th>
                   <th className="px-4 py-3">{t('Date and description')}</th>
                   <th className="w-36 px-4 py-3 text-right">{t('Products')}</th>
                   <th className="w-36 px-4 py-3 text-right">{t('Services')}</th>
-                  <th className="w-40 bg-slate-700 px-4 py-3 text-right">{t('Total (3+4)')}</th>
+                  <th className="w-40 bg-[#334155] px-4 py-3 text-right">{t('Total (3+4)')}</th>
                   <th className="w-20 px-2 py-3" />
                 </tr>
               </thead>

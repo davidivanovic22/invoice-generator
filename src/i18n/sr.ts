@@ -911,9 +911,12 @@ export const SR: Record<string, string> = {
   "Write with AI": "Napiši uz AI",
 
   // Theme and updates
-  "Dark theme": "Tamna tema (klikni: prati sistem)",
-  "Light theme": "Svetla tema (klikni: tamna)",
-  "Theme follows the system": "Tema prati sistem (klikni: svetla)",
+  "Dark theme": "Tamna tema",
+  "Light theme": "Svetla tema",
+  "Switch to dark theme": "Prebaci na tamnu temu",
+  "Switch to light theme": "Prebaci na svetlu temu",
+  "More": "Više",
+  "Main": "Glavni meni",
   "A new version is ready.": "Nova verzija je spremna.",
   "Update": "Osveži",
 

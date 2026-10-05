@@ -99,7 +99,7 @@ export const CommandPalette = ({ open, onClose }: { open: boolean; onClose: () =
   let lastGroup = '';
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/40 p-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 p-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-label={t('Search and commands')} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-slate-100 px-4">
           <Icon name="search" className="h-5 w-5 text-slate-400" />

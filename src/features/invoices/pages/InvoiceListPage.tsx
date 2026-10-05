@@ -196,7 +196,7 @@ export const InvoiceListPage = () => {
       )}
 
       {store.invoices.length > 0 && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5 [&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1">
           <Stat label={t('Outstanding')} value={sumByCurrency(unpaid)} detail={t('{count} unpaid invoice|{count} unpaid invoices', { count: unpaid.length })} />
           <Stat
             label={t('Overdue')}
@@ -298,8 +298,9 @@ export const InvoiceListPage = () => {
                 {visible.map((invoice) => {
                   const status = displayStatus(invoice, today);
                   return (
-                    <li key={invoice.id} className="group flex items-center gap-3 px-5 py-3.5 transition hover:bg-slate-50">
-                      <Link to={`/invoices/${invoice.id}`} className="flex min-w-0 flex-1 items-center gap-4">
+                    // Phones: name and amount on the first line, status and actions on the second.
+                    <li key={invoice.id} className="group flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3.5 transition hover:bg-slate-50 sm:flex-nowrap sm:px-5">
+                      <Link to={`/invoices/${invoice.id}`} className="flex min-w-0 basis-full items-center gap-4 sm:flex-1 sm:basis-auto">
                         <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-600 sm:flex">
                           {(invoice.client.name || '?').slice(0, 2).toUpperCase()}
                         </span>
@@ -320,6 +321,7 @@ export const InvoiceListPage = () => {
                         </div>
                         <span className="shrink-0 text-right font-semibold tabular-nums text-slate-900">{formatMinor(invoiceTotals(invoice).totalMinor, invoice.currency)}</span>
                       </Link>
+                      <span className="ml-auto sm:ml-0" />
                       <StatusSelect invoice={invoice} onChange={(next) => setStatus(invoice.id, next)} />
                       <Button size="sm" icon="copy" title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')} onClick={() => handleDuplicate(invoice)}>
                         <span className="hidden sm:inline">{t('Duplicate')}</span>

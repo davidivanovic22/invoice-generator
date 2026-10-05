@@ -92,7 +92,7 @@ export const Onboarding = () => {
   const set = (field: keyof Party) => (value: string) => setParty((current) => ({ ...current, [field]: value }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
       <div role="dialog" aria-modal="true" aria-labelledby="onboarding-title" className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white">

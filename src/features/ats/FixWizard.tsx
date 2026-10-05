@@ -79,7 +79,7 @@ export const FixWizard = ({ resumeId, suggestions, onClose, onGoTo }: Props) => 
   const visibleTotal = steps.filter((candidate, candidateIndex) => candidateIndex < index || isRelevant(candidate)).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-0 backdrop-blur-[2px] sm:p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 backdrop-blur-[2px] sm:p-6" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"

@@ -169,7 +169,7 @@ export const InvoiceEditorPage = () => {
           { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
         ]}
       >
-        <Button icon="copy" onClick={handleDuplicate} title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')}>
+        <Button icon="copy" onClick={handleDuplicate} title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')} className="hidden sm:inline-flex">
           <span className="hidden sm:inline">{t('Duplicate')}</span>
         </Button>
         <Button icon="mail" onClick={() => setEmailing('invoice')} title={t('Send by email')} aria-label={t('Send by email')}>

@@ -89,7 +89,7 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
   const ready = mode === 'paste' ? text.trim().length > 50 : Boolean(file);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={() => !working && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onMouseDown={() => !working && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="import-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <h2 id="import-title" className="text-lg font-semibold text-slate-900">
           {t('Import your existing resume')}

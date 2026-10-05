@@ -115,7 +115,7 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
   const total = formatMinor(lineTotalMinor(quantity, price, currency), currency);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-[2px] sm:items-center" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-[2px] sm:items-center" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="quick-invoice-title" className="w-full max-w-xl rounded-2xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-5">
           <h2 id="quick-invoice-title" className="text-lg font-semibold text-slate-900">

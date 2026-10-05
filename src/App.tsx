@@ -23,7 +23,7 @@ import { LanguageProvider, t, useLanguage } from './i18n';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { FeedbackProvider, useFeedback } from './ui/Feedback';
 import { Icon } from './ui/Icon';
-import { readTheme, saveTheme, type ThemeChoice } from './ui/theme';
+import { saveTheme } from './ui/theme';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
@@ -95,25 +95,123 @@ const AccountButton = () => {
   );
 };
 
-const THEME_NEXT: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
+/** One click switches between light and dark (the first visit follows the system). */
+const useThemeToggle = () => {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const toggle = () => {
+    saveTheme(dark ? 'light' : 'dark');
+    setDark(!dark);
+  };
+  return { dark, toggle, label: dark ? t('Switch to light theme') : t('Switch to dark theme') };
+};
 
-const ThemeSwitch = () => {
-  const [choice, setChoice] = useState<ThemeChoice>(readTheme);
-  const label = choice === 'dark' ? t('Dark theme') : choice === 'light' ? t('Light theme') : t('Theme follows the system');
+const ThemeSwitch = ({ withLabel = false }: { withLabel?: boolean }) => {
+  const { dark, toggle, label } = useThemeToggle();
   return (
     <button
       type="button"
-      onClick={() => {
-        const next = THEME_NEXT[choice];
-        saveTheme(next);
-        setChoice(next);
-      }}
+      onClick={toggle}
       title={label}
       aria-label={label}
-      className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+      className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
     >
-      <Icon name={choice === 'dark' ? 'moon' : choice === 'light' ? 'sun' : 'monitor'} />
+      <Icon name={dark ? 'sun' : 'moon'} />
+      {withLabel && <span>{dark ? t('Light theme') : t('Dark theme')}</span>}
     </button>
+  );
+};
+
+const mobileTabClass = ({ isActive }: { isActive: boolean }) =>
+  `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${isActive ? 'text-indigo-600' : 'text-slate-500'}`;
+
+/** Phones: the main sections sit in a bottom tab bar; everything else is under "More". */
+const MobileTabBar = () => {
+  const [open, setOpen] = useState(false);
+  const { hasKey, openSettings } = useAi();
+  const { lang, setLang } = useLanguage();
+  const { lock, lockNow } = useAccount();
+  const close = () => setOpen(false);
+  const sheetLink = 'flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-slate-800 hover:bg-slate-100';
+  return (
+    <>
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden" aria-label={t('Main')}>
+        <NavLink to="/invoices" className={mobileTabClass}>
+          <Icon name="file" className="h-5 w-5" />
+          {t('Invoices')}
+        </NavLink>
+        <NavLink to="/overview" className={mobileTabClass}>
+          <Icon name="cash" className="h-5 w-5" />
+          {t('Overview')}
+        </NavLink>
+        <NavLink to="/kpo" className={mobileTabClass}>
+          <Icon name="list" className="h-5 w-5" />
+          KPO
+        </NavLink>
+        <NavLink to="/resumes" className={mobileTabClass}>
+          <Icon name="user" className="h-5 w-5" />
+          {t('Resumes')}
+        </NavLink>
+        <button type="button" onClick={() => setOpen(true)} className={mobileTabClass({ isActive: open })} aria-haspopup="dialog">
+          <Icon name="more" className="h-5 w-5" />
+          {t('More')}
+        </button>
+      </nav>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/50 md:hidden" onMouseDown={close}>
+          <div role="dialog" aria-modal="true" aria-label={t('More')} className="w-full rounded-t-3xl bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200" />
+            <NavLink to="/" className={sheetLink} onClick={close}>
+              <Icon name="home" /> {t('Home')}
+            </NavLink>
+            <NavLink to="/profile" className={sheetLink} onClick={close}>
+              <Icon name="building" /> {t('Business profile')}
+            </NavLink>
+            <NavLink to="/account" className={sheetLink} onClick={close}>
+              <Icon name="shield" /> {t('Account & backup')}
+            </NavLink>
+            <button
+              type="button"
+              className={`${sheetLink} w-full`}
+              onClick={() => {
+                close();
+                openSettings();
+              }}
+            >
+              <Icon name="sparkle" /> {hasKey ? t('AI on') : t('Connect AI')}
+            </button>
+            {lock && (
+              <button
+                type="button"
+                className={`${sheetLink} w-full`}
+                onClick={() => {
+                  close();
+                  lockNow();
+                }}
+              >
+                <Icon name="lock" /> {t('Lock now')}
+              </button>
+            )}
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-100 px-1 pt-3">
+              <ThemeSwitch withLabel />
+              <div className="flex items-center rounded-lg bg-slate-100 p-0.5 text-xs font-semibold" role="radiogroup" aria-label={t('Language')}>
+                {(['sr', 'en'] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={lang === value}
+                    onClick={() => setLang(value)}
+                    className={`rounded-md px-3 py-1.5 uppercase ${lang === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -124,9 +222,9 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
           <Icon name="file" className="h-4 w-4" strokeWidth={2} />
         </span>
-        <span className="hidden md:inline">Paperwork</span>
+        <span className="md:hidden lg:inline">Paperwork</span>
       </NavLink>
-      <nav className="flex items-center gap-1">
+      <nav className="hidden items-center gap-1 md:flex">
         <NavLink to="/invoices" className={navClass}>
           {t('Invoices')}
         </NavLink>
@@ -152,16 +250,18 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
       </button>
       <LanguageSwitch />
       <ThemeSwitch />
-      <AiStatus />
-      <NavLink
-        to="/profile"
-        title={t('Business profile')}
-        className={({ isActive }) => `flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
-      >
-        <Icon name="building" />
-        <span className="hidden xl:inline">{t('Business profile')}</span>
-      </NavLink>
-      <AccountButton />
+      <div className="hidden items-center gap-1 md:flex">
+        <AiStatus />
+        <NavLink
+          to="/profile"
+          title={t('Business profile')}
+          className={({ isActive }) => `flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+        >
+          <Icon name="building" />
+          <span className="hidden xl:inline">{t('Business profile')}</span>
+        </NavLink>
+        <AccountButton />
+      </div>
     </div>
   </header>
 );
@@ -176,7 +276,7 @@ const UpdateBanner = () => {
   }, []);
   if (!activate) return null;
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-xl print:hidden">
+    <div className="fixed bottom-20 left-1/2 md:bottom-4 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-xl print:hidden">
       {t('A new version is ready.')}
       <button type="button" onClick={activate} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100">
         {t('Update')}
@@ -216,7 +316,7 @@ const Shell = () => {
       <RecurringInvoices />
       <CloudChoiceDialog />
       <UpdateBanner />
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col pb-16 md:pb-0">
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -232,6 +332,7 @@ const Shell = () => {
           </Routes>
         </ErrorBoundary>
       </main>
+      <MobileTabBar />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       <Onboarding />
     </div>

@@ -85,7 +85,7 @@ export const CloudSection = () => {
             <li>
               {t('Open SQL Editor, paste this and press Run:')}
               <div className="relative mt-2">
-                <pre className="max-h-40 overflow-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">{CLOUD_SQL}</pre>
+                <pre className="max-h-40 overflow-auto rounded-lg bg-slate-50 p-3 pr-24 text-[11px] leading-relaxed text-slate-800 ring-1 ring-inset ring-slate-200">{CLOUD_SQL}</pre>
                 <Button
                   size="sm"
                   icon="copy"
@@ -198,7 +198,7 @@ export const CloudChoiceDialog = () => {
   const line = (counts: typeof local) =>
     t('{invoices} invoices · {resumes} resumes · {kpo} KPO entries', { invoices: counts.invoices, resumes: counts.resumes, kpo: counts.kpo });
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
       <div role="dialog" aria-modal="true" aria-labelledby="cloud-choice" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
         <h2 id="cloud-choice" className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <Icon name="globe" className="h-5 w-5 text-indigo-600" />

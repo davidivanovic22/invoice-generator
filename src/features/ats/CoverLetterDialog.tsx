@@ -58,7 +58,7 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
   const contact = [resume.personal.email, resume.personal.phone, resume.personal.location].filter(Boolean).join(' · ');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={() => !writing && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onMouseDown={() => !writing && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="letter-title" className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <div className="border-b border-slate-100 px-6 py-5">
           <h2 id="letter-title" className="text-lg font-semibold text-slate-900">

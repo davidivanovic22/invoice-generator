@@ -64,10 +64,11 @@ export const EditorToolbar = ({ backTo, backLabel, title, onUndo, onRedo, canUnd
         <Icon name="chevronLeft" />
         <span className="hidden sm:inline">{backLabel}</span>
       </Link>
-      <div className="flex min-w-0 flex-1 items-center gap-2">{title}</div>
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">{title}</div>
       <div className="flex shrink-0 items-center gap-1">
-        <IconButton icon="undo" label={`${t('Undo')} (Ctrl+Z)`} onClick={onUndo} disabled={!canUndo} />
-        <IconButton icon="redo" label={`${t('Redo')} (Ctrl+Y)`} onClick={onRedo} disabled={!canRedo} />
+        {/* Phones have no room (or keyboard shortcuts) for these; Undo is also offered after deletes. */}
+        <IconButton icon="undo" label={`${t('Undo')} (Ctrl+Z)`} onClick={onUndo} disabled={!canUndo} className="hidden sm:inline-flex" />
+        <IconButton icon="redo" label={`${t('Redo')} (Ctrl+Y)`} onClick={onRedo} disabled={!canRedo} className="hidden sm:inline-flex" />
         <Menu label={t('More actions')} items={menu} />
         {children}
       </div>

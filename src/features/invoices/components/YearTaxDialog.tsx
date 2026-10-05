@@ -37,7 +37,7 @@ export const YearTaxDialog = ({ year, value, onSave, onClose }: Props) => {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="year-tax-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
         <h2 id="year-tax-title" className="text-lg font-semibold text-slate-900">
           {t('Tax for {year}', { year })}

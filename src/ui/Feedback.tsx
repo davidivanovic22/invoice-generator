@@ -79,7 +79,7 @@ export const FeedbackProvider = ({ children }: { children: ReactNode }) => {
       {children}
 
       {dialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]" onMouseDown={() => close(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]" onMouseDown={() => close(false)}>
           <div
             role="alertdialog"
             aria-modal="true"
@@ -106,7 +106,7 @@ export const FeedbackProvider = ({ children }: { children: ReactNode }) => {
         </div>
       )}
 
-      <div aria-live="polite" className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 flex-col items-center gap-2">
+      <div aria-live="polite" className="pointer-events-none fixed bottom-20 left-1/2 md:bottom-4 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 flex-col items-center gap-2">
         {toasts.map((item) => (
           <div
             key={item.id}

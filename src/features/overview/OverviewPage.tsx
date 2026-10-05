@@ -106,7 +106,7 @@ export const OverviewPage = () => {
         </p>
       )}
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label={t('Income in {year}', { year })} value={money(income)} detail={planned > 0 ? t('+ {amount} planned', { amount: money(planned) }) : t('Booked and paid')} />
         <Stat label={t('Tax paid')} value={money(tax)} detail={yearTax ? t('{count} month|{count} months', { count: rows.filter((row) => row.tax > 0 && !row.taxPlanned).length }) : t('Not entered')} tone="red" link={yearTax ? undefined : '/invoices'} />
         <Stat label={t('Earned after tax')} value={money(income - tax)} detail={t('Income minus tax')} tone="green" />
