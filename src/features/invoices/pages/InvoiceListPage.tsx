@@ -10,6 +10,8 @@ import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
+import { EmailDialog } from '../components/EmailDialog';
+import { exportForAccountant } from '../exportAccountant';
 import { StatusBadge, StatusSelect } from '../components/Status';
 import { YearTaxDialog } from '../components/YearTaxDialog';
 import { displayStatus, invoiceTotals, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
@@ -66,6 +68,7 @@ export const sumByCurrency = (invoices: Invoice[]) => {
 export const InvoiceListPage = () => {
   const { store, duplicateInvoice, deleteInvoice, restoreInvoice, importBackup, setStatus, updateProfile } = useInvoiceStore();
   const [editingTax, setEditingTax] = useState(false);
+  const [reminding, setReminding] = useState<Invoice | null>(null);
   const { toast } = useFeedback();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -140,6 +143,15 @@ export const InvoiceListPage = () => {
           <Menu
             label={t('Backup and restore')}
             items={[
+              ...[year, year - 1].map((exportYear) => ({
+                label: t('Excel for the accountant ({year})', { year: exportYear }),
+                icon: 'list' as const,
+                onSelect: async () => {
+                  const count = await exportForAccountant(store, exportYear);
+                  if (!count) toast(t('No issued invoices in {year}.', { year: exportYear }), 'info');
+                }
+              })),
+              'divider' as const,
               { label: t('Download backup'), icon: 'download', onSelect: () => downloadJson(store, `invoices-backup-${today}.json`), disabled: !store.invoices.length },
               { label: t('Restore from backup'), icon: 'upload', onSelect: () => fileRef.current?.click() },
               { label: t('Business profile'), icon: 'building', onSelect: () => navigate('/profile') }
@@ -309,6 +321,7 @@ export const InvoiceListPage = () => {
                             ? { label: t('Mark as unpaid'), icon: 'refresh', onSelect: () => setStatus(invoice.id, 'sent') }
                             : { label: t('Mark as paid'), icon: 'check', onSelect: () => setStatus(invoice.id, 'paid') },
                           ...(status === 'draft' ? [{ label: t('Mark as sent'), icon: 'mail' as const, onSelect: () => setStatus(invoice.id, 'sent') }] : []),
+                          ...(status === 'sent' || status === 'overdue' ? [{ label: t('Send payment reminder'), icon: 'alert' as const, onSelect: () => setReminding(invoice) }] : []),
                           'divider',
                           { label: t('Delete'), icon: 'trash', danger: true, onSelect: () => handleDelete(invoice) }
                         ]}
@@ -323,6 +336,7 @@ export const InvoiceListPage = () => {
       )}
 
       {creating && <QuickInvoiceDialog onClose={() => setCreating(false)} />}
+      {reminding && <EmailDialog invoice={reminding} kind="reminder" onClose={() => setReminding(null)} />}
       {editingTax && (
         <YearTaxDialog
           year={year}

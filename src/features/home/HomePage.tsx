@@ -12,6 +12,7 @@ import { QuickInvoiceDialog, recurringInvoices } from '../invoices/QuickInvoiceD
 import { useInvoiceStore } from '../invoices/store';
 import { NewResumeDialog } from '../resumes/NewResumeDialog';
 import { useResumeStore } from '../resumes/store';
+import { RemindersPanel } from './RemindersPanel';
 
 const greeting = () => {
   const hour = new Date().getHours();
@@ -78,6 +79,8 @@ export const HomePage = () => {
         <ActionCard icon="user" title={t('New resume')} text={t('Start from an example or from scratch.')} onClick={() => setDialog('resume')} accent="bg-gradient-to-br from-sky-500 to-cyan-600" />
         <ActionCard icon="sparkle" title={t('Improve my CV')} text={t('Upload your CV. AI checks it and fixes it step by step.')} onClick={() => setDialog('import')} accent="bg-gradient-to-br from-amber-400 to-orange-500" />
       </div>
+
+      <RemindersPanel />
 
       {recurring.length > 0 && (
         <section className="mt-8">

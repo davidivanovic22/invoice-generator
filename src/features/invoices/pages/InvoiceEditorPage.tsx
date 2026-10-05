@@ -14,6 +14,7 @@ import { InvoiceDocument } from '../document/InvoiceDocument';
 import { ClientSection } from '../editor/ClientSection';
 import { DesignSection } from '../editor/DesignSection';
 import { DetailsSection } from '../editor/DetailsSection';
+import { EmailDialog } from '../components/EmailDialog';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
 import { isDefaultPeriod, isNumberTaken, periodLabel, type Invoice } from '../model';
@@ -32,6 +33,7 @@ export const InvoiceEditorPage = () => {
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [exporting, setExporting] = useState(false);
   const [openFromToken, setOpenFromToken] = useState(0);
+  const [emailing, setEmailing] = useState<null | 'invoice' | 'reminder'>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   const onChange = useCallback((update: Partial<Invoice>) => updateInvoice(id, update), [id, updateInvoice]);
@@ -160,6 +162,8 @@ export const InvoiceEditorPage = () => {
         }
         menu={[
           { label: t('Duplicate as new invoice'), icon: 'copy', onSelect: handleDuplicate },
+          { label: t('Send by email'), icon: 'mail', onSelect: () => setEmailing('invoice') },
+          ...(invoice.status === 'sent' ? [{ label: t('Send payment reminder'), icon: 'alert' as const, onSelect: () => setEmailing('reminder') }] : []),
           { label: t('Business profile'), icon: 'building', onSelect: () => navigate('/profile') },
           'divider',
           { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
@@ -167,6 +171,9 @@ export const InvoiceEditorPage = () => {
       >
         <Button icon="copy" onClick={handleDuplicate} title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')}>
           <span className="hidden sm:inline">{t('Duplicate')}</span>
+        </Button>
+        <Button icon="mail" onClick={() => setEmailing('invoice')} title={t('Send by email')} aria-label={t('Send by email')}>
+          <span className="hidden md:inline">{t('Send')}</span>
         </Button>
         <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting}>
           <span className="hidden sm:inline">{t('Download PDF')}</span>
@@ -211,6 +218,20 @@ export const InvoiceEditorPage = () => {
           </div>
         </div>
       </div>
+      {emailing && (
+        <EmailDialog
+          invoice={invoice}
+          kind={emailing}
+          onClose={() => setEmailing(null)}
+          onDownloadPdf={exportPdf}
+          onSent={(to) => {
+            const update: Partial<Invoice> = {};
+            if (to && !invoice.client.email.trim()) update.client = { ...invoice.client, email: to };
+            if (emailing === 'invoice' && invoice.status === 'draft') update.status = 'sent';
+            if (Object.keys(update).length) updateInvoice(invoice.id, update, { record: false });
+          }}
+        />
+      )}
     </div>
   );
 };
