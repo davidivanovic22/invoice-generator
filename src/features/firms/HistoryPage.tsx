@@ -21,7 +21,7 @@ const ACTIONS: Record<AuditAction, { label: string; icon: IconName }> = {
   'profile.edited': { label: 'Business profile edited', icon: 'building' }
 };
 
-const STATUS_NAMES: Record<string, string> = { draft: 'Draft', sent: 'Sent', paid: 'Paid' };
+const STATUS_NAMES: Record<string, string> = { draft: 'Draft', sent: 'Sent', paid: 'Paid', cancelled: 'Cancelled' };
 
 const describe = (entry: AuditEntry) =>
   t(ACTIONS[entry.action]?.label ?? entry.action, { target: entry.target, detail: t(STATUS_NAMES[entry.detail ?? ''] ?? entry.detail ?? '') });

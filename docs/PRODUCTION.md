@@ -17,15 +17,18 @@ Paperwork works in two modes:
 | Automatic local backups, backup folder, restore | Done |
 | Installable app (PWA), offline, phone layout, dark theme | Done |
 | Privacy policy and terms (drafts) | Done — have a lawyer review them |
-| CI: type check, tests, build | `.github/workflows/ci.yml` |
+| Issued invoices are cancelled (storno), never deleted | Done |
+| Viewers cannot change a shared firm (app and database) | Done, covered by `e2e/sharing.cjs` |
+| Bank statement import, yearly report, limit warning | Done |
+| CI/CD: type check, unit tests, build, end-to-end smoke test, optional deploy | `.github/workflows/ci.yml` |
 
 ## Not built (decide before selling)
 
 - **SEF** (Serbian e-invoices). Required for invoices to Serbian businesses. The app warns and is meant for invoices abroad.
 - **Billing** (subscriptions). Use a merchant of record that supports Serbia, or bank transfer.
 - **AI on your account.** Users connect their own Claude API key. To include AI in the price, proxy Claude through a server function and meter usage.
-- **Read-only UI for viewers.** Viewers cannot save to the cloud (enforced by the database), and see a banner; the edit controls are not hidden.
-- **Conflict handling** is last-writer-wins per firm and data kind (invoices, KPO, history). Two people editing the same firm in the same minute can overwrite each other; the previous state is always in the local backups.
+- **Conflict handling** is last-writer-wins per firm and data kind (invoices, KPO, history). When someone else's version replaces unsent local changes, the app says so and points to the local backup that holds them; it does not merge.
+- **Bank statements** are read from Excel/CSV exports. PDF statements and direct bank connections are not supported.
 
 ## Set up the database
 
@@ -47,7 +50,15 @@ Paperwork works in two modes:
 
 ## Host the app
 
-`build/` is a static site. Any static host works (Cloudflare Pages, Netlify, Vercel). Requirements:
+`build/` is a static site. `public/_redirects`, `public/_headers` and `vercel.json` already configure the single-page fallback and caching for Cloudflare Pages, Netlify and Vercel.
+
+**Automatic deploys (Cloudflare Pages).** The workflow deploys every push to `main` once the repository has:
+
+- Variable `CLOUDFLARE_PROJECT` — the Pages project name (create it once with "Direct upload").
+- Secrets `CLOUDFLARE_API_TOKEN` (permission: Cloudflare Pages → Edit) and `CLOUDFLARE_ACCOUNT_ID`.
+- Optional variables `SUPABASE_URL` and `SUPABASE_ANON_KEY`, to bake the database into the build.
+
+Until those exist the deploy job is skipped. Requirements for any other host:
 
 - HTTPS (needed for the service worker, the backup folder and the password lock).
 - Single-page fallback: unknown paths serve `index.html`.
@@ -59,6 +70,8 @@ Paperwork works in two modes:
 npm start                 # the app, local-only mode
 npm run db:start          # local Supabase in Docker (first run downloads images)
 npm run db:test           # row-level security checks against it
+npm run build && npm run e2e            # end-to-end smoke test of the built app
+npm run e2e:sharing       # owner / accountant / viewer in three browsers (needs db:start)
 npm run db:stop
 ```
 

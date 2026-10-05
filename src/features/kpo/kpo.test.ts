@@ -135,3 +135,15 @@ describe('matching invoices to an imported book', () => {
     expect(missing.map((invoice: Invoice) => invoice.number)).toEqual(['2026-009']);
   });
 });
+
+describe('cancelled invoices', () => {
+  it('are never offered for the KPO book', () => {
+    const { createEmptyStore, createInvoice, isIssued } = require('../invoices/model');
+    const { bookableInvoices } = require('./model');
+    const make = (status: string) => ({ ...createInvoice(createEmptyStore()), status });
+    const invoices = [make('draft'), make('sent'), make('paid'), make('cancelled')];
+    expect(bookableInvoices(invoices, 'issued').map((invoice: Invoice) => invoice.status)).toEqual(['sent', 'paid']);
+    expect(bookableInvoices(invoices, 'paid').map((invoice: Invoice) => invoice.status)).toEqual(['paid']);
+    expect(invoices.map(isIssued)).toEqual([false, true, true, false]);
+  });
+});

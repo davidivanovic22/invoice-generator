@@ -3,8 +3,8 @@ import { Badge } from '../../../ui/Layout';
 import { displayStatus, type Invoice, type InvoiceStatus } from '../model';
 import { t } from '../../../i18n';
 
-const LABELS = { draft: 'Draft', sent: 'Sent', paid: 'Paid', overdue: 'Overdue' } as const;
-const TONES = { draft: 'slate', sent: 'indigo', paid: 'green', overdue: 'red' } as const;
+const LABELS = { draft: 'Draft', sent: 'Sent', paid: 'Paid', overdue: 'Overdue', cancelled: 'Cancelled' } as const;
+const TONES = { draft: 'slate', sent: 'indigo', paid: 'green', overdue: 'red', cancelled: 'slate' } as const;
 
 export const StatusBadge = ({ invoice }: { invoice: Invoice }) => {
   const status = displayStatus(invoice);
@@ -21,6 +21,8 @@ export const StatusMenu = ({ invoice, onChange }: { invoice: Invoice; onChange: 
     <option value="draft">{t('Draft')}</option>
     <option value="sent">{t('Sent')}</option>
     <option value="paid">{t('Paid')}</option>
+    {/* Cancelling goes through "Cancel invoice" (with a confirmation); shown here only once cancelled. */}
+    {invoice.status === 'cancelled' && <option value="cancelled">{t('Cancelled')}</option>}
   </select>
 );
 
@@ -31,7 +33,8 @@ const SELECT_TONES = {
   draft: 'bg-slate-50 text-slate-700 ring-slate-200 hover:ring-slate-300',
   sent: 'bg-indigo-50 text-indigo-700 ring-indigo-200 hover:ring-indigo-300',
   paid: 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:ring-emerald-300',
-  overdue: 'bg-red-50 text-red-700 ring-red-200 hover:ring-red-300'
+  overdue: 'bg-red-50 text-red-700 ring-red-200 hover:ring-red-300',
+  cancelled: 'bg-slate-100 text-slate-500 line-through ring-slate-200 hover:ring-slate-300'
 } as const;
 
 /** Compact status picker for list rows, tinted by the current status. */
@@ -46,5 +49,7 @@ export const StatusSelect = ({ invoice, onChange }: { invoice: Invoice; onChange
     <option value="draft">{t('Draft')}</option>
     <option value="sent">{t('Sent')}</option>
     <option value="paid">{t('Paid')}</option>
+    {/* Cancelling goes through "Cancel invoice" (with a confirmation); shown here only once cancelled. */}
+    {invoice.status === 'cancelled' && <option value="cancelled">{t('Cancelled')}</option>}
   </select>
 );

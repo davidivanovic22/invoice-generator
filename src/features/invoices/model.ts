@@ -2,7 +2,11 @@ import { addDaysIso, daysBetween, monthLabel, todayIso } from '../../lib/dates';
 import { createId } from '../../lib/files';
 import { computeTotals, fromMinor } from '../../lib/money';
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid';
+/** `cancelled` (stornirana): an issued invoice that no longer counts, kept for the record. */
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
+
+/** Issued invoices are part of the books: they are cancelled, never deleted. */
+export const isIssued = (invoice: Pick<Invoice, 'status'>) => invoice.status === 'sent' || invoice.status === 'paid';
 export type DocLanguage = 'en' | 'sr' | 'en-sr';
 export type InvoiceTemplateId = 'classic' | 'modern' | 'minimal' | 'bold' | 'seasonal';
 export type MonthKey =

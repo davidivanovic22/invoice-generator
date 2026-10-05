@@ -65,6 +65,14 @@ export const RemindersPanel = () => {
             {t('Enter your monthly tax for {year} to see what you really earn.', { year: reminder.year })}
           </Row>
         );
+      case 'limit':
+        return (
+          <Row key="limit" icon="alert" tone={reminder.percent >= 100 ? 'red' : 'amber'} action={<Link to="/overview" className="text-sm font-medium text-indigo-600 hover:underline">{t('Open overview')}</Link>}>
+            {reminder.percent >= 100
+              ? t('You are over the yearly flat-rate limit of 6 million RSD ({percent}%). Talk to your accountant.', { percent: reminder.percent })
+              : t('You have used {percent}% of the yearly flat-rate limit of 6 million RSD.', { percent: reminder.percent })}
+          </Row>
+        );
       case 'kpo':
         return (
           <Row key="kpo" icon="list" tone="indigo" action={<Link to="/kpo" className="text-sm font-medium text-indigo-600 hover:underline">{t('Open KPO')}</Link>}>

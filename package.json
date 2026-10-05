@@ -44,7 +44,9 @@
     "eslint-fix": "eslint --fix",
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,storage-api,realtime,postgres-meta,supavisor",
     "db:stop": "supabase stop",
-    "db:test": "node supabase/tests/rls.test.mjs"
+    "db:test": "node supabase/tests/rls.test.mjs",
+    "e2e": "node e2e/smoke.cjs",
+    "e2e:sharing": "node e2e/sharing.cjs"
   },
   "jest": {
     "moduleNameMapper": {

@@ -1043,5 +1043,36 @@ export const SR: Record<string, string> = {
   "To work together with your accountant or clients, connect the cloud database and sign in under Account & backup.": "Za rad zajedno sa knjigovođom ili klijentima, poveži bazu u oblaku i prijavi se u Nalog i backup.",
   "You can view this firm. Changes you make here are not saved for the others.": "Ovu firmu možeš samo da pregledaš. Izmene koje napraviš ovde ne čuvaju se za ostale.",
   "Privacy policy": "Politika privatnosti",
-  "Terms of use": "Uslovi korišćenja"
+  "Terms of use": "Uslovi korišćenja",
+
+  // Storno
+  "Cancelled": "Stornirana",
+  "Undo cancellation": "Poništi storniranje",
+  "Cancel invoice (storno)": "Storniraj fakturu",
+  "Cancel invoice {number}?": "Stornirati fakturu {number}?",
+  "It stays on record marked \"Cancelled\", prints with a Cancelled stamp and no longer counts as income. You can undo this.": "Ostaje u evidenciji sa oznakom „Stornirana“, štampa se sa pečatom „Stornirano“ i više se ne računa u prihod. Ovo možeš poništiti.",
+  "Cancel invoice": "Storniraj",
+
+  // Bank import, viewer, conflicts
+  "Import a bank statement": "Uvezi izvod iz banke",
+  "Bank statement": "Izvod iz banke",
+  "Incoming payments are matched with your invoices, which are then marked paid on the day the money arrived.": "Uplate se povezuju sa tvojim fakturama, koje se zatim označavaju kao plaćene na dan kad je novac legao.",
+  "No incoming payments were found. The file needs a date column and an amount (or \"Uplata\" / \"Priliv\") column. Export the statement from your e-banking as Excel or CSV.": "Nisu pronađene uplate. Fajl treba da ima kolonu sa datumom i kolonu sa iznosom (ili „Uplata“ / „Priliv“). Izvezi izvod iz e-bankinga kao Excel ili CSV.",
+  "No payment in this statement matches an open invoice.": "Nijedna uplata iz ovog izvoda ne odgovara otvorenoj fakturi.",
+  "fixes the payment date": "ispravlja datum plaćanja",
+  "{amount} less arrived (bank charges?)": "stiglo {amount} manje (provizija banke?)",
+  "Paid {date}": "Uplaćeno {date}",
+  "{count} other incoming payment|{count} other incoming payments": "{count} druga uplata|{count} druge uplate|{count} drugih uplata",
+  "Mark {count} invoice as paid|Mark {count} invoices as paid": "Označi {count} fakturu kao plaćenu|Označi {count} fakture kao plaćene|Označi {count} faktura kao plaćene",
+  "You can only view this firm. Ask the owner for the accountant role to make changes.": "Ovu firmu možeš samo da pregledaš. Zatraži od vlasnika ulogu knjigovođe da bi menjao podatke.",
+  "View only: you can look at this firm and export, but not change it.": "Samo pregled: možeš da gledaš ovu firmu i izvoziš, ali ne i da je menjaš.",
+  "Someone else changed this data while you were working. Their version is loaded; your last changes are kept in a backup.": "Neko drugi je izmenio ove podatke dok si ti radio. Učitana je njegova verzija; tvoje poslednje izmene su sačuvane u backup-u.",
+  "Loaded the latest changes from the cloud.": "Učitane su najnovije izmene iz oblaka.",
+  "Open backups": "Otvori backup",
+
+  // Report and limit
+  "Yearly report (PDF)": "Godišnji pregled (PDF)",
+  "Open overview": "Otvori pregled",
+  "You are over the yearly flat-rate limit of 6 million RSD ({percent}%). Talk to your accountant.": "Prešao si godišnji limit za paušal od 6 miliona dinara ({percent}%). Javi se knjigovođi.",
+  "You have used {percent}% of the yearly flat-rate limit of 6 million RSD.": "Iskoristio si {percent}% godišnjeg limita za paušal od 6 miliona dinara."
 };

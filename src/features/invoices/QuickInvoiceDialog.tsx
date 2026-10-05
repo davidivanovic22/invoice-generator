@@ -77,7 +77,7 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
       currency,
       items: [createLineItem({ title: title.trim(), quantity, unit, unitPrice: price })]
     });
-    open(invoice, print);
+    if (invoice) open(invoice, print);
   };
 
   const createWithAi = async () => {
@@ -101,7 +101,7 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
         dueDate: addDaysIso(issueDate, request.dueDays >= 0 ? request.dueDays : defaults.paymentDays),
         items: request.items.length ? request.items.map((item) => createLineItem(item)) : [createLineItem({ unit: defaults.unit })]
       });
-      open(invoice, false);
+      if (invoice) open(invoice, false);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       toast(error instanceof Error ? error.message : t('Something went wrong.'), 'error');

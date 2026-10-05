@@ -58,6 +58,12 @@ export const appendAudit = (entries: AuditEntry[], entry: AuditEntry): AuditEntr
 };
 
 export const logAudit = (action: AuditAction, target: string, detail?: string) => {
+  // Viewers cannot change a shared firm: the stores refuse the change, and this tells the user why.
+  const registry = readFirms();
+  if (registry.firms.find((firm) => firm.id === registry.activeId)?.role === 'viewer') {
+    window.dispatchEvent(new Event('read-only'));
+    return;
+  }
   try {
     const next = appendAudit(readAudit(), { at: new Date().toISOString(), who: currentUser(), action, target, ...(detail ? { detail } : {}) });
     writeJson(auditKey(), next);

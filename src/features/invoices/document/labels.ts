@@ -27,6 +27,7 @@ const dictionary = {
   regNo: ['Company reg. no.', 'Matični broj'],
   email: ['Email', 'Email'],
   paid: ['Paid', 'Plaćeno'],
+  cancelled: ['Cancelled', 'Stornirano'],
   thankYou: ['Thank you for your business.', 'Hvala na saradnji.']
 } as const;
 

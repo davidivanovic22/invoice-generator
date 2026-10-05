@@ -226,8 +226,10 @@ export const SignatureBlock = ({ view, lineColor = '#cbd5e1' }: { view: InvoiceV
     </div>
   ) : null;
 
-export const PaidStamp = ({ view, color }: { view: InvoiceView; color: string }) =>
-  view.isPaid ? (
+/** "Paid" stamp, or a red "Cancelled" stamp on a cancelled invoice. */
+export const PaidStamp = ({ view, color: paidColor }: { view: InvoiceView; color: string }) => {
+  const color = view.isCancelled ? '#dc2626' : paidColor;
+  return view.isPaid || view.isCancelled ? (
     <div
       style={{
         position: 'absolute',
@@ -245,6 +247,7 @@ export const PaidStamp = ({ view, color }: { view: InvoiceView; color: string })
         opacity: 0.75
       }}
     >
-      {view.t('paid')}
+      {view.t(view.isCancelled ? 'cancelled' : 'paid')}
     </div>
   ) : null;
+};

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { logAudit } from '../../lib/audit';
 import { formatDateNumeric } from '../../lib/dates';
 import { readJson, writeJson } from '../../lib/storage';
@@ -39,12 +39,19 @@ export const normalizeBook = (raw: unknown): KpoBook => {
 };
 
 /** `storageKey` selects the firm; the provider is remounted when the firm changes. */
-export const KpoStoreProvider = ({ children, storageKey = KPO_KEY }: { children: ReactNode; storageKey?: string }) => {
+export const KpoStoreProvider = ({ children, storageKey = KPO_KEY, readOnly = false }: { children: ReactNode; storageKey?: string; readOnly?: boolean }) => {
   const { store } = useInvoiceStore();
-  const [book, setBook] = useState<KpoBook>(() => {
+  const [initial] = useState<KpoBook>(() => {
     const saved = readJson<unknown>(storageKey);
     return saved.status === 'ok' ? normalizeBook(saved.value) : createBook(store.profile.party);
   });
+  // Read-only firms (viewers) refuse every change.
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
+  const [book, setBook] = useReducer(
+    (current: KpoBook, update: KpoBook | ((value: KpoBook) => KpoBook)) => (readOnlyRef.current ? current : typeof update === 'function' ? update(current) : update),
+    initial
+  );
   const bookRef = useRef(book);
   bookRef.current = book;
   // Nothing is written until the book is actually changed.
@@ -71,6 +78,7 @@ export const KpoStoreProvider = ({ children, storageKey = KPO_KEY }: { children:
   }, [storageKey]);
 
   const update = useCallback((patch: Partial<KpoBook> | ((book: KpoBook) => KpoBook)) => {
+    if (readOnlyRef.current) window.dispatchEvent(new Event('read-only'));
     setBook((current) => (typeof patch === 'function' ? patch(current) : { ...current, ...patch }));
   }, []);
 

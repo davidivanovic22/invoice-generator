@@ -17,7 +17,7 @@ import { DetailsSection } from '../editor/DetailsSection';
 import { EmailDialog } from '../components/EmailDialog';
 import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
-import { isDefaultPeriod, isNumberTaken, periodLabel, type Invoice } from '../model';
+import { isDefaultPeriod, isIssued, isNumberTaken, periodLabel, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
 
 const SECTION_IDS: Record<string, string> = { client: 'client', items: 'items', details: 'details', from: 'from', design: 'design' };
@@ -28,7 +28,7 @@ export const InvoiceEditorPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { store, updateInvoice, duplicateInvoice, deleteInvoice, restoreInvoice, setStatus, rememberClient, updateProfile, undo, redo, canUndo, canRedo } =
     useInvoiceStore();
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   const invoice = store.invoices.find((candidate) => candidate.id === id);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [exporting, setExporting] = useState(false);
@@ -130,6 +130,16 @@ export const InvoiceEditorPage = () => {
     }
   };
 
+  const handleCancel = async () => {
+    const ok = await confirm({
+      title: t('Cancel invoice {number}?', { number: invoice.number }),
+      message: t('It stays on record marked "Cancelled", prints with a Cancelled stamp and no longer counts as income. You can undo this.'),
+      confirmLabel: t('Cancel invoice'),
+      tone: 'danger'
+    });
+    if (ok) setStatus(invoice.id, 'cancelled');
+  };
+
   const handleDelete = () => {
     const removed = deleteInvoice(invoice.id);
     navigate('/invoices');
@@ -165,7 +175,10 @@ export const InvoiceEditorPage = () => {
           ...(invoice.status === 'sent' ? [{ label: t('Send payment reminder'), icon: 'alert' as const, onSelect: () => setEmailing('reminder') }] : []),
           { label: t('Business profile'), icon: 'building', onSelect: () => navigate('/profile') },
           'divider',
-          { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
+          ...(invoice.status === 'cancelled' ? [{ label: t('Undo cancellation'), icon: 'undo' as const, onSelect: () => setStatus(invoice.id, 'sent') }] : []),
+          isIssued(invoice)
+            ? { label: t('Cancel invoice (storno)'), icon: 'x', danger: true, onSelect: handleCancel }
+            : { label: t('Delete invoice'), icon: 'trash', danger: true, onSelect: handleDelete }
         ]}
       >
         <Button icon="copy" onClick={handleDuplicate} title={t('Duplicate as new invoice')} aria-label={t('Duplicate as new invoice')} className="hidden sm:inline-flex">
