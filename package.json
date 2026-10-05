@@ -41,7 +41,10 @@
     "test:ci": "react-scripts test --watchAll=false",
     "typecheck": "tsc --noEmit",
     "eject": "react-scripts eject",
-    "eslint-fix": "eslint --fix"
+    "eslint-fix": "eslint --fix",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,storage-api,realtime,postgres-meta,supavisor",
+    "db:stop": "supabase stop",
+    "db:test": "node supabase/tests/rls.test.mjs"
   },
   "jest": {
     "moduleNameMapper": {
@@ -72,6 +75,7 @@
     "autoprefixer": "^10.4.27",
     "playwright": "^1.63.0",
     "postcss": "^8.5.8",
+    "supabase": "^2.119.0",
     "tailwindcss": "^3.4.19"
   },
   "overrides": {

@@ -66,7 +66,6 @@ export const KpoPage = () => {
     const entries = invoices.map((invoice) => entryFromInvoice(invoice, book, bookRate(invoice, book))).filter((entry): entry is KpoEntry => entry !== null);
     if (!entries.length) return toast(t('The exchange rate is not loaded yet. Try again in a moment.'), 'error');
     addEntries(entries);
-    toast(t('{count} invoice added to the book|{count} invoices added to the book', { count: entries.length }));
   };
 
   const settle = (invoices: Invoice[]) => {

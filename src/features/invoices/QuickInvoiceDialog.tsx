@@ -65,7 +65,6 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
   const repeat = (source: Invoice) => {
     const copy = duplicateInvoice(source.id);
     if (copy) {
-      toast(t('Invoice {number} for {client} is ready', { number: copy.number, client: copy.client.name }));
       open(copy, false);
     }
   };
@@ -102,7 +101,6 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
         dueDate: addDaysIso(issueDate, request.dueDays >= 0 ? request.dueDays : defaults.paymentDays),
         items: request.items.length ? request.items.map((item) => createLineItem(item)) : [createLineItem({ unit: defaults.unit })]
       });
-      toast(t('Invoice {number} created. Check it and download the PDF.', { number: invoice.number }));
       open(invoice, false);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;

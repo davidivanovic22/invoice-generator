@@ -1,6 +1,6 @@
 # Paperwork: invoices & resumes
 
-Create professional invoices and ATS-ready resumes in minutes. Everything runs in the browser, with no account and no server. Your data stays on your device.
+Invoices, the KPO book, earnings and limits for Serbian flat-rate businesses, plus ATS-ready resumes. It runs in the browser with no account and no server; your data stays on your device. Connect a database when you want sync, or to work together with an accountant.
 
 ## Features
 
@@ -20,6 +20,21 @@ Create professional invoices and ATS-ready resumes in minutes. Everything runs i
 - **Correct numbers.** Amounts are computed in integer minor units: every line is rounded, the subtotal is the sum of the printed lines, and VAT is applied once. Sequential numbering (`2026-001`) warns about duplicates.
 - **Five templates** (Modern, Classic, Minimal, Bold, Seasonal with monthly illustrations), with accent colours, in English, Serbian or both.
 - **Status tracking:** draft, sent, paid and overdue, with outstanding and paid totals.
+
+### KPO book, earnings and taxes (Serbia)
+- **KPO book:** add paid invoices with one click, import your existing book from Excel or CSV, export to styled Excel, CSV or PDF.
+- **Overview:** income per month, the monthly flat-rate tax, net earnings, and progress toward the 6M RSD yearly and 8M RSD rolling limits, in EUR or RSD at the NBS middle rate.
+- **Recurring invoices**, payment reminders, ready-made emails (Gmail or mail app), and a yearly Excel for the accountant.
+- Notes for invoicing abroad in one click ("not registered for VAT"); a warning for clients in Serbia, whose invoices must go through SEF.
+
+### Firms, accountants and sync
+- **Several firms** in one app, each with its own invoices, KPO book and taxes; an "All firms" page shows income, limits and warnings per firm.
+- **Optional database (Supabase):** sign in, sync between devices, and share a firm with an **owner / accountant / viewer** role by inviting an email address. Row-level security keeps every firm private to its members.
+- **History of changes** per firm: who changed what, and when.
+- Password lock, automatic daily backups (30 days), backup folder on disk, restore.
+- Installable (PWA), works offline, phone layout, dark theme.
+
+See [docs/PRODUCTION.md](docs/PRODUCTION.md) for running it for customers.
 
 ### Resumes
 - **Six templates** (Modern, Classic/ATS, Minimal, Executive, Creative, Compact) with real multi-page pagination.
@@ -43,7 +58,7 @@ The key is stored only in your browser's local storage and sent only to `api.ant
 
 ## Your data
 
-Everything is saved in `localStorage` (`studio.invoices.v2`, `studio.resumes.v2`). Use **Backup** on the list pages to export JSON, and **Import** / **Restore backup** to bring it back; imports merge and never overwrite existing documents. Data from older versions of the app is migrated automatically, and the old keys are kept as a backup. If saved data is ever unreadable, a copy is stored under a `.backup.<date>` key before anything else happens.
+Everything is saved in `localStorage` (`studio.invoices.v2`, `studio.kpo.v1`, `studio.resumes.v2`; further firms use `<key>@<firmId>`). A snapshot of all of it is kept in IndexedDB every day. Use **Backup** on the list pages to export JSON, and **Import** / **Restore backup** to bring it back; imports merge and never overwrite existing documents. Data from older versions of the app is migrated automatically, and the old keys are kept as a backup. If saved data is ever unreadable, a copy is stored under a `.backup.<date>` key before anything else happens.
 
 ## Development
 

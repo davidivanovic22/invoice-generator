@@ -42,10 +42,10 @@ export const CloudSection = () => {
   const [error, setError] = useState('');
 
   const connect = async () => {
-    if (!/^https:\/\/.+/.test(url.trim()) || anonKey.trim().length < 20) return setError(t('Paste the Project URL (https://…) and the anon public key.'));
+    // https everywhere; plain http only for a local Supabase.
+    if (!/^(https:\/\/.+|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$)/.test(url.trim()) || anonKey.trim().length < 20) return setError(t('Paste the Project URL (https://…) and the anon public key.'));
     setError('');
     await saveCloudConfig({ url, anonKey });
-    toast(t('Project saved. Now sign in or create an account.'));
   };
 
   const submit = async () => {
@@ -54,7 +54,6 @@ export const CloudSection = () => {
     try {
       const result = await signIn(email.trim(), password, mode);
       if (result === 'confirm-email') toast(t('Check your email and confirm the address, then sign in.'), 'info');
-      else toast(t('Signed in. Your data now syncs.'));
       setPassword('');
     } catch (caught) {
       setError((caught as Error).message);

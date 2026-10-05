@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { addFirm, firmKey, readFirms, removeFirm, renameFirm, setActiveFirm, type Firm, type FirmBaseKey, type FirmRegistry } from '../../lib/firms';
 
 type FirmContextValue = {
@@ -23,6 +23,13 @@ export const useFirm = () => {
 export const FirmProvider = ({ children }: { children: ReactNode }) => {
   const [registry, setRegistry] = useState<FirmRegistry>(readFirms);
   const refresh = () => setRegistry(readFirms());
+
+  // Cloud sync adds firms that were shared with you.
+  useEffect(() => {
+    const onChange = () => setRegistry(readFirms());
+    window.addEventListener('firms-changed', onChange);
+    return () => window.removeEventListener('firms-changed', onChange);
+  }, []);
 
   const switchFirm = useCallback((id: string) => {
     setActiveFirm(id);

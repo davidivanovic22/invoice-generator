@@ -194,7 +194,6 @@ export const ResumeEditorPage = () => {
               const copy = duplicateResume(resume.id);
               if (copy) {
                 navigate(`/resumes/${copy.id}`);
-                toast(t('Copy created'));
               }
             }
           },

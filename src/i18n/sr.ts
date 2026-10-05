@@ -1019,5 +1019,29 @@ export const SR: Record<string, string> = {
   "History of changes": "Istorija izmena",
   "Every change to invoices, the KPO book and the business profile of this firm, with who made it.": "Svaka izmena faktura, KPO knjige i poslovnog profila ove firme, i ko ju je napravio.",
   "No changes yet": "Još nema izmena",
-  "Changes appear here from now on.": "Izmene će se od sada pojavljivati ovde."
+  "Changes appear here from now on.": "Izmene će se od sada pojavljivati ovde.",
+
+  // Sharing and legal
+  "Invitation saved. When {email} signs in with that address, the firm appears in their list.": "Poziv je sačuvan. Kad se {email} prijavi tom adresom, firma će se pojaviti u njegovoj listi.",
+  "People in \"{name}\"": "Ljudi u firmi „{name}“",
+  "Invite your accountant or a client. They sign in with their own account and see only this firm.": "Pozovi knjigovođu ili klijenta. Prijavljuju se svojim nalogom i vide samo ovu firmu.",
+  "you": "ti",
+  "Remove {email}?": "Ukloniti {email}?",
+  "Invited": "Pozvan",
+  "Cancel invitation": "Otkaži poziv",
+  "Invite by email": "Pozovi mejlom",
+  "Invite": "Pozovi",
+  "Only the owner can invite people. Your role: {role}.": "Samo vlasnik može da poziva ljude. Tvoja uloga: {role}.",
+  "Viewer": "Samo pregled",
+  "Accountant": "Knjigovođa",
+  "Owner": "Vlasnik",
+  "Can add and change invoices and the KPO book": "Dodaje i menja fakture i KPO knjigu",
+  "Can only look and export": "Samo gleda i izvozi",
+  "Everything, including inviting people": "Sve, uključujući pozivanje ljudi",
+  "People and roles": "Ljudi i uloge",
+  "Share via the cloud": "Podeli preko oblaka",
+  "To work together with your accountant or clients, connect the cloud database and sign in under Account & backup.": "Za rad zajedno sa knjigovođom ili klijentima, poveži bazu u oblaku i prijavi se u Nalog i backup.",
+  "You can view this firm. Changes you make here are not saved for the others.": "Ovu firmu možeš samo da pregledaš. Izmene koje napraviš ovde ne čuvaju se za ostale.",
+  "Privacy policy": "Politika privatnosti",
+  "Terms of use": "Uslovi korišćenja"
 };

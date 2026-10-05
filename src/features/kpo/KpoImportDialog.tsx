@@ -3,7 +3,6 @@ import { t } from '../../i18n';
 import { formatDateNumeric, todayIso } from '../../lib/dates';
 import { formatAmount } from '../../lib/money';
 import { Button } from '../../ui/Button';
-import { useFeedback } from '../../ui/Feedback';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
 import { importKpoFile, type ParsedBook } from './importKpo';
@@ -26,7 +25,6 @@ const HEADER_NAMES: Record<keyof KpoHeader, string> = {
 /** Imports an existing KPO book from Excel or CSV, with a preview. */
 export const KpoImportDialog = ({ onClose, onImported }: Props) => {
   const { book, update } = useKpo();
-  const { toast } = useFeedback();
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
   const [parsed, setParsed] = useState<ParsedBook | null>(null);
@@ -90,7 +88,6 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
       ]
     }));
     logAudit('kpo.imported', String(chosen.length), fileName);
-    toast(t('{count} entry imported|{count} entries imported', { count: chosen.length }));
     const years = chosen.map((row) => Number(row.date!.slice(0, 4)));
     onImported(years.length ? Math.max(...years) : null);
     onClose();

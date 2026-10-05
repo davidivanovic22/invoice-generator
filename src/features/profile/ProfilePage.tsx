@@ -15,7 +15,7 @@ const UNIT_NAMES: Record<string, string> = { h: 'hours', day: 'days', pcs: 'piec
 
 export const ProfilePage = () => {
   const { store, updateProfile, deleteClient } = useInvoiceStore();
-  const { confirm, toast } = useFeedback();
+  const { confirm } = useFeedback();
   const { profile } = store;
   const location = useLocation();
 
@@ -145,7 +145,6 @@ export const ProfilePage = () => {
                         });
                         if (ok) {
                           deleteClient(client.id);
-                          toast(t('Client removed'));
                         }
                       }}
                     />

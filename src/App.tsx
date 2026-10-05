@@ -9,6 +9,7 @@ import { AiProvider, useAi } from './features/ai/AiSettings';
 import { FirmProvider, useFirm } from './features/firms/FirmContext';
 import { FirmsPage } from './features/firms/FirmsPage';
 import { HistoryPage } from './features/firms/HistoryPage';
+import { LegalPage } from './features/legal/LegalPage';
 import { FirmSwitcher } from './features/firms/FirmSwitcher';
 import { CommandPalette, useCommandShortcut } from './features/command/CommandPalette';
 import { HomePage } from './features/home/HomePage';
@@ -323,6 +324,17 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
   </header>
 );
 
+/** Viewers of a shared firm can look around, but their changes are not saved to the cloud. */
+const ViewerBanner = () => {
+  const { active } = useFirm();
+  if (active.role !== 'viewer') return null;
+  return (
+    <div className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-center text-sm text-sky-900 print:hidden">
+      {t('You can view this firm. Changes you make here are not saved for the others.')}
+    </div>
+  );
+};
+
 /** Offers to switch to a newly downloaded version of the app. */
 const UpdateBanner = () => {
   const [activate, setActivate] = useState<(() => void) | null>(null);
@@ -370,6 +382,7 @@ const Shell = () => {
     <div className="flex min-h-screen flex-col">
       <Header onSearch={openSearch} />
       <AutoBackup />
+      <ViewerBanner />
       <RecurringInvoices />
       <CloudChoiceDialog />
       <UpdateBanner />
@@ -385,6 +398,8 @@ const Shell = () => {
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/firms" element={<FirmsPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+            <Route path="/terms" element={<LegalPage kind="terms" />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

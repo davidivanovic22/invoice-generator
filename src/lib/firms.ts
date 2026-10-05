@@ -13,7 +13,17 @@ export const DEFAULT_FIRM = 'default';
 export const FIRM_BASE_KEYS = ['studio.invoices.v2', 'studio.kpo.v1', 'studio.audit.v1'] as const;
 export type FirmBaseKey = (typeof FIRM_BASE_KEYS)[number];
 
-export type Firm = { id: string; name: string; createdAt: string };
+export type FirmRole = 'owner' | 'accountant' | 'viewer';
+
+export type Firm = {
+  id: string;
+  name: string;
+  createdAt: string;
+  /** The firm's id in the cloud, once it is shared or synced. */
+  cloudId?: string;
+  /** Your role in the cloud firm; viewers cannot change data. */
+  role?: FirmRole;
+};
 export type FirmRegistry = { firms: Firm[]; activeId: string };
 
 const defaultRegistry = (): FirmRegistry => ({ firms: [{ id: DEFAULT_FIRM, name: '', createdAt: new Date().toISOString() }], activeId: DEFAULT_FIRM });
@@ -71,6 +81,22 @@ export const removeFirm = (id: string) => {
   const firms = registry.firms.filter((firm) => firm.id !== id);
   writeFirms({ firms, activeId: registry.activeId === id ? firms[0].id : registry.activeId });
 };
+
+/** Connects a local firm to its cloud copy (or disconnects it with `cloudId: undefined`). */
+export const linkFirm = (id: string, cloudId: string | undefined, role?: FirmRole) => {
+  const registry = readFirms();
+  writeFirms({ ...registry, firms: registry.firms.map((firm) => (firm.id === id ? { ...firm, cloudId, role: cloudId ? role : undefined } : firm)) });
+};
+
+/** Adds a firm someone shared with you, without switching to it. */
+export const addLinkedFirm = (name: string, cloudId: string, role: FirmRole): Firm => {
+  const registry = readFirms();
+  const firm: Firm = { id: createId().slice(0, 8), name: name.trim(), createdAt: new Date().toISOString(), cloudId, role };
+  writeFirms({ ...registry, firms: [...registry.firms, firm] });
+  return firm;
+};
+
+export const canEdit = (firm: Firm) => firm.role !== 'viewer';
 
 /** The display name: the saved name, else the business name from the firm's profile. */
 export const firmDisplayName = (firm: Firm) => {

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { t } from '../../i18n';
 import { Button } from '../../ui/Button';
-import { useFeedback } from '../../ui/Feedback';
 import { Icon, type IconName } from '../../ui/Icon';
 import { ImportDialog } from '../ats/ImportDialog';
 import { useResumeStore } from './store';
@@ -27,7 +26,6 @@ const Option = ({ icon, title, text, onClick, primary }: { icon: IconName; title
 /** One entry point for every way to start a resume. */
 export const NewResumeDialog = ({ onClose, startWithImport = false }: { onClose: () => void; startWithImport?: boolean }) => {
   const { createResume, addResume } = useResumeStore();
-  const { toast } = useFeedback();
   const navigate = useNavigate();
   const [importing, setImporting] = useState(startWithImport);
 
@@ -45,7 +43,6 @@ export const NewResumeDialog = ({ onClose, startWithImport = false }: { onClose:
         onImported={(resume) => {
           addResume(resume);
           onClose();
-          toast(t('Resume imported. Now let us make it ATS-ready.'));
           navigate(`/resumes/${resume.id}?tab=ats&wizard=1`);
         }}
       />

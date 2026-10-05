@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Button } from '../../ui/Button';
-import { useFeedback } from '../../ui/Feedback';
 import { TextField } from '../../ui/Field';
 import { Icon } from '../../ui/Icon';
 import { getApiKey, onApiKeyChange, setApiKey, testApiKey } from './client';
@@ -18,7 +17,6 @@ export const useAi = () => {
 const mask = (key: string) => (key.length > 12 ? `${key.slice(0, 7)}…${key.slice(-4)}` : '••••');
 
 const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
-  const { toast } = useFeedback();
   const current = getApiKey();
   const [draft, setDraft] = useState('');
   const [testing, setTesting] = useState(false);
@@ -36,7 +34,6 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
     try {
       await testApiKey(draft);
       setApiKey(draft);
-      toast(t('Claude is connected'));
       onClose();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : t('The key could not be verified.'));
@@ -97,7 +94,6 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
               variant="danger"
               onClick={() => {
                 setApiKey('');
-                toast(t('Claude disconnected'), 'info');
                 onClose();
               }}
             >

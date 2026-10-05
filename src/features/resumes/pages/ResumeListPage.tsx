@@ -110,7 +110,6 @@ export const ResumeListPage = () => {
                     icon: 'copy',
                     onSelect: () => {
                       duplicateResume(resume.id);
-                      toast(t('Copy created'));
                     }
                   },
                   'divider',

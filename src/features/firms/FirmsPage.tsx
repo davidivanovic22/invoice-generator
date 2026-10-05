@@ -12,7 +12,10 @@ import { TextField } from '../../ui/Field';
 import { Icon } from '../../ui/Icon';
 import { createEmptyStore } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
+import { useCloud } from '../account/CloudSection';
+import { syncNow } from '../../lib/cloud';
 import { useFirm } from './FirmContext';
+import { ShareDialog } from './ShareDialog';
 import { summarizeFirm, type FirmSummary } from './summary';
 
 /** Creates a firm with its own empty data, copying invoice defaults from the current firm. */
@@ -69,6 +72,8 @@ export const FirmsPage = () => {
   const { confirm, toast } = useFeedback();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
+  const [sharing, setSharing] = useState<string | null>(null);
+  const cloud = useCloud();
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const today = todayIso();
@@ -144,7 +149,12 @@ export const FirmsPage = () => {
                     {summary.taxId ? `PIB ${summary.taxId}` : t('No PIB yet')} · {t('{count} invoice|{count} invoices', { count: summary.invoiceCount })}
                   </div>
                 </div>
-                {isActive && <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">{t('Open now')}</span>}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {isActive && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">{t('Open now')}</span>}
+                  {firm.role && firm.role !== 'owner' && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{firm.role === 'viewer' ? t('Viewer') : t('Accountant')}</span>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -196,6 +206,13 @@ export const FirmsPage = () => {
                   KPO
                 </Button>
                 <span className="ml-auto" />
+                {cloud.email && (
+                  <IconButton
+                    icon="users"
+                    label={firm.cloudId ? t('People and roles') : t('Share via the cloud')}
+                    onClick={() => (firm.cloudId ? setSharing(firm.id) : void syncNow())}
+                  />
+                )}
                 <IconButton
                   icon="pen"
                   label={t('Rename')}
@@ -236,7 +253,17 @@ export const FirmsPage = () => {
           {t('Add a firm')}
         </button>
       </div>
+      {!cloud.email && (
+        <p className="mt-4 text-xs text-slate-500">
+          {t('To work together with your accountant or clients, connect the cloud database and sign in under Account & backup.')}
+        </p>
+      )}
       {creating && <NewFirmDialog onClose={() => setCreating(false)} />}
+      {sharing &&
+        (() => {
+          const row = rows.find((item) => item.firm.id === sharing);
+          return row ? <ShareDialog firm={row.firm} name={label(row.firm, row.summary)} onClose={() => setSharing(null)} /> : null;
+        })()}
     </div>
   );
 };

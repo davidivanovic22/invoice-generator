@@ -102,7 +102,6 @@ export const InvoiceListPage = () => {
   const handleDuplicate = (invoice: Invoice) => {
     const copy = duplicateInvoice(invoice.id);
     if (!copy) return;
-    toast(t('Created invoice {number}', { number: copy.number }));
     navigate(`/invoices/${copy.id}`);
   };
 

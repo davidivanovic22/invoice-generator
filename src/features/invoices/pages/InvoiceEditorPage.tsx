@@ -127,7 +127,6 @@ export const InvoiceEditorPage = () => {
     const copy = duplicateInvoice(invoice.id);
     if (copy) {
       navigate(`/invoices/${copy.id}`);
-      toast(t('Created invoice {number}', { number: copy.number }));
     }
   };
 

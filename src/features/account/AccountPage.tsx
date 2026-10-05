@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { t, uiLocale } from '../../i18n';
 import {
   allowFolder,
@@ -55,6 +55,14 @@ export const AccountPage = () => {
         <CloudSection />
         <BackupSection />
       </div>
+      <p className="mt-8 flex gap-4 text-xs text-slate-400">
+        <Link to="/privacy" className="hover:text-slate-600 hover:underline">
+          {t('Privacy policy')}
+        </Link>
+        <Link to="/terms" className="hover:text-slate-600 hover:underline">
+          {t('Terms of use')}
+        </Link>
+      </p>
     </div>
   );
 };
@@ -108,7 +116,6 @@ const LockSection = () => {
     if (!ok) return;
     removeLock();
     refresh();
-    toast(t('Password removed'));
   };
 
   return (
@@ -262,8 +269,7 @@ const BackupSection = () => {
     try {
       const snapshot = await takeSnapshot('manual');
       if (!snapshot) return toast(t('There is nothing to back up yet.'), 'info');
-      const wrote = await writeFolderBackup(snapshot).catch(() => false);
-      toast(wrote ? t('Backup saved here and in your folder') : t('Backup saved'));
+      await writeFolderBackup(snapshot).catch(() => false);
       void reload();
     } catch {
       toast(t('The backup could not be saved.'), 'error');
@@ -299,7 +305,6 @@ const BackupSection = () => {
     try {
       if (!(await chooseFolder())) return;
       await writeFolderBackup();
-      toast(t('Backups will be saved to that folder every day'));
       void reload();
     } catch (error) {
       if ((error as Error)?.name !== 'AbortError') toast(t('Could not use that folder.'), 'error');
@@ -358,7 +363,6 @@ const BackupSection = () => {
                       onClick={async () => {
                         if ((await allowFolder()) === 'granted') {
                           await writeFolderBackup().catch(() => false);
-                          toast(t('Backup saved to your folder'));
                         }
                         void reload();
                       }}
