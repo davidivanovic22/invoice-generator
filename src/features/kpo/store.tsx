@@ -25,6 +25,7 @@ export const normalizeBook = (raw: unknown): KpoBook => {
     header: { ...createHeader(), ...(value.header ?? {}) },
     entryTemplate: typeof value.entryTemplate === 'string' && value.entryTemplate ? value.entryTemplate : DEFAULT_TEMPLATE,
     bookOn: value.bookOn === 'issued' ? 'issued' : 'paid',
+    settledInvoiceIds: Array.isArray(value.settledInvoiceIds) ? value.settledInvoiceIds.filter((id): id is string => typeof id === 'string') : [],
     entries: Array.isArray(value.entries)
       ? value.entries
           .filter((entry): entry is KpoEntry => Boolean(entry && typeof entry === 'object' && typeof (entry as KpoEntry).date === 'string'))

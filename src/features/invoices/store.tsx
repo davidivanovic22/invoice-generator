@@ -147,7 +147,7 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
 
   const setStatus = useCallback(
     (id: string, status: InvoiceStatus) =>
-      updateInvoice(id, (invoice) => ({ ...invoice, status, paidAt: status === 'paid' ? todayIso() : null })),
+      updateInvoice(id, (invoice) => ({ ...invoice, status, paidAt: status === 'paid' ? invoice.paidAt ?? todayIso() : null })),
     [updateInvoice]
   );
 

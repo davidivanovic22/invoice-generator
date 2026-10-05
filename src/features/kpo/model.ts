@@ -44,6 +44,8 @@ export type KpoBook = {
   /** Which invoice date is booked. */
   bookOn: 'paid' | 'issued';
   entries: KpoEntry[];
+  /** Invoices the user confirmed are already in the book (e.g. booked with another amount or date). */
+  settledInvoiceIds: string[];
 };
 
 export const DEFAULT_TEMPLATE = 'Usluge računarskog programiranja ({client})';
@@ -63,7 +65,8 @@ export const createBook = (party?: Party): KpoBook => ({
   header: createHeader(party),
   entryTemplate: DEFAULT_TEMPLATE,
   bookOn: 'paid',
-  entries: []
+  entries: [],
+  settledInvoiceIds: []
 });
 
 export const createEntry = (overrides?: Partial<KpoEntry>): KpoEntry => ({
@@ -149,19 +152,30 @@ const normalize = (text: string) =>
  * imported books) same client in the description, the same amount and a date
  * within 60 days.
  */
-export const findEntryForInvoice = (invoice: Invoice, entries: KpoEntry[], amountInBook: number | null, bookOn: KpoBook['bookOn']) => {
+export const findEntryForInvoice = (
+  invoice: Invoice,
+  entries: KpoEntry[],
+  amountInBook: number | null,
+  bookOn: KpoBook['bookOn'],
+  taken: ReadonlySet<string> = new Set()
+) => {
   const linked = entries.find((entry) => entry.invoiceId === invoice.id);
   if (linked) return linked;
   const client = normalize(invoice.client.name);
-  const date = new Date(invoiceBookingDate(invoice, bookOn)).getTime();
-  return (
-    entries.find((entry) => {
-      if (entry.invoiceId) return false;
+  // Hand-made books use the issue, due or payment date; the payment date may also have been set late.
+  const dates = Array.from(new Set([invoiceBookingDate(invoice, bookOn), invoice.issueDate, invoice.dueDate, invoice.paidAt].filter(Boolean) as string[])).map((date) =>
+    new Date(date).getTime()
+  );
+  const near = (entry: KpoEntry) => Math.min(...dates.map((date) => Math.abs(new Date(entry.date).getTime() - date)));
+  const candidates = entries
+    .filter((entry) => {
+      if (entry.invoiceId || taken.has(entry.id)) return false;
       if (amountInBook === null || Math.abs(entryTotal(entry) - amountInBook) > 0.5) return false;
       if (client && !normalize(entry.description).includes(client)) return false;
-      return Math.abs(new Date(entry.date).getTime() - date) <= 60 * 86_400_000;
-    }) ?? null
-  );
+      return near(entry) <= 60 * 86_400_000;
+    })
+    .sort((a, b) => near(a) - near(b));
+  return candidates[0] ?? null;
 };
 
 /** Invoices that should be in the book: issued (not drafts), and paid when booking on payment. */
@@ -173,12 +187,20 @@ export const bookRate = (invoice: Invoice, book: KpoBook) =>
   invoice.currency === book.currency ? 1 : convert(1, invoice.currency, book.currency, invoiceBookingDate(invoice, book.bookOn));
 
 /** Bookable invoices of a year that are not in the book yet. */
-export const invoicesMissingFromBook = (invoices: Invoice[], book: KpoBook, year: number) =>
-  bookableInvoices(invoices, book.bookOn).filter((invoice) => {
-    if (!invoiceBookingDate(invoice, book.bookOn).startsWith(String(year))) return false;
+export const invoicesMissingFromBook = (invoices: Invoice[], book: KpoBook, year: number) => {
+  // Each booking can stand for one invoice only.
+  const taken = new Set<string>();
+  const settled = new Set(book.settledInvoiceIds);
+  const sorted = [...bookableInvoices(invoices, book.bookOn)].filter((invoice) => !settled.has(invoice.id)).sort((a, b) => a.issueDate.localeCompare(b.issueDate));
+  const missing = new Set<string>();
+  for (const invoice of sorted) {
     const rate = bookRate(invoice, book);
-    return !findEntryForInvoice(invoice, book.entries, rate === null ? null : invoiceTotals(invoice).total * rate, book.bookOn);
-  });
+    const entry = findEntryForInvoice(invoice, book.entries, rate === null ? null : invoiceTotals(invoice).total * rate, book.bookOn, taken);
+    if (entry) taken.add(entry.id);
+    else if (invoiceBookingDate(invoice, book.bookOn).startsWith(String(year))) missing.add(invoice.id);
+  }
+  return sorted.filter((invoice) => missing.has(invoice.id));
+};
 
 /* ---------- Parsing Serbian spreadsheets ---------- */
 

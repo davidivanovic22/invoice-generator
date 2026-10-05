@@ -29,6 +29,7 @@ import { SelectField, TextField } from '../../ui/Field';
 import { Icon } from '../../ui/Icon';
 import { Section } from '../../ui/Layout';
 import { useAccount } from './AccountGate';
+import { CloudSection } from './CloudSection';
 import { checkPassword, removeLock, setPassword, updateLockDetails } from './lock';
 
 const formatWhen = (iso: string) =>
@@ -51,6 +52,7 @@ export const AccountPage = () => {
       <p className="mt-1 text-sm text-slate-500">{t('Lock the app with a password and keep automatic backups of everything you make.')}</p>
       <div className="mt-6 space-y-4">
         <LockSection />
+        <CloudSection />
         <BackupSection />
       </div>
     </div>

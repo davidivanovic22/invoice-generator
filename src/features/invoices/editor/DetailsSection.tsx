@@ -63,6 +63,16 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
             options={TERMS.map((days) => ({ value: String(days), label: days === 0 ? t('On receipt') : t('{count} day|{count} days', { count: days }) }))}
           />
         </div>
+        {invoice.status === 'paid' && (
+          <TextField
+            type="date"
+            wrapperClassName="col-span-2 sm:col-span-1"
+            label={t('Paid on')}
+            hint={t('The day the money arrived; the KPO book uses it.')}
+            value={invoice.paidAt ?? ''}
+            onChange={(paidAt) => paidAt && onChange({ paidAt })}
+          />
+        )}
         <label className="col-span-2 flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200/70">
           <input
             type="checkbox"

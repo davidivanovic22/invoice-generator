@@ -31,3 +31,17 @@ describe('overview', () => {
     expect(yearBefore('2026-10-05')).toBe('2025-10-06');
   });
 });
+
+describe('KPO book is the record', () => {
+  it('never adds invoices on top of a year that has a KPO book, even when marked paid late', () => {
+    const { createEmptyStore, createInvoice, createLineItem } = require('../invoices/model');
+    const book = createBook();
+    book.entries = [createEntry({ date: '2026-02-12', description: 'Usluge (Wisteria d.o.o.)', services: 2250 })];
+    const invoice = { ...createInvoice(createEmptyStore()), status: 'paid', issueDate: '2026-01-31', dueDate: '2026-02-14', paidAt: '2026-10-05' };
+    invoice.client = { ...invoice.client, name: 'Wisteria d.o.o.' };
+    invoice.items = [createLineItem({ quantity: 1, unitPrice: 2250 })];
+    const events = incomeEvents(book, [invoice], [2026], '2026-10-05');
+    expect(events).toHaveLength(1);
+    expect(events[0].source).toBe('kpo');
+  });
+});

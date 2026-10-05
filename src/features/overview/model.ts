@@ -16,7 +16,7 @@ export type IncomeEvent = { date: string; amount: number; currency: string; plan
 /** Converts an amount into the display currency on a date; null when the rate is not known yet. */
 export type Converter = (amount: number, currency: string, date: string) => number | null;
 
-/** Every income event: the KPO bookings, plus invoices that are not in the book yet. */
+/** Every income event: the KPO bookings, plus invoices for years that have no KPO book. */
 export const incomeEvents = (book: KpoBook, invoices: Invoice[], years: number[], today: string): IncomeEvent[] => [
   ...book.entries.map((entry) => ({
     date: entry.date,
@@ -25,12 +25,15 @@ export const incomeEvents = (book: KpoBook, invoices: Invoice[], years: number[]
     planned: entry.date > today,
     source: 'kpo' as const
   })),
-  ...years.flatMap((year) =>
-    invoicesMissingFromBook(invoices, book, year).map((invoice) => {
-      const date = invoiceBookingDate(invoice, book.bookOn);
-      return { date, amount: invoiceTotals(invoice).total, currency: invoice.currency, planned: date > today, source: 'invoice' as const };
-    })
-  )
+  // Where a year has a KPO book, the book is the record; invoices only fill years without one.
+  ...years
+    .filter((year) => !book.entries.some((entry) => entry.date.startsWith(String(year))))
+    .flatMap((year) =>
+      invoicesMissingFromBook(invoices, book, year).map((invoice) => {
+        const date = invoiceBookingDate(invoice, book.bookOn);
+        return { date, amount: invoiceTotals(invoice).total, currency: invoice.currency, planned: date > today, source: 'invoice' as const };
+      })
+    )
 ];
 
 export type MonthRow = {

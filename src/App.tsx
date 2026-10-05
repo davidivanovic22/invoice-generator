@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-do
 import { AccountGate, useAccount } from './features/account/AccountGate';
 import { AccountPage } from './features/account/AccountPage';
 import { AutoBackup } from './features/account/AutoBackup';
+import { CloudChoiceDialog, CloudDot, statusLabel, useCloud } from './features/account/CloudSection';
+import { startCloud } from './lib/cloud';
 import { AiProvider, useAi } from './features/ai/AiSettings';
 import { CommandPalette, useCommandShortcut } from './features/command/CommandPalette';
 import { HomePage } from './features/home/HomePage';
@@ -64,6 +66,7 @@ const LanguageSwitch = () => {
 
 const AccountButton = () => {
   const { lock, lockNow } = useAccount();
+  const cloud = useCloud();
   return (
     <div className="flex items-center">
       <NavLink
@@ -77,6 +80,11 @@ const AccountButton = () => {
           <Icon name="shield" />
         )}
         <span className="hidden xl:inline">{lock?.name || t('Account')}</span>
+        {cloud.status !== 'off' && (
+          <span title={statusLabel(cloud)}>
+            <CloudDot status={cloud.status} />
+          </span>
+        )}
       </NavLink>
       {lock && (
         <button type="button" onClick={lockNow} title={t('Lock now')} aria-label={t('Lock now')} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
@@ -195,6 +203,10 @@ const RecurringInvoices = () => {
 
 const Shell = () => {
   const [searchOpen, setSearchOpen] = useState(false);
+  // Optional cloud sync; does nothing until a Supabase project is connected.
+  useEffect(() => {
+    void startCloud();
+  }, []);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   useCommandShortcut(openSearch);
   return (
@@ -202,6 +214,7 @@ const Shell = () => {
       <Header onSearch={openSearch} />
       <AutoBackup />
       <RecurringInvoices />
+      <CloudChoiceDialog />
       <UpdateBanner />
       <main className="flex flex-1 flex-col">
         <ErrorBoundary>

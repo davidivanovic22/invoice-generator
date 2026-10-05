@@ -8,7 +8,7 @@ import { useNbsRates } from '../../lib/useNbsRates';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
 import { useInvoiceStore } from '../invoices/store';
-import { bookYears } from '../kpo/model';
+import { bookYears, invoicesMissingFromBook } from '../kpo/model';
 import { useKpo } from '../kpo/store';
 import { FLAT_RATE_LIMIT_RSD, incomeBetween, incomeEvents, monthlyRows, taxSchedule, VAT_LIMIT_RSD, yearBefore, type MonthRow } from './model';
 
@@ -73,6 +73,8 @@ export const OverviewPage = () => {
   const yearIncomeRsd = incomeBetween(events, `${year}-01-01`, `${year}-12-31`, toRsd);
   const rollingRsd = incomeBetween(events, yearBefore(today), today, toRsd);
   const incomplete = loading || rows.some((row) => row.incomplete);
+  const yearHasBook = book.entries.some((entry) => entry.date.startsWith(String(year)));
+  const unbooked = yearHasBook ? invoicesMissingFromBook(store.invoices, book, year).length : 0;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
@@ -93,6 +95,16 @@ export const OverviewPage = () => {
           />
         </div>
       </div>
+
+      {unbooked > 0 && (
+        <p className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+          <Icon name="alert" className="h-4 w-4" />
+          {t('{count} paid invoice is not in the KPO book, so it is not counted here.|{count} paid invoices are not in the KPO book, so they are not counted here.', { count: unbooked })}
+          <Link to="/kpo" className="font-medium text-indigo-700 hover:underline">
+            {t('Check in KPO')}
+          </Link>
+        </p>
+      )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t('Income in {year}', { year })} value={money(income)} detail={planned > 0 ? t('+ {amount} planned', { amount: money(planned) }) : t('Booked and paid')} />

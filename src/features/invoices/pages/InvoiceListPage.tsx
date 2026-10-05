@@ -17,6 +17,8 @@ import { YearTaxDialog } from '../components/YearTaxDialog';
 import { displayStatus, invoiceTotals, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
 import { useInvoiceStore } from '../store';
+import { bookYear, yearTotals } from '../../kpo/model';
+import { useKpo } from '../../kpo/store';
 
 type Filter = 'all' | 'unpaid' | 'paid' | 'draft';
 type Sort = 'newest' | 'oldest' | 'number' | 'amount' | 'client';
@@ -68,6 +70,7 @@ export const sumByCurrency = (invoices: Invoice[]) => {
 export const InvoiceListPage = () => {
   const { store, duplicateInvoice, deleteInvoice, restoreInvoice, importBackup, setStatus, updateProfile } = useInvoiceStore();
   const [editingTax, setEditingTax] = useState(false);
+  const { book } = useKpo();
   const [reminding, setReminding] = useState<Invoice | null>(null);
   const { toast } = useFeedback();
   const navigate = useNavigate();
@@ -116,7 +119,12 @@ export const InvoiceListPage = () => {
   const year = Number(today.slice(0, 4));
   const yearTax = store.profile.yearlyTax[String(year)];
   const taxSpent = taxSpentEur(yearTax, year);
-  const paidEur = paidIncomeEur(store.invoices, year, yearTax?.rsdPerEur ?? 117.2);
+  const invoicePaidEur = paidIncomeEur(store.invoices, year, yearTax?.rsdPerEur ?? 117.2);
+  // When the year has a KPO book, it is the record (the same numbers as Overview and KPO).
+  const kpoRows = bookYear(book, year, today).filter((row) => !row.planned);
+  const kpoTotal = yearTotals(kpoRows).total;
+  const useBook = kpoRows.length > 0;
+  const paidEur = useBook ? { total: book.currency === 'EUR' ? kpoTotal : kpoTotal / (yearTax?.rsdPerEur || 117.2), skipped: 0 } : invoicePaidEur;
 
   const handleImport = async (file: File) => {
     try {
@@ -196,7 +204,15 @@ export const InvoiceListPage = () => {
             detail={overdue.length ? t('{count} past the due date', { count: overdue.length }) : t('Nothing overdue')}
             tone={overdue.length ? 'red' : 'default'}
           />
-          <Stat label={t('Paid in {year}', { year: today.slice(0, 4) })} value={sumByCurrency(paidThisYear)} detail={t('{count} invoice|{count} invoices', { count: paidThisYear.length })} />
+          {useBook ? (
+            <Stat
+              label={t('Paid in {year}', { year: today.slice(0, 4) })}
+              value={formatAmount(kpoTotal, book.currency)}
+              detail={t('From the KPO book · {count} entry|From the KPO book · {count} entries', { count: kpoRows.length })}
+            />
+          ) : (
+            <Stat label={t('Paid in {year}', { year: today.slice(0, 4) })} value={sumByCurrency(paidThisYear)} detail={t('{count} invoice|{count} invoices', { count: paidThisYear.length })} />
+          )}
           <button
             type="button"
             onClick={() => setEditingTax(true)}

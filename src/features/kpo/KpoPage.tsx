@@ -69,6 +69,15 @@ export const KpoPage = () => {
     toast(t('{count} invoice added to the book|{count} invoices added to the book', { count: entries.length }));
   };
 
+  const settle = (invoices: Invoice[]) => {
+    const ids = invoices.map((invoice) => invoice.id);
+    update((current) => ({ ...current, settledInvoiceIds: Array.from(new Set([...current.settledInvoiceIds, ...ids])) }));
+    toast(t('Marked as already in the book'), 'success', {
+      label: t('Undo'),
+      onClick: () => update((current) => ({ ...current, settledInvoiceIds: current.settledInvoiceIds.filter((id) => !ids.includes(id)) }))
+    });
+  };
+
   const exportPdf = async () => {
     if (!printRef.current) return;
     try {
@@ -122,10 +131,16 @@ export const KpoPage = () => {
               <Icon name="bolt" className="h-4 w-4" />
               {t('{count} invoice is not in the book yet|{count} invoices are not in the book yet', { count: missing.length })}
             </div>
-            <Button size="sm" variant="accent" icon="plus" onClick={() => addInvoices(missing)}>
-              {t('Add all')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" icon="check" onClick={() => settle(missing)}>
+                {t('All are already in the book')}
+              </Button>
+              <Button size="sm" variant="accent" icon="plus" onClick={() => addInvoices(missing)}>
+                {t('Add all')}
+              </Button>
+            </div>
           </div>
+          <p className="mt-1 text-xs text-indigo-800/80">{t('No booking with the same client and amount was found for these. If one is already booked (with another amount or date), mark it as already in the book.')}</p>
           <ul className="mt-3 space-y-1.5">
             {missing.map((invoice) => {
               const rate = bookRate(invoice, book);
@@ -143,6 +158,9 @@ export const KpoPage = () => {
                       <span className="text-slate-400"> → {rate === null ? t('loading rate…') : money(invoiceTotals(invoice).total * rate)}</span>
                     )}
                   </span>
+                  <Button size="sm" variant="ghost" icon="check" onClick={() => settle([invoice])}>
+                    {t('Already in the book')}
+                  </Button>
                   <Button size="sm" icon="plus" onClick={() => addInvoices([invoice])} disabled={rate === null}>
                     {t('Add')}
                   </Button>

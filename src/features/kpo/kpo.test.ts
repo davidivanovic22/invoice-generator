@@ -1,6 +1,6 @@
 import { createEmptyStore, createInvoice, createLineItem, type Invoice } from '../invoices/model';
 import { parseKpoRows, type Cell } from './importKpo';
-import { bookYear, createBook, createEntry, entryFromInvoice, findEntryForInvoice, parseAmount, parseDate, splitDescriptionDate, yearTotals } from './model';
+import { bookYear, createBook, createEntry, entryFromInvoice, findEntryForInvoice, invoicesMissingFromBook, parseAmount, parseDate, splitDescriptionDate, yearTotals } from './model';
 
 const line = (number: number | null, description: string, services: number): Cell[] => [number, description, 0, services, services];
 
@@ -114,5 +114,24 @@ describe('book', () => {
     const imported = createEntry({ date: '2026-10-14', description: 'Usluge računarskog programiranja (Wisteria d.o.o.)', services: 3300, source: 'import' });
     expect(findEntryForInvoice(paid, [imported], 3300, 'paid')).toBe(imported);
     expect(findEntryForInvoice(paid, [imported], 2850, 'paid')).toBeNull();
+  });
+});
+
+describe('matching invoices to an imported book', () => {
+  it('matches by issue date when the payment date was set late, one booking per invoice', () => {
+    const { createEmptyStore, createInvoice, createLineItem } = require('../invoices/model');
+    const make = (number: string, issueDate: string) => {
+      const value = { ...createInvoice(createEmptyStore()), number, status: 'paid', issueDate, dueDate: issueDate, paidAt: '2026-10-05' };
+      value.client = { ...value.client, name: 'Wisteria d.o.o.' };
+      value.items = [createLineItem({ quantity: 1, unitPrice: 3300 })];
+      return value;
+    };
+    const book = createBook();
+    book.entries = [
+      createEntry({ date: '2026-04-15', description: 'Usluge (Wisteria d.o.o.)', services: 3300 }),
+      createEntry({ date: '2026-05-12', description: 'Usluge (Wisteria d.o.o.)', services: 3300 })
+    ];
+    const missing = invoicesMissingFromBook([make('2026-003', '2026-03-31'), make('2026-004', '2026-04-30'), make('2026-009', '2026-09-30')], book, 2026);
+    expect(missing.map((invoice: Invoice) => invoice.number)).toEqual(['2026-009']);
   });
 });

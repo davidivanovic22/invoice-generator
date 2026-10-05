@@ -124,8 +124,26 @@ const trimCanvas = (source: HTMLCanvasElement): string => {
 
 type SignaturePadProps = { value: string; onChange: (value: string) => void };
 
+const INK = '#1e293b';
+
+/** Paints every drawn pixel in one colour, keeping its transparency. */
+const recolor = (canvas: HTMLCanvasElement, hex: string) => {
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  const [r, g, b] = [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
+  const image = context.getImageData(0, 0, canvas.width, canvas.height);
+  for (let index = 0; index < image.data.length; index += 4) {
+    if (image.data[index + 3] === 0) continue;
+    image.data[index] = r;
+    image.data[index + 1] = g;
+    image.data[index + 2] = b;
+  }
+  context.putImageData(image, 0, 0);
+};
+
 export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
   const padRef = useRef<SignatureCanvas | null>(null);
+  const darkUi = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const [drawing, setDrawing] = useState(!value);
   const uploadRef = useRef<HTMLInputElement>(null);
   const { toast } = useFeedback();
@@ -133,7 +151,10 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
   const save = () => {
     const pad = padRef.current;
     if (!pad || pad.isEmpty()) return;
-    onChange(trimCanvas(pad.getCanvas()));
+    const canvas = pad.getCanvas();
+    // Drawn with light ink on the dark theme; documents are white, so store dark ink.
+    if (darkUi) recolor(canvas, INK);
+    onChange(trimCanvas(canvas));
     setDrawing(false);
   };
 
@@ -142,12 +163,12 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
       <div className="mb-1.5 text-[13px] font-medium text-slate-700">{t('Signature')}</div>
       {drawing ? (
         <div>
-          <div className="light-scope relative overflow-hidden rounded-xl bg-slate-50 ring-1 ring-inset ring-slate-200">
+          <div className="relative overflow-hidden rounded-xl bg-slate-50 ring-1 ring-inset ring-slate-200">
             <div className="pointer-events-none absolute bottom-7 left-6 right-6 border-t border-dashed border-slate-300" />
             <span className="pointer-events-none absolute bottom-2 left-6 text-[11px] text-slate-400">{t('Sign above the line with your mouse or finger')}</span>
             <SignatureCanvas
               ref={padRef}
-              penColor="#1e293b"
+              penColor={darkUi ? '#e2e8f0' : INK}
               minWidth={1}
               maxWidth={2.4}
               canvasProps={{ width: 520, height: 150, className: 'h-[150px] w-full cursor-crosshair touch-none' }}

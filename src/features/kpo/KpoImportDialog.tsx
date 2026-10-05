@@ -7,7 +7,8 @@ import { useFeedback } from '../../ui/Feedback';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
 import { importKpoFile, type ParsedBook } from './importKpo';
-import { createEntry, entryTotal, round2, type KpoBook, type KpoHeader } from './model';
+import { useInvoiceStore } from '../invoices/store';
+import { bookableInvoices, createEntry, entryTotal, round2, type KpoBook, type KpoHeader } from './model';
 import { useKpo } from './store';
 
 type Props = { onClose: () => void; onImported: (year: number | null) => void };
@@ -31,6 +32,8 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
   const [selected, setSelected] = useState<boolean[]>([]);
   const [currency, setCurrency] = useState<KpoBook['currency']>(book.currency);
   const [useHeader, setUseHeader] = useState(true);
+  const [settleOlder, setSettleOlder] = useState(true);
+  const { store } = useInvoiceStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const today = todayIso();
@@ -68,6 +71,9 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
   };
 
   const chosen = parsed ? parsed.rows.filter((row, index) => selected[index] && row.date) : [];
+  // The last booking that already happened: invoices issued up to then are in the imported book.
+  const lastBooked = chosen.map((row) => row.date!).filter((date) => date <= today).sort().pop() ?? null;
+  const covered = lastBooked ? bookableInvoices(store.invoices, book.bookOn).filter((invoice) => invoice.issueDate <= lastBooked) : [];
   const headerFound = parsed ? (Object.entries(parsed.header) as [keyof KpoHeader, string][]).filter(([, value]) => value) : [];
 
   const confirm = () => {
@@ -76,6 +82,7 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
       ...current,
       currency,
       header: useHeader ? { ...current.header, ...parsed.header } : current.header,
+      settledInvoiceIds: settleOlder ? Array.from(new Set([...current.settledInvoiceIds, ...covered.map((invoice) => invoice.id)])) : current.settledInvoiceIds,
       entries: [
         ...current.entries,
         ...chosen.map((row) => createEntry({ date: row.date!, description: row.description, products: row.products, services: row.services, source: 'import' }))
@@ -146,6 +153,16 @@ export const KpoImportDialog = ({ onClose, onImported }: Props) => {
                   <span>
                     <span className="font-medium text-slate-900">{t('Use the taxpayer details from the file')}</span>
                     <span className="mt-1 block text-xs text-slate-500">{headerFound.map(([field, value]) => `${HEADER_NAMES[field]}: ${value}`).join(' · ')}</span>
+                  </span>
+                </label>
+              )}
+
+              {covered.length > 0 && lastBooked && (
+                <label className="mt-3 flex items-start gap-3 rounded-xl bg-slate-50 p-3 text-sm ring-1 ring-slate-200/70">
+                  <input type="checkbox" checked={settleOlder} onChange={(event) => setSettleOlder(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600" />
+                  <span>
+                    <span className="font-medium text-slate-900">{t('My invoices issued up to {date} are already in this book', { date: formatDateNumeric(lastBooked) })}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{t('{count} invoice will not be suggested for the book again.|{count} invoices will not be suggested for the book again.', { count: covered.length })}</span>
                   </span>
                 </label>
               )}

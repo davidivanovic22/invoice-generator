@@ -71,10 +71,24 @@ export const suspendWrites = () => {
   writesSuspended = true;
 };
 
+type WriteListener = (key: string) => void;
+const writeListeners = new Set<WriteListener>();
+
+/** Called after every successful save (used by cloud sync). */
+export const onWrite = (listener: WriteListener) => {
+  writeListeners.add(listener);
+  return () => {
+    writeListeners.delete(listener);
+  };
+};
+
 export const writeJson = (key: string, value: unknown): boolean => {
   if (writesSuspended) return false;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    const raw = JSON.stringify(value);
+    if (localStorage.getItem(key) === raw) return true;
+    localStorage.setItem(key, raw);
+    writeListeners.forEach((listener) => listener(key));
     return true;
   } catch (error) {
     report(
