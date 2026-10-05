@@ -46,6 +46,7 @@ export const CommandPalette = ({ open, onClose }: { open: boolean; onClose: () =
       { id: 'invoices', group: t('Go to'), icon: 'file', label: t('Invoices'), run: go('/invoices') },
       { id: 'resumes', group: t('Go to'), icon: 'user', label: t('Resumes'), run: go('/resumes') },
       { id: 'profile', group: t('Go to'), icon: 'building', label: t('Business profile'), run: go('/profile'), keywords: 'firma pib iban logo potpis' },
+      { id: 'overview', group: t('Go to'), icon: 'cash', label: t('Overview'), run: go('/overview'), keywords: 'pregled zarada prihod limit pdv 6 miliona 8 miliona grafikon' },
       { id: 'kpo', group: t('Go to'), icon: 'list', label: t('KPO book'), run: go('/kpo'), keywords: 'kpo knjiga promet pausal pausalni porez' },
       { id: 'account', group: t('Go to'), icon: 'shield', label: t('Account & backup'), run: go('/account'), keywords: 'nalog lozinka sifra backup rezervna kopija vrati restore password lock' },
       { id: 'ai', group: t('Settings'), icon: 'sparkle', label: t('Connect Claude AI'), run: openSettings, keywords: 'api key kljuc' },

@@ -8,6 +8,7 @@
  */
 import { createId } from '../../lib/files';
 import { formatDateNumeric, todayIso } from '../../lib/dates';
+import { convert } from '../../lib/nbs';
 import { invoiceTotals, type Invoice, type Party } from '../invoices/model';
 
 export type KpoCurrency = 'EUR' | 'RSD';
@@ -166,6 +167,18 @@ export const findEntryForInvoice = (invoice: Invoice, entries: KpoEntry[], amoun
 /** Invoices that should be in the book: issued (not drafts), and paid when booking on payment. */
 export const bookableInvoices = (invoices: Invoice[], bookOn: KpoBook['bookOn']) =>
   invoices.filter((invoice) => (bookOn === 'paid' ? invoice.status === 'paid' : invoice.status !== 'draft'));
+
+/** Rate from the invoice currency to the book currency on the booking date (1 when they match); null until the NBS rate is loaded. */
+export const bookRate = (invoice: Invoice, book: KpoBook) =>
+  invoice.currency === book.currency ? 1 : convert(1, invoice.currency, book.currency, invoiceBookingDate(invoice, book.bookOn));
+
+/** Bookable invoices of a year that are not in the book yet. */
+export const invoicesMissingFromBook = (invoices: Invoice[], book: KpoBook, year: number) =>
+  bookableInvoices(invoices, book.bookOn).filter((invoice) => {
+    if (!invoiceBookingDate(invoice, book.bookOn).startsWith(String(year))) return false;
+    const rate = bookRate(invoice, book);
+    return !findEntryForInvoice(invoice, book.entries, rate === null ? null : invoiceTotals(invoice).total * rate, book.bookOn);
+  });
 
 /* ---------- Parsing Serbian spreadsheets ---------- */
 

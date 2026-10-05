@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { t, uiLocale } from '../../i18n';
 import { formatDate, formatDateNumeric, todayIso } from '../../lib/dates';
 import { formatAmount } from '../../lib/money';
-import { convert } from '../../lib/nbs';
 import { printToPdf } from '../../lib/pdf';
 import { useNbsRates } from '../../lib/useNbsRates';
 import { Button, IconButton } from '../../ui/Button';
@@ -17,32 +16,21 @@ import { exportKpoCsv, exportKpoXlsx, kpoFileName } from './exportKpo';
 import { KpoImportDialog } from './KpoImportDialog';
 import {
   bookableInvoices,
+  bookRate,
   bookYear,
   bookYears,
   createEntry,
   describeWithDate,
   entryFromInvoice,
   entryTotal,
-  findEntryForInvoice,
   invoiceBookingDate,
+  invoicesMissingFromBook,
   parseAmount,
   yearTotals,
   type KpoBook,
   type KpoEntry
 } from './model';
 import { useKpo } from './store';
-
-/** Rate from the invoice currency to the book currency on the booking date (1 when they match). */
-export const bookRate = (invoice: Invoice, book: KpoBook) =>
-  invoice.currency === book.currency ? 1 : convert(1, invoice.currency, book.currency, invoiceBookingDate(invoice, book.bookOn));
-
-/** Bookable invoices of a year that are not in the book yet. */
-export const invoicesMissingFromBook = (invoices: Invoice[], book: KpoBook, year: number) =>
-  bookableInvoices(invoices, book.bookOn).filter((invoice) => {
-    if (!invoiceBookingDate(invoice, book.bookOn).startsWith(String(year))) return false;
-    const rate = bookRate(invoice, book);
-    return !findEntryForInvoice(invoice, book.entries, rate === null ? null : invoiceTotals(invoice).total * rate, book.bookOn);
-  });
 
 export const KpoPage = () => {
   const { book, update, addEntries, updateEntry, removeEntry, restoreEntry } = useKpo();

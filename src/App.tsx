@@ -10,6 +10,7 @@ import { InvoiceEditorPage } from './features/invoices/pages/InvoiceEditorPage';
 import { InvoiceListPage } from './features/invoices/pages/InvoiceListPage';
 import { InvoiceStoreProvider } from './features/invoices/store';
 import { KpoPage } from './features/kpo/KpoPage';
+import { OverviewPage } from './features/overview/OverviewPage';
 import { KpoStoreProvider } from './features/kpo/store';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { ProfilePage } from './features/profile/ProfilePage';
@@ -98,6 +99,9 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <NavLink to="/invoices" className={navClass}>
           {t('Invoices')}
         </NavLink>
+        <NavLink to="/overview" className={navClass}>
+          {t('Overview')}
+        </NavLink>
         <NavLink to="/kpo" className={navClass}>
           KPO
         </NavLink>
@@ -147,6 +151,7 @@ const Shell = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/kpo" element={<KpoPage />} />
+            <Route path="/overview" element={<OverviewPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
