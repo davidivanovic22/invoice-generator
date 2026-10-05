@@ -9,7 +9,7 @@
  * a local backup snapshot is taken.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { BACKUP_KEYS, takeSnapshot } from './backup';
+import { backupKeys, isBackupKey, takeSnapshot } from './backup';
 import { onWrite, readRaw, suspendWrites } from './storage';
 
 export const CLOUD_SQL = `-- Paperwork cloud sync: run once in Supabase → SQL Editor
@@ -37,7 +37,6 @@ create trigger paperwork_touch before insert or update on public.paperwork_data
 const CONFIG_KEY = 'studio.cloud';
 const META_KEY = 'studio.cloud.meta';
 const TABLE = 'paperwork_data';
-const KEYS: readonly string[] = BACKUP_KEYS;
 
 export type CloudConfig = { url: string; anonKey: string };
 
@@ -132,9 +131,9 @@ const getClient = async () => {
 const message = (error: unknown) => (error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : String(error));
 
 const fetchRows = async (supabase: SupabaseClient): Promise<Row[]> => {
-  const { data, error } = await supabase.from(TABLE).select('key, data, updated_at').in('key', [...KEYS]);
+  const { data, error } = await supabase.from(TABLE).select('key, data, updated_at');
   if (error) throw error;
-  return (data ?? []) as Row[];
+  return ((data ?? []) as Row[]).filter((row) => isBackupKey(row.key));
 };
 
 const push = async (supabase: SupabaseClient, key: string) => {
@@ -168,7 +167,8 @@ export const syncNow = async () => {
     const meta = readMeta();
     const toPull: Row[] = [];
     const ask: CloudChoice = { local: {}, remote: {} };
-    for (const key of KEYS) {
+    // Local keys plus keys only the cloud has (e.g. a firm added on another device).
+    for (const key of Array.from(new Set([...backupKeys(), ...byKey.keys()]))) {
       const local = readRaw(key);
       const action = decide(local, byKey.get(key), meta[key]);
       if (action === 'push') await push(supabase, key);
@@ -209,7 +209,7 @@ export const resolveChoice = async (keep: 'local' | 'remote') => {
 const startWatching = () => {
   stopWatching?.();
   const offWrite = onWrite((key) => {
-    if (!KEYS.includes(key)) return;
+    if (!isBackupKey(key)) return;
     updateMeta(key, { dirty: true });
     window.clearTimeout(pushTimer);
     pushTimer = window.setTimeout(() => void syncNow(), 2500);

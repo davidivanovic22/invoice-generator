@@ -7,10 +7,16 @@
  * - Optionally, the same snapshot is written as a JSON file into a folder the
  *   user picked on disk, so it survives clearing the browser's data.
  */
+import { allFirmKeys, FIRMS_KEY, isFirmKey } from './firms';
 import { readRaw, suspendWrites } from './storage';
 
-/** localStorage keys that hold user data. Secrets (AI key, lock) are left out on purpose. */
-export const BACKUP_KEYS = ['studio.invoices.v2', 'studio.resumes.v2', 'studio.kpo.v1'] as const;
+const RESUMES_KEY = 'studio.resumes.v2';
+
+/** localStorage keys that hold user data: the firm list, resumes and every firm's invoices and KPO. Secrets (AI key, lock) are left out on purpose. */
+export const backupKeys = (): string[] => [FIRMS_KEY, RESUMES_KEY, ...allFirmKeys()];
+
+/** Keys a backup (or the cloud) may write back. */
+export const isBackupKey = (key: string) => key === FIRMS_KEY || key === RESUMES_KEY || isFirmKey(key);
 
 export const KEEP_DAYS = 30;
 export const KEEP_NEWEST = 10;
@@ -32,7 +38,7 @@ export type BackupFile = { app: 'paperwork'; version: 1; createdAt: string; data
 
 export const collectData = (read: (key: string) => string | null = readRaw): Record<string, string> => {
   const data: Record<string, string> = {};
-  for (const key of BACKUP_KEYS) {
+  for (const key of backupKeys()) {
     const raw = read(key);
     if (raw !== null) data[key] = raw;
   }
@@ -75,9 +81,8 @@ export const fromBackupFile = (value: unknown): Record<string, string> | null =>
   const file = value as Partial<BackupFile>;
   if (file.app !== 'paperwork' || !file.data || typeof file.data !== 'object') return null;
   const data: Record<string, string> = {};
-  for (const key of BACKUP_KEYS) {
-    const entry = file.data[key];
-    if (entry !== undefined) data[key] = typeof entry === 'string' ? entry : JSON.stringify(entry);
+  for (const [key, entry] of Object.entries(file.data)) {
+    if (isBackupKey(key) && entry !== undefined) data[key] = typeof entry === 'string' ? entry : JSON.stringify(entry);
   }
   return hasData(data) ? data : null;
 };
@@ -94,7 +99,11 @@ export const summarize = (data: Record<string, string>) => {
       return 0;
     }
   };
-  return { invoices: count('studio.invoices.v2', 'invoices'), resumes: count('studio.resumes.v2', 'resumes'), kpo: count('studio.kpo.v1', 'entries') };
+  const sum = (base: string, field: string) =>
+    Object.keys(data)
+      .filter((key) => key === base || key.startsWith(`${base}@`))
+      .reduce((total, key) => total + count(key, field), 0);
+  return { invoices: sum('studio.invoices.v2', 'invoices'), resumes: count(RESUMES_KEY, 'resumes'), kpo: sum('studio.kpo.v1', 'entries') };
 };
 
 // ---- IndexedDB ------------------------------------------------------------------
@@ -234,8 +243,8 @@ export const runDailyBackup = async () => {
 export const restoreData = async (data: Record<string, string>) => {
   await takeSnapshot('before-restore');
   suspendWrites();
-  for (const key of BACKUP_KEYS) {
-    if (data[key] !== undefined) localStorage.setItem(key, data[key]);
+  for (const [key, raw] of Object.entries(data)) {
+    if (isBackupKey(key)) localStorage.setItem(key, raw);
   }
   window.location.reload();
 };

@@ -55,9 +55,10 @@ export const useInvoiceStore = () => {
   return value;
 };
 
-export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
+/** `storageKey` selects the firm; the provider is remounted when the firm changes. */
+export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { children: ReactNode; storageKey?: string }) => {
   const [{ initial, persist }] = useState(() => {
-    const loaded = loadInvoiceStore();
+    const loaded = loadInvoiceStore(storageKey);
     return { initial: loaded.store, persist: loaded.persist };
   });
   const [store, setStore] = useState<InvoiceStore>(initial);
@@ -71,17 +72,21 @@ export const InvoiceStoreProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     if (!persist) return;
-    const timer = setTimeout(() => writeJson(STORE_KEY, store), 250);
+    const timer = setTimeout(() => writeJson(storageKey, store), 250);
     return () => clearTimeout(timer);
-  }, [store, persist]);
+  }, [store, persist, storageKey]);
 
   // Flush pending changes if the tab closes inside the debounce window.
   useEffect(() => {
     if (!persist) return;
-    const flush = () => writeJson(STORE_KEY, storeRef.current);
+    const flush = () => writeJson(storageKey, storeRef.current);
     window.addEventListener('beforeunload', flush);
-    return () => window.removeEventListener('beforeunload', flush);
-  }, [persist]);
+    // Also when switching firms, which unmounts this provider.
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      flush();
+    };
+  }, [persist, storageKey]);
 
   const touch = (invoice: Invoice): Invoice => ({ ...invoice, updatedAt: new Date().toISOString() });
 

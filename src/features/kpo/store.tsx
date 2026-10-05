@@ -34,14 +34,17 @@ export const normalizeBook = (raw: unknown): KpoBook => {
   };
 };
 
-export const KpoStoreProvider = ({ children }: { children: ReactNode }) => {
+/** `storageKey` selects the firm; the provider is remounted when the firm changes. */
+export const KpoStoreProvider = ({ children, storageKey = KPO_KEY }: { children: ReactNode; storageKey?: string }) => {
   const { store } = useInvoiceStore();
   const [book, setBook] = useState<KpoBook>(() => {
-    const saved = readJson<unknown>(KPO_KEY);
+    const saved = readJson<unknown>(storageKey);
     return saved.status === 'ok' ? normalizeBook(saved.value) : createBook(store.profile.party);
   });
   const bookRef = useRef(book);
   bookRef.current = book;
+  // Nothing is written until the book is actually changed.
+  const changed = useRef(false);
 
   const first = useRef(true);
   useEffect(() => {
@@ -49,15 +52,19 @@ export const KpoStoreProvider = ({ children }: { children: ReactNode }) => {
       first.current = false;
       return;
     }
-    const timer = setTimeout(() => writeJson(KPO_KEY, book), 250);
+    changed.current = true;
+    const timer = setTimeout(() => writeJson(storageKey, book), 250);
     return () => clearTimeout(timer);
-  }, [book]);
+  }, [book, storageKey]);
 
   useEffect(() => {
-    const flush = () => writeJson(KPO_KEY, bookRef.current);
+    const flush = () => changed.current && writeJson(storageKey, bookRef.current);
     window.addEventListener('beforeunload', flush);
-    return () => window.removeEventListener('beforeunload', flush);
-  }, []);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      flush();
+    };
+  }, [storageKey]);
 
   const update = useCallback((patch: Partial<KpoBook> | ((book: KpoBook) => KpoBook)) => {
     setBook((current) => (typeof patch === 'function' ? patch(current) : { ...current, ...patch }));

@@ -967,5 +967,34 @@ export const SR: Record<string, string> = {
   "{count} paid invoice is not in the KPO book, so it is not counted here.|{count} paid invoices are not in the KPO book, so they are not counted here.": "{count} plaćena faktura nije u KPO knjizi, pa nije uračunata.|{count} plaćene fakture nisu u KPO knjizi, pa nisu uračunate.|{count} plaćenih faktura nije u KPO knjizi, pa nisu uračunate.",
   "Check in KPO": "Proveri u KPO",
   "Paid on": "Datum plaćanja",
-  "The day the money arrived; the KPO book uses it.": "Dan kad je novac legao; KPO knjiga koristi taj datum."
+  "The day the money arrived; the KPO book uses it.": "Dan kad je novac legao; KPO knjiga koristi taj datum.",
+
+  // Firms
+  "New firm": "Nova firma",
+  "Each firm has its own invoices, clients, KPO book and taxes. Switch between them at the top.": "Svaka firma ima svoje fakture, klijente, KPO knjigu i porez. Između firmi prelaziš gore u zaglavlju.",
+  "Create firm": "Napravi firmu",
+  "Unnamed firm": "Firma bez naziva",
+  "Firms": "Firme",
+  "For accountants and owners of several businesses: every firm has its own invoices, KPO book and taxes.": "Za knjigovođe i vlasnike više firmi: svaka firma ima svoje fakture, KPO knjigu i porez.",
+  "{count} overdue invoice|{count} overdue invoices": "{count} faktura kasni|{count} fakture kasne|{count} faktura kasni",
+  "{count} invoice not in KPO|{count} invoices not in KPO": "{count} faktura nije u KPO|{count} fakture nisu u KPO|{count} faktura nije u KPO",
+  "Tax for {year} not entered": "Porez za {year}. nije unet",
+  "Close to the flat-rate limit": "Blizu limita za paušal",
+  "No PIB yet": "Bez PIB-a",
+  "Open now": "Otvorena",
+  "from the KPO book": "iz KPO knjige",
+  "from paid invoices": "iz plaćenih faktura",
+  "Flat-rate limit": "Limit za paušal (6 mil.)",
+  "All in order": "Sve je u redu",
+  "Delete firm": "Obriši firmu",
+  "Delete \"{name}\"?": "Obrisati „{name}“?",
+  "All its invoices and the KPO book are removed from this browser. A backup is made first (Account & backup).": "Sve njene fakture i KPO knjiga se brišu iz ovog pregledača. Pre toga se pravi backup (Nalog i backup).",
+  "Firm deleted. It can be restored from Account & backup.": "Firma je obrisana. Može se vratiti iz Nalog i backup.",
+  "Add a firm": "Dodaj firmu",
+  "My firm": "Moja firma",
+  "Switch firm": "Promeni firmu",
+  "All firms": "Sve firme",
+
+  // Firm name
+  "Firm name": "Naziv firme"
 };

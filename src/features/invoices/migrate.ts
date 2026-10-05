@@ -223,12 +223,13 @@ export const normalizeStore = (raw: Partial<InvoiceStore>): InvoiceStore => {
 };
 
 /** `persist: false` means the stored data is unreadable and un-backed-up: never overwrite it. */
-export const loadInvoiceStore = (): { store: InvoiceStore; persist: boolean } => {
-  const current = readJson<Partial<InvoiceStore>>(STORE_KEY);
+export const loadInvoiceStore = (key = STORE_KEY): { store: InvoiceStore; persist: boolean } => {
+  const current = readJson<Partial<InvoiceStore>>(key);
   if (current.status === 'ok') return { store: normalizeStore(current.value), persist: true };
   if (current.status === 'corrupt') return { store: createEmptyStore(), persist: current.backupKey !== null };
 
-  const legacy = readJson<LegacyState>(LEGACY_KEY);
+  // Only the first firm can have data from the old app.
+  const legacy = key === STORE_KEY ? readJson<LegacyState>(LEGACY_KEY) : ({ status: 'empty' } as const);
   if (legacy.status === 'ok') {
     const migrated = migrateLegacy(legacy.value);
     // The legacy key is left untouched as a backup.

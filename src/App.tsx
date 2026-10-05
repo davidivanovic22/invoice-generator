@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { AccountGate, useAccount } from './features/account/AccountGate';
 import { AccountPage } from './features/account/AccountPage';
 import { AutoBackup } from './features/account/AutoBackup';
 import { CloudChoiceDialog, CloudDot, statusLabel, useCloud } from './features/account/CloudSection';
 import { startCloud } from './lib/cloud';
 import { AiProvider, useAi } from './features/ai/AiSettings';
+import { FirmProvider, useFirm } from './features/firms/FirmContext';
+import { FirmsPage } from './features/firms/FirmsPage';
+import { FirmSwitcher } from './features/firms/FirmSwitcher';
 import { CommandPalette, useCommandShortcut } from './features/command/CommandPalette';
 import { HomePage } from './features/home/HomePage';
 import { InvoiceEditorPage } from './features/invoices/pages/InvoiceEditorPage';
@@ -26,7 +29,7 @@ import { Icon } from './ui/Icon';
 import { saveTheme } from './ui/theme';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
+  `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
 
 const AiStatus = () => {
   const { hasKey, openSettings } = useAi();
@@ -34,12 +37,12 @@ const AiStatus = () => {
     <button
       type="button"
       onClick={openSettings}
-      className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+      className="relative flex items-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100"
       title={hasKey ? t('Claude AI is connected') : t('Connect Claude AI')}
+      aria-label={hasKey ? t('Claude AI is connected') : t('Connect Claude AI')}
     >
-      <span className={`h-2 w-2 rounded-full ${hasKey ? 'bg-emerald-500' : 'bg-slate-300'}`} />
       <Icon name="sparkle" />
-      <span className="hidden lg:inline">{hasKey ? t('AI on') : t('Connect AI')}</span>
+      <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ring-2 ring-white ${hasKey ? 'bg-emerald-500' : 'bg-slate-300'}`} />
     </button>
   );
 };
@@ -64,32 +67,78 @@ const LanguageSwitch = () => {
   );
 };
 
+/** Avatar menu: business profile, account & backup, lock. */
 const AccountButton = () => {
   const { lock, lockNow } = useAccount();
   const cloud = useCloud();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => !rootRef.current?.contains(event.target as Node) && setOpen(false);
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  const item = 'flex w-full items-center gap-2.5 whitespace-nowrap px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50';
+  const go = (to: string) => {
+    setOpen(false);
+    navigate(to);
+  };
   return (
-    <div className="flex items-center">
-      <NavLink
-        to="/account"
-        title={t('Account & backup')}
-        className={({ isActive }) => `flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={t('Account')}
+        className="flex items-center gap-2 whitespace-nowrap rounded-lg py-1 pl-1 pr-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
       >
-        {lock?.name ? (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-semibold uppercase text-indigo-700">{lock.name.slice(0, 1)}</span>
-        ) : (
-          <Icon name="shield" />
-        )}
-        <span className="hidden xl:inline">{lock?.name || t('Account')}</span>
-        {cloud.status !== 'off' && (
-          <span title={statusLabel(cloud)}>
-            <CloudDot status={cloud.status} />
-          </span>
-        )}
-      </NavLink>
-      {lock && (
-        <button type="button" onClick={lockNow} title={t('Lock now')} aria-label={t('Lock now')} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
-          <Icon name="lock" />
-        </button>
+        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold uppercase text-indigo-700">
+          {lock?.name ? lock.name.slice(0, 1) : <Icon name="user" className="h-4 w-4" />}
+          {cloud.status !== 'off' && (
+            <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white p-[2px]" title={statusLabel(cloud)}>
+              <CloudDot status={cloud.status} />
+            </span>
+          )}
+        </span>
+        <Icon name="chevronDown" className="h-3.5 w-3.5 text-slate-400" />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 shadow-lg ring-1 ring-slate-200">
+          {lock?.name && <div className="truncate px-3 pb-1 pt-2 text-xs font-semibold text-slate-400">{lock.name}</div>}
+          <button type="button" role="menuitem" className={item} onClick={() => go('/profile')}>
+            <Icon name="building" className="h-4 w-4 text-slate-400" /> {t('Business profile')}
+          </button>
+          <button type="button" role="menuitem" className={item} onClick={() => go('/account')}>
+            <Icon name="shield" className="h-4 w-4 text-slate-400" /> {t('Account & backup')}
+          </button>
+          <button type="button" role="menuitem" className={item} onClick={() => go('/firms')}>
+            <Icon name="list" className="h-4 w-4 text-slate-400" /> {t('All firms')}
+          </button>
+          {lock && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                role="menuitem"
+                className={item}
+                onClick={() => {
+                  setOpen(false);
+                  lockNow();
+                }}
+              >
+                <Icon name="lock" className="h-4 w-4 text-slate-400" /> {t('Lock now')}
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
@@ -134,7 +183,7 @@ const MobileTabBar = () => {
   const sheetLink = 'flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-slate-800 hover:bg-slate-100';
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden" aria-label={t('Main')}>
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden print:hidden" aria-label={t('Main')}>
         <NavLink to="/invoices" className={mobileTabClass}>
           <Icon name="file" className="h-5 w-5" />
           {t('Invoices')}
@@ -157,9 +206,15 @@ const MobileTabBar = () => {
         </button>
       </nav>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/50 md:hidden" onMouseDown={close}>
+        <div className="fixed inset-0 z-50 flex items-end bg-black/50 lg:hidden" onMouseDown={close}>
           <div role="dialog" aria-modal="true" aria-label={t('More')} className="w-full rounded-t-3xl bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
             <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200" />
+            <div className="mb-2 px-1">
+              <FirmSwitcher onNavigate={close} />
+            </div>
+            <NavLink to="/firms" className={sheetLink} onClick={close}>
+              <Icon name="list" /> {t('All firms')}
+            </NavLink>
             <NavLink to="/" className={sheetLink} onClick={close}>
               <Icon name="home" /> {t('Home')}
             </NavLink>
@@ -222,9 +277,12 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
           <Icon name="file" className="h-4 w-4" strokeWidth={2} />
         </span>
-        <span className="md:hidden lg:inline">Paperwork</span>
+        <span>Paperwork</span>
       </NavLink>
-      <nav className="hidden items-center gap-1 md:flex">
+      <div className="hidden lg:block">
+        <FirmSwitcher />
+      </div>
+      <nav className="hidden items-center gap-1 lg:flex">
         <NavLink to="/invoices" className={navClass}>
           {t('Invoices')}
         </NavLink>
@@ -241,25 +299,17 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
       <button
         type="button"
         onClick={onSearch}
-        className="ml-auto flex h-9 items-center gap-2 rounded-lg bg-slate-100 px-3 text-sm text-slate-500 transition hover:bg-slate-200/70 sm:w-56"
+        className="ml-auto flex h-9 shrink-0 items-center gap-2 rounded-lg bg-slate-100 px-3 text-sm text-slate-500 transition hover:bg-slate-200/70 xl:w-56"
         aria-label={t('Search and commands')}
       >
         <Icon name="search" />
-        <span className="hidden flex-1 text-left sm:inline">{t('Search…')}</span>
-        <kbd className="hidden rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-400 shadow-sm sm:inline">Ctrl K</kbd>
+        <span className="hidden flex-1 text-left xl:inline">{t('Search…')}</span>
+        <kbd className="hidden rounded bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-400 shadow-sm xl:inline">Ctrl K</kbd>
       </button>
       <LanguageSwitch />
       <ThemeSwitch />
-      <div className="hidden items-center gap-1 md:flex">
+      <div className="hidden items-center gap-1 lg:flex">
         <AiStatus />
-        <NavLink
-          to="/profile"
-          title={t('Business profile')}
-          className={({ isActive }) => `flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
-        >
-          <Icon name="building" />
-          <span className="hidden xl:inline">{t('Business profile')}</span>
-        </NavLink>
         <AccountButton />
       </div>
     </div>
@@ -276,7 +326,7 @@ const UpdateBanner = () => {
   }, []);
   if (!activate) return null;
   return (
-    <div className="fixed bottom-20 left-1/2 md:bottom-4 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-xl print:hidden">
+    <div className="fixed bottom-20 left-1/2 lg:bottom-4 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-xl print:hidden">
       {t('A new version is ready.')}
       <button type="button" onClick={activate} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100">
         {t('Update')}
@@ -316,7 +366,7 @@ const Shell = () => {
       <RecurringInvoices />
       <CloudChoiceDialog />
       <UpdateBanner />
-      <main className="flex flex-1 flex-col pb-16 md:pb-0">
+      <main className="flex flex-1 flex-col pb-16 lg:pb-0">
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -326,6 +376,7 @@ const Shell = () => {
             <Route path="/account" element={<AccountPage />} />
             <Route path="/kpo" element={<KpoPage />} />
             <Route path="/overview" element={<OverviewPage />} />
+            <Route path="/firms" element={<FirmsPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -339,6 +390,18 @@ const Shell = () => {
   );
 };
 
+/** Invoice and KPO data belong to the active firm; switching firms remounts them with that firm's data. */
+const FirmStores = ({ children }: { children: ReactNode }) => {
+  const { active, keyFor } = useFirm();
+  return (
+    <InvoiceStoreProvider key={`invoices-${active.id}`} storageKey={keyFor('studio.invoices.v2')}>
+      <KpoStoreProvider key={`kpo-${active.id}`} storageKey={keyFor('studio.kpo.v1')}>
+        {children}
+      </KpoStoreProvider>
+    </InvoiceStoreProvider>
+  );
+};
+
 function App() {
   return (
     <LanguageProvider>
@@ -346,13 +409,13 @@ function App() {
         <BrowserRouter>
           <FeedbackProvider>
             <AiProvider>
-              <InvoiceStoreProvider>
-                <KpoStoreProvider>
-                  <ResumeStoreProvider>
+              <FirmProvider>
+                <ResumeStoreProvider>
+                  <FirmStores>
                     <Shell />
-                  </ResumeStoreProvider>
-                </KpoStoreProvider>
-              </InvoiceStoreProvider>
+                  </FirmStores>
+                </ResumeStoreProvider>
+              </FirmProvider>
             </AiProvider>
           </FeedbackProvider>
         </BrowserRouter>
