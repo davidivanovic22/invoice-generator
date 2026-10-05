@@ -1,5 +1,5 @@
 # Renders workbooks to PDF with Excel so a generated spreadsheet can be looked at before shipping a change to an export.
-# Usage: .scriptsxlsx-to-pdf.ps1 -Files C:pathKPO-2026.xlsx
+# Usage: .\scripts\xlsx-to-pdf.ps1 -Files C:\path\KPO-2026.xlsx   (writes KPO-2026.pdf next to it)
 param([string[]]$Files)
 $excel = New-Object -ComObject Excel.Application
 try {
