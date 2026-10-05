@@ -12,6 +12,7 @@ import {
   signOut,
   subscribeCloud,
   syncNow,
+  takeCloudNotice,
   type CloudState
 } from '../../lib/cloud';
 import { Button } from '../../ui/Button';
@@ -187,6 +188,36 @@ export const CloudDot = ({ status }: { status: CloudState['status'] }) => (
     }`}
   />
 );
+
+/** After a reload caused by sync: says what happened, and where the overwritten changes are. */
+export const CloudNoticeBanner = () => {
+  const [notice, setNotice] = useState(takeCloudNotice);
+  useEffect(() => {
+    if (notice !== 'updated') return;
+    const timer = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  if (!notice) return null;
+  const conflict = notice === 'conflict';
+  return (
+    <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b px-4 py-2 text-sm print:hidden ${conflict ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
+      <Icon name={conflict ? 'alert' : 'refresh'} className="h-4 w-4" />
+      <span>
+        {conflict
+          ? t('Someone else changed this data while you were working. Their version is loaded; your last changes are kept in a backup.')
+          : t('Loaded the latest changes from the cloud.')}
+      </span>
+      {conflict && (
+        <a href="/account#backup" className="font-medium underline">
+          {t('Open backups')}
+        </a>
+      )}
+      <button type="button" aria-label={t('Dismiss')} onClick={() => setNotice(null)} className="opacity-70 hover:opacity-100">
+        <Icon name="x" className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
 
 /** Shown once when this device and the cloud both have different data. */
 export const CloudChoiceDialog = () => {

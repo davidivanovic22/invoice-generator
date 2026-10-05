@@ -55,6 +55,7 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
     accent: invoice.design.accentColor,
     number: invoice.number,
     isPaid: invoice.status === 'paid',
+    isCancelled: invoice.status === 'cancelled',
     issuer: { name: invoice.issuer.name, lines: partyLines(invoice.issuer, true) },
     client: { name: invoice.client.name, lines: partyLines(invoice.client) },
     meta,

@@ -180,7 +180,7 @@ export const findEntryForInvoice = (
 
 /** Invoices that should be in the book: issued (not drafts), and paid when booking on payment. */
 export const bookableInvoices = (invoices: Invoice[], bookOn: KpoBook['bookOn']) =>
-  invoices.filter((invoice) => (bookOn === 'paid' ? invoice.status === 'paid' : invoice.status !== 'draft'));
+  invoices.filter((invoice) => (bookOn === 'paid' ? invoice.status === 'paid' : invoice.status === 'sent' || invoice.status === 'paid'));
 
 /** Rate from the invoice currency to the book currency on the booking date (1 when they match); null until the NBS rate is loaded. */
 export const bookRate = (invoice: Invoice, book: KpoBook) =>

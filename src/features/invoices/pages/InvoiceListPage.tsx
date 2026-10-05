@@ -10,11 +10,12 @@ import { inputClass } from '../../../ui/Field';
 import { Icon } from '../../../ui/Icon';
 import { EmptyState, Segmented } from '../../../ui/Layout';
 import { Menu } from '../../../ui/Menu';
+import { BankImportDialog } from '../components/BankImportDialog';
 import { EmailDialog } from '../components/EmailDialog';
 import { exportForAccountant } from '../exportAccountant';
 import { StatusBadge, StatusSelect } from '../components/Status';
 import { YearTaxDialog } from '../components/YearTaxDialog';
-import { displayStatus, invoiceTotals, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
+import { displayStatus, invoiceTotals, isIssued, paidIncomeEur, paidTaxMonths, taxSpentEur, type DisplayStatus, type Invoice } from '../model';
 import { QuickInvoiceDialog } from '../QuickInvoiceDialog';
 import { useInvoiceStore } from '../store';
 import { bookYear, yearTotals } from '../../kpo/model';
@@ -72,7 +73,8 @@ export const InvoiceListPage = () => {
   const [editingTax, setEditingTax] = useState(false);
   const { book } = useKpo();
   const [reminding, setReminding] = useState<Invoice | null>(null);
-  const { toast } = useFeedback();
+  const [banking, setBanking] = useState(false);
+  const { toast, confirm } = useFeedback();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -134,6 +136,17 @@ export const InvoiceListPage = () => {
     }
   };
 
+  // An issued invoice is part of the books: it is cancelled and stays on record.
+  const handleCancel = async (invoice: Invoice) => {
+    const ok = await confirm({
+      title: t('Cancel invoice {number}?', { number: invoice.number }),
+      message: t('It stays on record marked "Cancelled", prints with a Cancelled stamp and no longer counts as income. You can undo this.'),
+      confirmLabel: t('Cancel invoice'),
+      tone: 'danger'
+    });
+    if (ok) setStatus(invoice.id, 'cancelled');
+  };
+
   const handleDelete = (invoice: Invoice) => {
     const removed = deleteInvoice(invoice.id);
     if (removed) toast(t('Invoice {number} deleted', { number: removed.number }), 'success', { label: t('Undo'), onClick: () => restoreInvoice(removed) });
@@ -164,6 +177,11 @@ export const InvoiceListPage = () => {
               { label: t('Business profile'), icon: 'building', onSelect: () => navigate('/profile') }
             ]}
           />
+          {store.invoices.length > 0 && (
+            <Button icon="upload" size="lg" onClick={() => setBanking(true)} title={t('Import a bank statement')}>
+              <span className="hidden sm:inline">{t('Bank statement')}</span>
+            </Button>
+          )}
           <Button variant="primary" icon="plus" size="lg" onClick={() => setCreating(true)}>
             {t('New invoice')}
           </Button>
@@ -334,13 +352,17 @@ export const InvoiceListPage = () => {
                             icon: 'copy',
                             onSelect: () => handleDuplicate(invoice)
                           },
-                          status === 'paid'
-                            ? { label: t('Mark as unpaid'), icon: 'refresh', onSelect: () => setStatus(invoice.id, 'sent') }
-                            : { label: t('Mark as paid'), icon: 'check', onSelect: () => setStatus(invoice.id, 'paid') },
+                          status === 'cancelled'
+                            ? { label: t('Undo cancellation'), icon: 'undo', onSelect: () => setStatus(invoice.id, 'sent') }
+                            : status === 'paid'
+                              ? { label: t('Mark as unpaid'), icon: 'refresh', onSelect: () => setStatus(invoice.id, 'sent') }
+                              : { label: t('Mark as paid'), icon: 'check', onSelect: () => setStatus(invoice.id, 'paid') },
                           ...(status === 'draft' ? [{ label: t('Mark as sent'), icon: 'mail' as const, onSelect: () => setStatus(invoice.id, 'sent') }] : []),
                           ...(status === 'sent' || status === 'overdue' ? [{ label: t('Send payment reminder'), icon: 'alert' as const, onSelect: () => setReminding(invoice) }] : []),
                           'divider',
-                          { label: t('Delete'), icon: 'trash', danger: true, onSelect: () => handleDelete(invoice) }
+                          isIssued(invoice)
+                            ? { label: t('Cancel invoice (storno)'), icon: 'x', danger: true, onSelect: () => handleCancel(invoice) }
+                            : { label: t('Delete'), icon: 'trash', danger: true, onSelect: () => handleDelete(invoice) }
                         ]}
                       />
                     </li>
@@ -353,6 +375,7 @@ export const InvoiceListPage = () => {
       )}
 
       {creating && <QuickInvoiceDialog onClose={() => setCreating(false)} />}
+      {banking && <BankImportDialog onClose={() => setBanking(false)} />}
       {reminding && <EmailDialog invoice={reminding} kind="reminder" onClose={() => setReminding(null)} />}
       {editingTax && (
         <YearTaxDialog

@@ -8,7 +8,7 @@ import { safeFileName } from '../../lib/files';
 import { cachedRate, fetchRatesFor } from '../../lib/nbs';
 import { invoiceTotals, type InvoiceStore } from './model';
 
-const STATUS = { draft: 'Nacrt', sent: 'Poslata', paid: 'Plaćena' } as const;
+const STATUS = { draft: 'Nacrt', sent: 'Poslata', paid: 'Plaćena', cancelled: 'Stornirana' } as const;
 
 export const accountantRows = (store: InvoiceStore, year: number) =>
   store.invoices
@@ -30,7 +30,8 @@ export const accountantRows = (store: InvoiceStore, year: number) =>
         status: STATUS[invoice.status],
         paidAt: invoice.paidAt,
         rate,
-        totalRsd: rate === null ? null : Math.round(total * rate * 100) / 100
+        // A cancelled invoice stays listed, but adds nothing to the total.
+        totalRsd: invoice.status === 'cancelled' ? 0 : rate === null ? null : Math.round(total * rate * 100) / 100
       };
     });
 

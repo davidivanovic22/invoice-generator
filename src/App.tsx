@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from 're
 import { AccountGate, useAccount } from './features/account/AccountGate';
 import { AccountPage } from './features/account/AccountPage';
 import { AutoBackup } from './features/account/AutoBackup';
-import { CloudChoiceDialog, CloudDot, statusLabel, useCloud } from './features/account/CloudSection';
+import { CloudChoiceDialog, CloudDot, CloudNoticeBanner, statusLabel, useCloud } from './features/account/CloudSection';
 import { startCloud } from './lib/cloud';
 import { AiProvider, useAi } from './features/ai/AiSettings';
 import { FirmProvider, useFirm } from './features/firms/FirmContext';
@@ -327,10 +327,22 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
 /** Viewers of a shared firm can look around, but their changes are not saved to the cloud. */
 const ViewerBanner = () => {
   const { active } = useFirm();
+  const { toast } = useFeedback();
+  // A refused change (see the stores) is explained, at most once every few seconds.
+  useEffect(() => {
+    let last = 0;
+    const onRefused = () => {
+      if (Date.now() - last < 4000) return;
+      last = Date.now();
+      toast(t('You can only view this firm. Ask the owner for the accountant role to make changes.'), 'error');
+    };
+    window.addEventListener('read-only', onRefused);
+    return () => window.removeEventListener('read-only', onRefused);
+  }, [toast]);
   if (active.role !== 'viewer') return null;
   return (
     <div className="border-b border-sky-200 bg-sky-50 px-4 py-2 text-center text-sm text-sky-900 print:hidden">
-      {t('You can view this firm. Changes you make here are not saved for the others.')}
+      {t('View only: you can look at this firm and export, but not change it.')}
     </div>
   );
 };
@@ -383,6 +395,7 @@ const Shell = () => {
       <Header onSearch={openSearch} />
       <AutoBackup />
       <ViewerBanner />
+      <CloudNoticeBanner />
       <RecurringInvoices />
       <CloudChoiceDialog />
       <UpdateBanner />
@@ -417,8 +430,8 @@ const Shell = () => {
 const FirmStores = ({ children }: { children: ReactNode }) => {
   const { active, keyFor } = useFirm();
   return (
-    <InvoiceStoreProvider key={`invoices-${active.id}`} storageKey={keyFor('studio.invoices.v2')}>
-      <KpoStoreProvider key={`kpo-${active.id}`} storageKey={keyFor('studio.kpo.v1')}>
+    <InvoiceStoreProvider key={`invoices-${active.id}`} storageKey={keyFor('studio.invoices.v2')} readOnly={active.role === 'viewer'}>
+      <KpoStoreProvider key={`kpo-${active.id}`} storageKey={keyFor('studio.kpo.v1')} readOnly={active.role === 'viewer'}>
         {children}
       </KpoStoreProvider>
     </InvoiceStoreProvider>

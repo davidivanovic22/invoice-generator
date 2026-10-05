@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { writeJson } from '../../lib/storage';
 import { createId } from '../../lib/files';
 import { logAudit } from '../../lib/audit';
@@ -9,6 +9,7 @@ import {
   createInvoice,
   duplicateInvoice,
   generateRecurring,
+  isIssued,
   sameClient,
   type BusinessProfile,
   type Client,
@@ -26,7 +27,8 @@ export type ImportSummary = { added: number; skipped: number };
 
 type InvoiceStoreValue = {
   store: InvoiceStore;
-  createInvoice: (overrides?: Partial<Invoice>) => Invoice;
+  /** Null when the firm is read-only for this user. */
+  createInvoice: (overrides?: Partial<Invoice>) => Invoice | null;
   duplicateInvoice: (id: string) => Invoice | null;
   /** `record: false` skips undo history (for bookkeeping such as linking a client). */
   updateInvoice: (id: string, update: Updater<Invoice>, options?: { record?: boolean }) => void;
@@ -39,6 +41,8 @@ type InvoiceStoreValue = {
   canUndo: (id: string) => boolean;
   canRedo: (id: string) => boolean;
   setStatus: (id: string, status: InvoiceStatus) => void;
+  /** Marks an invoice paid on a given day (e.g. from a bank statement). */
+  markPaid: (id: string, paidAt: string) => void;
   updateProfile: (update: Updater<BusinessProfile>) => void;
   /** Saves (or refreshes) a client in the address book and returns its id. */
   rememberClient: (party: Party, currency: string, preferId?: string | null) => string | null;
@@ -57,12 +61,29 @@ export const useInvoiceStore = () => {
 };
 
 /** `storageKey` selects the firm; the provider is remounted when the firm changes. */
-export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { children: ReactNode; storageKey?: string }) => {
+type ProviderProps = {
+  children: ReactNode;
+  storageKey?: string;
+  /** Viewers of a shared firm: every change is refused (and announced), nothing is saved. */
+  readOnly?: boolean;
+};
+
+/** Tells the app that a change was refused because the firm is read-only. */
+export const announceReadOnly = () => window.dispatchEvent(new Event('read-only'));
+
+export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnly = false }: ProviderProps) => {
   const [{ initial, persist }] = useState(() => {
     const loaded = loadInvoiceStore(storageKey);
     return { initial: loaded.store, persist: loaded.persist };
   });
-  const [store, setStore] = useState<InvoiceStore>(initial);
+  // A reducer keeps `setStore` a stable function while letting a read-only firm refuse every change.
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
+  const [store, setStore] = useReducer(
+    (current: InvoiceStore, update: InvoiceStore | ((value: InvoiceStore) => InvoiceStore)) =>
+      readOnlyRef.current ? current : typeof update === 'function' ? update(current) : update,
+    initial
+  );
   const storeRef = useRef(store);
   storeRef.current = store;
 
@@ -92,6 +113,10 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   const touch = (invoice: Invoice): Invoice => ({ ...invoice, updatedAt: new Date().toISOString() });
 
   const createInvoiceAction = useCallback((overrides?: Partial<Invoice>) => {
+    if (readOnlyRef.current) {
+      announceReadOnly();
+      return null;
+    }
     const invoice = createInvoice(storeRef.current, overrides);
     setStore((current) => ({ ...current, invoices: [invoice, ...current.invoices] }));
     logAudit('invoice.created', invoice.number);
@@ -101,6 +126,10 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   const duplicateInvoiceAction = useCallback((id: string) => {
     const source = storeRef.current.invoices.find((invoice) => invoice.id === id);
     if (!source) return null;
+    if (readOnlyRef.current) {
+      announceReadOnly();
+      return null;
+    }
     const copy = duplicateInvoice(storeRef.current, source);
     setStore((current) => ({ ...current, invoices: [copy, ...current.invoices] }));
     logAudit('invoice.created', copy.number, `copy of ${source.number}`);
@@ -123,6 +152,8 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
 
   const deleteInvoice = useCallback((id: string) => {
     const removed = storeRef.current.invoices.find((invoice) => invoice.id === id);
+    // Issued invoices are cancelled, never deleted.
+    if (removed && isIssued(removed)) return undefined;
     setStore((current) => ({ ...current, invoices: current.invoices.filter((invoice) => invoice.id !== id) }));
     if (removed) logAudit('invoice.deleted', removed.number);
     return removed;
@@ -166,6 +197,17 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
       history.record(id, invoice);
       if (invoice.status !== status) logAudit('invoice.status', invoice.number, status);
       updateInvoice(id, (current) => ({ ...current, status, paidAt: status === 'paid' ? current.paidAt ?? todayIso() : null }), { record: false });
+    },
+    [updateInvoice, history]
+  );
+
+  const markPaid = useCallback(
+    (id: string, paidAt: string) => {
+      const invoice = storeRef.current.invoices.find((item) => item.id === id);
+      if (!invoice) return;
+      history.record(id, invoice);
+      logAudit('invoice.status', invoice.number, 'paid');
+      updateInvoice(id, { status: 'paid', paidAt }, { record: false });
     },
     [updateInvoice, history]
   );
@@ -228,6 +270,7 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
   }, []);
 
   const runRecurring = useCallback(() => {
+    if (readOnlyRef.current) return [];
     const { store: next, created } = generateRecurring(storeRef.current);
     if (created.length) {
       storeRef.current = next;
@@ -249,13 +292,14 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY }: { chi
       canUndo,
       canRedo,
       setStatus,
+      markPaid,
       updateProfile,
       rememberClient,
       deleteClient,
       importBackup,
       runRecurring
     }),
-    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, restoreInvoice, undo, redo, canUndo, canRedo, setStatus, updateProfile, rememberClient, deleteClient, importBackup, runRecurring]
+    [store, createInvoiceAction, duplicateInvoiceAction, updateInvoice, deleteInvoice, restoreInvoice, undo, redo, canUndo, canRedo, setStatus, markPaid, updateProfile, rememberClient, deleteClient, importBackup, runRecurring]
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

@@ -239,9 +239,28 @@ const push = async (supabase: SupabaseClient, target: Target) => {
   updateMeta(target.localKey, { syncedAt: (data as { updated_at: string }).updated_at, dirty: false });
 };
 
+const NOTICE_KEY = 'studio.cloud.notice';
+export type CloudNotice = 'updated' | 'conflict';
+
+/** What the last reload was about; read once by the banner. */
+export const takeCloudNotice = (): CloudNotice | null => {
+  try {
+    const value = sessionStorage.getItem(NOTICE_KEY);
+    sessionStorage.removeItem(NOTICE_KEY);
+    return value === 'updated' || value === 'conflict' ? value : null;
+  } catch {
+    return null;
+  }
+};
+
 /** Replaces local data with the cloud's (after a local snapshot) and reloads. */
-const pullAndReload = async (pulls: { target: Target; row: Row }[]) => {
+const pullAndReload = async (pulls: { target: Target; row: Row }[], conflict = false) => {
   await takeSnapshot('before-restore').catch(() => null);
+  try {
+    sessionStorage.setItem(NOTICE_KEY, conflict ? 'conflict' : 'updated');
+  } catch {
+    // The reload still happens; only the explanation is lost.
+  }
   suspendWrites();
   for (const { target, row } of pulls) {
     localStorage.setItem(target.localKey, JSON.stringify(row.data));
@@ -266,13 +285,18 @@ export const syncNow = async () => {
     const rows = await fetchRows(supabase);
     const meta = readMeta();
     const pulls: { target: Target; row: Row }[] = [];
+    // Someone else saved a newer version while this device had unsent changes.
+    let conflict = false;
     const ask: CloudChoice = { local: {}, remote: {} };
     for (const target of syncTargets()) {
       const local = readRaw(target.localKey);
       const remote = rows.get(rowId(target));
       const action = decideFor(target, local, remote, meta[target.localKey]);
       if (action === 'push') await push(supabase, target);
-      if (action === 'pull') pulls.push({ target, row: remote! });
+      if (action === 'pull') {
+        pulls.push({ target, row: remote! });
+        if (local !== null && meta[target.localKey]?.dirty && !target.readOnly) conflict = true;
+      }
       if (action === 'ask') {
         ask.local[target.localKey] = local!;
         ask.remote[target.localKey] = JSON.stringify(remote!.data);
@@ -283,7 +307,7 @@ export const syncNow = async () => {
       }
     }
     if (Object.keys(ask.local).length) return setState({ status: 'synced', choice: ask });
-    if (pulls.length) return pullAndReload(pulls);
+    if (pulls.length) return pullAndReload(pulls, conflict);
     setState({ status: 'synced', lastSync: new Date().toISOString() });
     // New shared firms appear in the firm list.
     if (addedFirms) window.dispatchEvent(new Event('firms-changed'));
