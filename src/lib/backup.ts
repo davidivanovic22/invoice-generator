@@ -10,7 +10,7 @@
 import { readRaw, suspendWrites } from './storage';
 
 /** localStorage keys that hold user data. Secrets (AI key, lock) are left out on purpose. */
-export const BACKUP_KEYS = ['studio.invoices.v2', 'studio.resumes.v2'] as const;
+export const BACKUP_KEYS = ['studio.invoices.v2', 'studio.resumes.v2', 'studio.kpo.v1'] as const;
 
 export const KEEP_DAYS = 30;
 export const KEEP_NEWEST = 10;
@@ -94,7 +94,7 @@ export const summarize = (data: Record<string, string>) => {
       return 0;
     }
   };
-  return { invoices: count('studio.invoices.v2', 'invoices'), resumes: count('studio.resumes.v2', 'resumes') };
+  return { invoices: count('studio.invoices.v2', 'invoices'), resumes: count('studio.resumes.v2', 'resumes'), kpo: count('studio.kpo.v1', 'entries') };
 };
 
 // ---- IndexedDB ------------------------------------------------------------------

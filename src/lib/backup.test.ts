@@ -56,6 +56,6 @@ describe('backup files', () => {
     const store: Record<string, string> = { ...data, 'studio.ai.key': 'secret', 'studio.lock': '{}' };
     const collected = collectData((key) => store[key] ?? null);
     expect(Object.keys(collected).sort()).toEqual(['studio.invoices.v2', 'studio.resumes.v2']);
-    expect(summarize(collected)).toEqual({ invoices: 2, resumes: 1 });
+    expect(summarize(collected)).toEqual({ invoices: 2, resumes: 1, kpo: 0 });
   });
 });

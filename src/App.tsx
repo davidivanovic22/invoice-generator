@@ -9,6 +9,8 @@ import { HomePage } from './features/home/HomePage';
 import { InvoiceEditorPage } from './features/invoices/pages/InvoiceEditorPage';
 import { InvoiceListPage } from './features/invoices/pages/InvoiceListPage';
 import { InvoiceStoreProvider } from './features/invoices/store';
+import { KpoPage } from './features/kpo/KpoPage';
+import { KpoStoreProvider } from './features/kpo/store';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { ResumeEditorPage } from './features/resumes/pages/ResumeEditorPage';
@@ -96,6 +98,9 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <NavLink to="/invoices" className={navClass}>
           {t('Invoices')}
         </NavLink>
+        <NavLink to="/kpo" className={navClass}>
+          KPO
+        </NavLink>
         <NavLink to="/resumes" className={navClass}>
           {t('Resumes')}
         </NavLink>
@@ -141,6 +146,7 @@ const Shell = () => {
             <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/account" element={<AccountPage />} />
+            <Route path="/kpo" element={<KpoPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
             <Route path="/resumes/:id" element={<ResumeEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -161,9 +167,11 @@ function App() {
           <FeedbackProvider>
             <AiProvider>
               <InvoiceStoreProvider>
-                <ResumeStoreProvider>
-                  <Shell />
-                </ResumeStoreProvider>
+                <KpoStoreProvider>
+                  <ResumeStoreProvider>
+                    <Shell />
+                  </ResumeStoreProvider>
+                </KpoStoreProvider>
               </InvoiceStoreProvider>
             </AiProvider>
           </FeedbackProvider>
