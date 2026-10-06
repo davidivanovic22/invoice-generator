@@ -1,4 +1,5 @@
-// Cloudflare Workers (static assets). The dashboard build runs `npm run build`, then `npx wrangler deploy`.
+// Cloudflare Workers (static assets). The dashboard build runs `npm run build`, then
+// `npx wrangler deploy` for main and `npx wrangler preview` for other branches.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "invoice-generator",
@@ -8,5 +9,7 @@
     "directory": "build",
     // Single-page app: unknown paths (/invoices/123, /kpo, …) are served by index.html.
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Required (may stay empty) for preview deployments of pull-request branches.
+  "previews": {}
 }
