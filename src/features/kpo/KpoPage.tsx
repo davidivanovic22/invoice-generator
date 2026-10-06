@@ -1,15 +1,15 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { t, uiLocale } from '../../i18n';
 import { formatDate, formatDateNumeric, todayIso } from '../../lib/dates';
 import { formatAmount } from '../../lib/money';
-import { printToPdf } from '../../lib/pdf';
 import { useNbsRates } from '../../lib/useNbsRates';
 import { Button, IconButton } from '../../ui/Button';
 import { useFeedback } from '../../ui/Feedback';
 import { inputClass, SelectField, TextField } from '../../ui/Field';
 import { Icon } from '../../ui/Icon';
 import { EmptyState, Section, Segmented } from '../../ui/Layout';
+import { PdfPreviewDialog } from '../../ui/PdfPreviewDialog';
 import { invoiceTotals, type Invoice } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
 import { exportKpoCsv, exportKpoXlsx, kpoFileName } from './exportKpo';
@@ -42,7 +42,7 @@ export const KpoPage = () => {
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [includePlanned, setIncludePlanned] = useState(true);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [previewing, setPreviewing] = useState(false);
   const money = (value: number) => formatAmount(value, book.currency);
 
   // Rates for invoices in another currency than the book.
@@ -77,15 +77,6 @@ export const KpoPage = () => {
     });
   };
 
-  const exportPdf = async () => {
-    if (!printRef.current) return;
-    try {
-      await printToPdf(printRef.current, kpoFileName(book, year, 'pdf'));
-    } catch (error) {
-      toast((error as Error).message, 'error');
-    }
-  };
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -100,7 +91,7 @@ export const KpoPage = () => {
           <Button icon="download" onClick={() => void exportKpoXlsx(book, year, includePlanned)} disabled={!rows.length}>
             Excel
           </Button>
-          <Button icon="printer" onClick={exportPdf} disabled={!rows.length}>
+          <Button icon="eye" onClick={() => setPreviewing(true)} disabled={!rows.length} title={t('Preview and download the PDF')}>
             PDF
           </Button>
           <Button variant="ghost" onClick={() => exportKpoCsv(book, year, includePlanned)} disabled={!rows.length}>
@@ -303,12 +294,11 @@ export const KpoPage = () => {
         </Section>
       </div>
 
-      {/* Printable copy for the PDF export */}
-      <div className="light-scope pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
-        <div ref={printRef}>
+      {previewing && (
+        <PdfPreviewDialog title={`KPO ${year}. — ${book.header.business || book.header.taxpayer || ''}`.replace(/ — $/, '')} fileName={kpoFileName(book, year, 'pdf')} onClose={() => setPreviewing(false)}>
           <KpoPrint book={book} year={year} includePlanned={includePlanned} />
-        </div>
-      </div>
+        </PdfPreviewDialog>
+      )}
 
       {importing && <KpoImportDialog onClose={() => setImporting(false)} onImported={(importedYear) => importedYear && setYear(importedYear)} />}
     </div>

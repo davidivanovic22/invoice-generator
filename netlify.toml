@@ -1,0 +1,9 @@
+# Netlify: single-page fallback (public/_headers covers caching and security headers).
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

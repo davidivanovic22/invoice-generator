@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import { safeFileName } from '../../lib/files';
-import { printToPdf } from '../../lib/pdf';
 import { Button } from '../../ui/Button';
 import { useFeedback } from '../../ui/Feedback';
 import { TextArea } from '../../ui/Field';
+import { PdfPreviewDialog } from '../../ui/PdfPreviewDialog';
 import { useAi } from '../ai/AiSettings';
 import type { Resume } from '../resumes/model';
 import { useResumeStore } from '../resumes/store';
@@ -18,7 +18,7 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
   const { toast } = useFeedback();
   const [text, setText] = useState(resume.coverLetter ?? '');
   const [writing, setWriting] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [previewing, setPreviewing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const jobAd = resume.ats.jobDescription.trim();
 
@@ -49,11 +49,6 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
     }
   };
 
-  const exportPdf = async () => {
-    if (!printRef.current) return;
-    toast(t('In the window that opens, choose "Save as PDF".'), 'info');
-    await printToPdf(printRef.current, safeFileName(`${resume.design.language === 'sr' ? 'Propratno-pismo' : 'Cover-letter'}-${resume.personal.fullName || resume.name}`));
-  };
 
   const contact = [resume.personal.email, resume.personal.phone, resume.personal.location].filter(Boolean).join(' · ');
 
@@ -85,7 +80,7 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
             >
               {t('Copy')}
             </Button>
-            <Button icon="download" onClick={exportPdf} disabled={!text}>
+            <Button icon="eye" onClick={() => setPreviewing(true)} disabled={!text} title={t('Preview and download the PDF')}>
               PDF
             </Button>
             <Button variant="primary" onClick={onClose}>
@@ -94,8 +89,13 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
           </div>
         </div>
       </div>
-      <div className="light-scope pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
-        <div ref={printRef}>
+      {previewing && (
+        <div onMouseDown={(event) => event.stopPropagation()}>
+          <PdfPreviewDialog
+            title={t('Cover letter')}
+            fileName={safeFileName(`${resume.design.language === 'sr' ? 'Propratno-pismo' : 'Cover-letter'}-${resume.personal.fullName || resume.name}`)}
+            onClose={() => setPreviewing(false)}
+          >
           <div data-pdf-page className="box-border w-[210mm] bg-white px-[22mm] py-[20mm] font-sans text-[11pt] leading-relaxed text-slate-900" style={{ minHeight: '297mm' }}>
             <div className="border-b border-slate-200 pb-4">
               <div className="text-[18pt] font-bold tracking-tight">{resume.personal.fullName}</div>
@@ -104,8 +104,9 @@ export const CoverLetterDialog = ({ resume, onClose }: Props) => {
             </div>
             <div className="mt-8 whitespace-pre-wrap">{text}</div>
           </div>
+          </PdfPreviewDialog>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI
 
 # Runs for main: on every push to it, and on every pull request that targets it.
 on:
@@ -29,10 +29,9 @@ jobs:
         # Third-party source-map warnings must not fail the build.
         run: CI=false npm run build
         env:
-          # Optional (Settings → Secrets and variables → Actions → Variables). Without them the
-          # app is built in local-only mode and users can connect a database themselves.
-          REACT_APP_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          REACT_APP_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          # Built in local-only mode here; the deployed build gets the database from Cloudflare's build variables.
+          NEXT_PUBLIC_SUPABASE_URL: ''
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ''
       - name: End-to-end smoke test
         run: |
           npx playwright install --with-deps chromium
@@ -44,23 +43,5 @@ jobs:
           path: build
           retention-days: 7
 
-  # Publishes main to Cloudflare Pages. Skipped until the repository has the variable
-  # CLOUDFLARE_PROJECT and the secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-  deploy:
-    needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_PROJECT != ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: build
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build --project-name=${{ vars.CLOUDFLARE_PROJECT }} --branch=main
+# Deploying is done by Cloudflare itself (Workers Builds, connected to this repository):
+# every push to main runs `npm run build` and `npx wrangler deploy` there. See wrangler.jsonc.
