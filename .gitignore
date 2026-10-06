@@ -27,3 +27,7 @@ yarn-error.log*
 /public/*.zip
 /design-review/
 /sample-invoices-2026/
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars*

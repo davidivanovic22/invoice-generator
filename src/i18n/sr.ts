@@ -1074,5 +1074,9 @@ export const SR: Record<string, string> = {
   "Yearly report (PDF)": "Godišnji pregled (PDF)",
   "Open overview": "Otvori pregled",
   "You are over the yearly flat-rate limit of 6 million RSD ({percent}%). Talk to your accountant.": "Prešao si godišnji limit za paušal od 6 miliona dinara ({percent}%). Javi se knjigovođi.",
-  "You have used {percent}% of the yearly flat-rate limit of 6 million RSD.": "Iskoristio si {percent}% godišnjeg limita za paušal od 6 miliona dinara."
+  "You have used {percent}% of the yearly flat-rate limit of 6 million RSD.": "Iskoristio si {percent}% godišnjeg limita za paušal od 6 miliona dinara.",
+
+  // PDF preview
+  "Preview and download the PDF": "Pregledaj i preuzmi PDF",
+  "Yearly report {year}": "Godišnji pregled {year}."
 };

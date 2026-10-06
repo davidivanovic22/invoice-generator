@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { t, uiLocale } from '../../i18n';
 import { todayIso } from '../../lib/dates';
@@ -6,11 +6,10 @@ import { formatAmount } from '../../lib/money';
 import { cachedRate, convert } from '../../lib/nbs';
 import { useNbsRates } from '../../lib/useNbsRates';
 import { safeFileName } from '../../lib/files';
-import { printToPdf } from '../../lib/pdf';
 import { Button } from '../../ui/Button';
-import { useFeedback } from '../../ui/Feedback';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Layout';
+import { PdfPreviewDialog } from '../../ui/PdfPreviewDialog';
 import { useInvoiceStore } from '../invoices/store';
 import { bookYears, invoicesMissingFromBook } from '../kpo/model';
 import { useKpo } from '../kpo/store';
@@ -36,8 +35,7 @@ export const OverviewPage = () => {
   const invoiceYears = store.invoices.map((invoice) => Number(invoice.issueDate.slice(0, 4))).filter(Boolean);
   const years = Array.from(new Set([thisYear, ...bookYears(book), ...invoiceYears])).sort((a, b) => b - a);
   const [year, setYear] = useState(thisYear);
-  const reportRef = useRef<HTMLDivElement>(null);
-  const { toast } = useFeedback();
+  const [previewing, setPreviewing] = useState(false);
   const [display, setDisplayState] = useState<Display>(readDisplay);
   const setDisplay = (value: Display) => {
     setDisplayState(value);
@@ -91,14 +89,7 @@ export const OverviewPage = () => {
           <p className="mt-1 text-sm text-slate-500">{t('Income per month, flat-rate tax, what you actually earned, and how close you are to the limits.')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            icon="printer"
-            onClick={async () => {
-              if (!reportRef.current) return;
-              toast(t('In the window that opens, choose "Save as PDF".'), 'info');
-              await printToPdf(reportRef.current, safeFileName(`Godisnji-pregled-${year}-${store.profile.party.name || 'firma'}`)).catch((error) => toast(error.message, 'error'));
-            }}
-          >
+          <Button icon="eye" onClick={() => setPreviewing(true)} title={t('Preview and download the PDF')}>
             {t('Yearly report (PDF)')}
           </Button>
           <Segmented<string> value={String(year)} onChange={(value) => setYear(Number(value))} options={years.map((value) => ({ value: String(value), label: String(value) }))} />
@@ -201,12 +192,15 @@ export const OverviewPage = () => {
         </Link>
       </p>
 
-      {/* Printable copy for the yearly report */}
-      <div className="light-scope pointer-events-none fixed left-[-10000px] top-0" aria-hidden="true">
-        <div ref={reportRef}>
+      {previewing && (
+        <PdfPreviewDialog
+          title={t('Yearly report {year}', { year })}
+          fileName={safeFileName(`Godisnji-pregled-${year}-${store.profile.party.name || 'firma'}`)}
+          onClose={() => setPreviewing(false)}
+        >
           <YearReport year={year} profile={store.profile} book={book} rows={rows} currency={display} income={income} tax={tax} incomeRsd={yearIncomeRsd.total} today={today} />
-        </div>
-      </div>
+        </PdfPreviewDialog>
+      )}
     </div>
   );
 };

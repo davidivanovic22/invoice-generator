@@ -1,0 +1,12 @@
+// Cloudflare Workers (static assets). The dashboard build runs `npm run build`, then `npx wrangler deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "invoice-generator",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "build",
+    // Single-page app: unknown paths (/invoices/123, /kpo, …) are served by index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

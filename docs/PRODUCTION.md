@@ -20,7 +20,8 @@ Paperwork works in two modes:
 | Issued invoices are cancelled (storno), never deleted | Done |
 | Viewers cannot change a shared firm (app and database) | Done, covered by `e2e/sharing.cjs` |
 | Bank statement import, yearly report, limit warning | Done |
-| CI/CD: type check, unit tests, build, end-to-end smoke test, optional deploy | `.github/workflows/ci.yml` |
+| CI: type check, unit tests, build, end-to-end smoke test | `.github/workflows/ci.yml` |
+| Deploy on every push to `main` | Cloudflare Workers Builds, `wrangler.jsonc` |
 
 ## Not built (decide before selling)
 
@@ -37,28 +38,23 @@ Paperwork works in two modes:
    - `npx supabase link --project-ref <ref>` then `npx supabase db push`, or
    - paste `supabase/migrations/20261005120000_paperwork.sql` into the SQL Editor and run it.
 3. Authentication → Providers → Email: keep **Confirm email** on. Set the Site URL to your domain.
-4. Build the app with the project baked in, so users never see the setup form:
-
-   ```bash
-   REACT_APP_SUPABASE_URL=https://<ref>.supabase.co \
-   REACT_APP_SUPABASE_ANON_KEY=<anon key> \
-   npm run build
-   ```
-
-   The anon key is public by design; row-level security protects the data. Never ship the service-role key.
+4. Give the app the Project URL and the publishable (anon) key — see "Host the app" below. Users then never see the setup form.
 5. Turn on Point-in-Time Recovery (or daily backups) for the project.
 
 ## Host the app
 
-`build/` is a static site. `public/_redirects`, `public/_headers` and `vercel.json` already configure the single-page fallback and caching for Cloudflare Pages, Netlify and Vercel.
+The app is deployed on **Cloudflare Workers** (static assets), connected to the GitHub repository: every push to `main` runs `npm run build` and then `npx wrangler deploy` on Cloudflare. `wrangler.jsonc` sets the single-page fallback; `public/_headers` sets caching and security headers.
 
-**Automatic deploys (Cloudflare Pages).** The workflow deploys every push to `main` once the repository has:
+To connect the database, add two **build variables** in Cloudflare (Worker → Settings → Build → Variables and secrets) and redeploy:
 
-- Variable `CLOUDFLARE_PROJECT` — the Pages project name (create it once with "Direct upload").
-- Secrets `CLOUDFLARE_API_TOKEN` (permission: Cloudflare Pages → Edit) and `CLOUDFLARE_ACCOUNT_ID`.
-- Optional variables `SUPABASE_URL` and `SUPABASE_ANON_KEY`, to bake the database into the build.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-Until those exist the deploy job is skipped. Requirements for any other host:
+The committed `.env` maps them to the `REACT_APP_*` names Create React App reads. Locally, put the same two lines in `.env.local`. The publishable key is public by design; row-level security protects the data. Never use the secret / service-role key in the app.
+
+Do not add a `public/_redirects` file: Workers rejects the usual `/* /index.html 200` rule as an infinite loop.
+
+Other static hosts work too (`netlify.toml` and `vercel.json` are included). Requirements for any host:
 
 - HTTPS (needed for the service worker, the backup folder and the password lock).
 - Single-page fallback: unknown paths serve `index.html`.
