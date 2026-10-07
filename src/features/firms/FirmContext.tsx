@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { renameDatabaseFirm, saveFirmSelection } from '../../lib/cloud';
+import { isDatabaseMode } from '../../lib/storage';
 import { addFirm, firmKey, readFirms, removeFirm, renameFirm, setActiveFirm, type Firm, type FirmBaseKey, type FirmRegistry } from '../../lib/firms';
 
 type FirmContextValue = {
@@ -7,8 +9,8 @@ type FirmContextValue = {
   /** Storage key of the active firm for one kind of data. */
   keyFor: (base: FirmBaseKey) => string;
   switchFirm: (id: string) => void;
-  createFirm: (name: string) => Firm;
-  rename: (id: string, name: string) => void;
+  createFirm: (name: string, taxId?: string) => Firm;
+  rename: (id: string, name: string) => Promise<void>;
   remove: (id: string) => void;
 };
 
@@ -24,7 +26,7 @@ export const FirmProvider = ({ children }: { children: ReactNode }) => {
   const [registry, setRegistry] = useState<FirmRegistry>(readFirms);
   const refresh = () => setRegistry(readFirms());
 
-  // Cloud sync adds firms that were shared with you.
+  // Explicit cloud selection and access changes refresh the firm references.
   useEffect(() => {
     const onChange = () => setRegistry(readFirms());
     window.addEventListener('firms-changed', onChange);
@@ -33,6 +35,7 @@ export const FirmProvider = ({ children }: { children: ReactNode }) => {
 
   const switchFirm = useCallback((id: string) => {
     setActiveFirm(id);
+    void saveFirmSelection().catch(() => null);
     setRegistry(readFirms());
     window.scrollTo(0, 0);
   }, []);
@@ -44,13 +47,14 @@ export const FirmProvider = ({ children }: { children: ReactNode }) => {
       active,
       keyFor: (base) => firmKey(base, active.id),
       switchFirm,
-      createFirm: (name) => {
-        const firm = addFirm(name);
+      createFirm: (name, taxId) => {
+        const firm = addFirm(name, taxId);
         refresh();
         return firm;
       },
-      rename: (id, name) => {
-        renameFirm(id, name);
+      rename: async (id, name) => {
+        if (isDatabaseMode()) await renameDatabaseFirm(id, name);
+        else renameFirm(id, name);
         refresh();
       },
       remove: (id) => {

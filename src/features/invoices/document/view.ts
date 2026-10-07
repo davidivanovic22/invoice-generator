@@ -13,13 +13,13 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
   const date = (iso: string) => (language === 'en' ? formatDate(iso, 'en-GB') : formatDateNumeric(iso));
   const quantity = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 4 }).format(value);
 
-  /** Your own business always shows PIB / Tax ID and Matični broj; a client may use its own labels. */
-  const partyLines = (party: Party, own = false) =>
+  /** Custom labels apply to both parties; empty labels follow document language. */
+  const partyLines = (party: Party) =>
     [
       party.address,
       party.cityCountry,
-      party.taxId && `${(!own && party.taxIdLabel) || t('taxId')}: ${party.taxId}`,
-      party.regNo && `${(!own && party.regIdLabel) || t('regNo')}: ${party.regNo}`,
+      party.taxId && `${party.taxIdLabel.trim() || t('taxId')}: ${party.taxId}`,
+      party.regNo && `${party.regIdLabel.trim() || t('regNo')}: ${party.regNo}`,
       party.email
     ].filter(Boolean) as string[];
 
@@ -37,9 +37,6 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
   const meta = [
     { label: t('issueDate'), value: date(invoice.issueDate) },
     { label: t('dueDate'), value: date(invoice.dueDate) },
-    invoice.serviceDate && invoice.serviceDate !== invoice.issueDate
-      ? { label: t('serviceDate'), value: date(invoice.serviceDate) }
-      : null,
     invoice.billingPeriod.trim() ? { label: t('billingPeriod'), value: invoice.billingPeriod } : null
   ].filter(Boolean) as { label: string; value: string }[];
 
@@ -56,7 +53,7 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
     number: invoice.number,
     isPaid: invoice.status === 'paid',
     isCancelled: invoice.status === 'cancelled',
-    issuer: { name: invoice.issuer.name, lines: partyLines(invoice.issuer, true) },
+    issuer: { name: invoice.issuer.name, lines: partyLines(invoice.issuer) },
     client: { name: invoice.client.name, lines: partyLines(invoice.client) },
     meta,
     lines,
@@ -67,7 +64,7 @@ export const buildInvoiceView = (invoice: Invoice, profile: BusinessProfile) => 
     payment: invoice.bank.iban || invoice.bank.swift || invoice.bank.bankName ? payment : [],
     note: invoice.note.trim(),
     logo: invoice.logo || profile.logo,
-    signature: invoice.signature || profile.signature
+    signature: invoice.design.showSignature === false ? '' : invoice.signature || profile.signature
   };
 };
 

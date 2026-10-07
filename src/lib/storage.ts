@@ -28,10 +28,33 @@ const report = (issue: StorageIssue) => listeners.forEach((listener) => listener
 
 export const backupKeyFor = (key: string) => `${key}.backup.${new Date().toISOString()}`;
 
+const documentKey = (key: string) => /^(studio\.(invoices\.v2|kpo\.v1|audit\.v1|resumes\.v2))(@.*)?$/.test(key);
+let databaseData: Map<string, string> | null = null;
+let dataGeneration = 0;
+export const isDatabaseMode = () => databaseData !== null;
+export const getDataGeneration = () => dataGeneration;
+/** Business documents are loaded from Supabase into memory, never from localStorage. */
+export const replaceDatabaseData = (data: Record<string, string>) => {
+  databaseData = new Map(Object.entries(data));
+  dataGeneration += 1;
+};
+export const patchDatabaseData = (data: Record<string, string | null>) => {
+  if (!databaseData) databaseData = new Map();
+  for (const [key, raw] of Object.entries(data)) {
+    if (raw === null) databaseData.delete(key); else databaseData.set(key, raw);
+  }
+  dataGeneration += 1;
+};
+export const disableDatabaseMode = () => { databaseData = null; dataGeneration += 1; };
+export const removeDocument = (key: string) => {
+  if (databaseData && documentKey(key)) databaseData.delete(key);
+  else localStorage.removeItem(key);
+};
+
 export const readJson = <T>(key: string): ReadResult<T> => {
   let raw: string | null;
   try {
-    raw = localStorage.getItem(key);
+    raw = readRaw(key);
   } catch {
     return { status: 'empty' };
   }
@@ -86,8 +109,9 @@ export const writeJson = (key: string, value: unknown): boolean => {
   if (writesSuspended) return false;
   try {
     const raw = JSON.stringify(value);
-    if (localStorage.getItem(key) === raw) return true;
-    localStorage.setItem(key, raw);
+    if (readRaw(key) === raw) return true;
+    if (databaseData && documentKey(key)) databaseData.set(key, raw);
+    else localStorage.setItem(key, raw);
     writeListeners.forEach((listener) => listener(key));
     return true;
   } catch (error) {
@@ -107,6 +131,7 @@ export const writeJson = (key: string, value: unknown): boolean => {
 
 export const readRaw = (key: string): string | null => {
   try {
+    if (databaseData && documentKey(key)) return databaseData.get(key) ?? null;
     return localStorage.getItem(key);
   } catch {
     return null;

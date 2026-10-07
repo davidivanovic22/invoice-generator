@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { t } from '../../i18n';
+import { isDatabaseMode } from '../../lib/storage';
 import { firmDisplayName } from '../../lib/firms';
 import { Icon } from '../../ui/Icon';
 import { useInvoiceStore } from '../invoices/store';
@@ -30,6 +31,7 @@ export const FirmSwitcher = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   const nameOf = (id: string) => {
     const firm = registry.firms.find((item) => item.id === id)!;
+    if (isDatabaseMode() && !firm.cloudId) return t('Choose a cloud firm');
     return (id === active.id ? firm.name || store.profile.party.name : firmDisplayName(firm)) || t('My firm');
   };
 
@@ -56,7 +58,7 @@ export const FirmSwitcher = ({ onNavigate }: { onNavigate?: () => void }) => {
       {open && (
         <div role="menu" className="absolute left-0 z-40 mt-1 w-64 overflow-hidden rounded-xl bg-white py-1 shadow-lg ring-1 ring-slate-200">
           <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{t('Firms')}</div>
-          {registry.firms.map((firm) => (
+          {registry.firms.filter(firm => !isDatabaseMode() || firm.cloudId).map((firm) => (
             <button
               key={firm.id}
               type="button"

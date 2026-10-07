@@ -152,7 +152,7 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
         )}
         {!hasKey && (
           <p className="mt-3 text-xs text-slate-500">
-            {t('The score and checks work offline. AI rewriting needs Claude:')}{' '}
+            {t('The score and checks work offline. AI rewriting needs Eden AI:')}{' '}
             <button type="button" onClick={openSettings} className="font-medium text-indigo-600 hover:underline">
               {t('connect it in one minute')}
             </button>
@@ -183,7 +183,7 @@ export const AtsPanel = ({ resume, onChange, onGoTo, autoStartWizard, onWizardSt
               {report.keywords.source === 'ai' ? t('Re-analyse with AI') : t('Find keywords with AI')}
             </Button>
             <span className="text-xs text-slate-500">
-              {report.keywords.source === 'ai' ? t('Keywords extracted by Claude.') : t('Using a quick estimate. AI finds the keywords recruiters really screen for.')}
+              {report.keywords.source === 'ai' ? t('Keywords extracted by Eden AI.') : t('Using a quick estimate. AI finds the keywords recruiters really screen for.')}
             </span>
           </div>
         )}

@@ -38,7 +38,7 @@ describe('analyzeResume', () => {
     expect(weak.issues.map((issue) => issue.id)).toEqual(expect.arrayContaining(['impact-weak', 'impact-first-person']));
   });
 
-  it('measures keyword coverage against Claude keywords for the current job ad', () => {
+  it('measures keyword coverage against Eden AI keywords for the current job ad', () => {
     const resume = createSampleResume();
     const jobDescription = 'We need a Product Designer with Figma, design systems and Webflow experience.';
     resume.ats = { jobDescription, keywords: ['Figma', 'Design systems', 'Webflow', 'User research'], keywordsSource: jobDescription };
@@ -48,7 +48,7 @@ describe('analyzeResume', () => {
     expect(report.keywords.matched).toHaveLength(3);
   });
 
-  it('ignores Claude keywords that belong to an older job ad', () => {
+  it('ignores Eden AI keywords that belong to an older job ad', () => {
     const resume = createSampleResume();
     resume.ats = { jobDescription: 'New ad mentioning Kubernetes and Kubernetes clusters', keywords: ['Figma'], keywordsSource: 'old ad' };
     expect(analyzeResume(resume).keywords.source).toBe('job');

@@ -1,4 +1,4 @@
-import { addFirm, allFirmKeys, DEFAULT_FIRM, firmKey, isFirmKey, readFirms, removeFirm, setActiveFirm } from '../../lib/firms';
+import { addFirm, allFirmKeys, DEFAULT_FIRM, firmKey, isFirmKey, keepOnlyLocalFirm, readFirms, removeFirm, setActiveFirm } from '../../lib/firms';
 import { collectData, fromBackupFile, summarize, toBackupFile } from '../../lib/backup';
 import { createEmptyStore, createInvoice, createLineItem } from '../invoices/model';
 import { summarizeFirm } from './summary';
@@ -46,4 +46,27 @@ describe('firms', () => {
     expect(summary.incomeEur).toBeCloseTo(1000);
     expect(summary.unpaidEur).toBeCloseTo(500);
   });
+});
+
+
+it('rejects a duplicate PIB regardless of formatting without adding a firm', () => {
+  localStorage.setItem('studio.invoices.v2', JSON.stringify({ profile: { party: { taxId: '123 456-789' } } }));
+  expect(() => addFirm('Duplicate', '123.456789')).toThrow('PIB');
+  expect(readFirms().firms).toHaveLength(1);
+  expect(() => addFirm('Draft')).not.toThrow();
+});
+
+
+it('permanent local cleanup preserves only the explicitly selected firm across reads', () => {
+  const keep = addFirm('Keep');
+  const unwanted = addFirm('Unwanted');
+  localStorage.setItem('studio.invoices.v2', JSON.stringify({ invoices: ['default-copy'] }));
+  localStorage.setItem(firmKey('studio.invoices.v2', keep.id), JSON.stringify({ invoices: ['kept-document'] }));
+  localStorage.setItem(firmKey('studio.kpo.v1', unwanted.id), JSON.stringify({ entries: ['unwanted-copy'] }));
+  keepOnlyLocalFirm(keep.id);
+  expect(readFirms().firms.map(firm => firm.id)).toEqual([keep.id]);
+  expect(readFirms().activeId).toBe(keep.id);
+  expect(localStorage.getItem('studio.invoices.v2')).toBeNull();
+  expect(localStorage.getItem(firmKey('studio.kpo.v1', unwanted.id))).toBeNull();
+  expect(JSON.parse(localStorage.getItem(firmKey('studio.invoices.v2', keep.id))!).invoices).toEqual(['kept-document']);
 });

@@ -68,7 +68,7 @@ export type ResumeDesign = {
 export type AtsSettings = {
   /** The job ad the resume is tailored to (optional). */
   jobDescription: string;
-  /** Keywords Claude extracted for that job ad; used by the local scorer. */
+  /** Keywords Eden AI extracted for that job ad; used by the local scorer. */
   keywords: string[];
   /** The job description the keywords were extracted from, to detect staleness. */
   keywordsSource: string;

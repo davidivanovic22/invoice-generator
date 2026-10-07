@@ -10,15 +10,15 @@ type Props = {
   /** Replaces the plain name input, e.g. with the client search. */
   nameSlot?: ReactNode;
   showEmail?: boolean;
-  /** Your own business in Serbia: always PIB and Matični broj, so the label fields are hidden. */
+  /** Kept for callers that distinguish the business profile; identifiers remain editable. */
   ownBusiness?: boolean;
 };
 
-export const PartyFields = ({ party, onChange, nameSlot, showEmail = true, ownBusiness = false }: Props) => {
+export const PartyFields = ({ party, onChange, nameSlot, showEmail = true }: Props) => {
   const set = (field: keyof Party) => (value: string) => onChange({ ...party, [field]: value });
-  const [more, setMore] = useState(Boolean(party.regNo || party.email || (!ownBusiness && (party.taxIdLabel || party.regIdLabel))));
-  const taxLabel = ownBusiness ? t('Tax ID (PIB)') : party.taxIdLabel || t('Tax ID (PIB)');
-  const regLabel = ownBusiness ? t('Company reg. no. (MB)') : party.regIdLabel || t('Company reg. no. (MB)');
+  const [more, setMore] = useState(Boolean(party.regNo || party.email || (party.taxIdLabel || party.regIdLabel)));
+  const taxLabel = party.taxIdLabel || t('Tax ID (PIB)');
+  const regLabel = party.regIdLabel || t('Company reg. no. (MB)');
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="col-span-2">
@@ -34,7 +34,7 @@ export const PartyFields = ({ party, onChange, nameSlot, showEmail = true, ownBu
         <>
           <TextField label={regLabel} value={party.regNo} onChange={set('regNo')} placeholder="12345678" inputMode="numeric" />
           {showEmail && <TextField type="email" label={t('Email')} value={party.email} onChange={set('email')} placeholder="billing@acme.com" />}
-          {!ownBusiness && (
+          {(
             <>
               <TextField
                 label={t('Label for tax ID')}

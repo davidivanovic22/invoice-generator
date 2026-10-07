@@ -4,7 +4,7 @@ const {pathToFileURL}=require('url');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),assets=path.join(root,'public/invoice-motifs'),review=path.join(root,'design-review');
 (async()=>{
-const manifest=JSON.parse(fs.readFileSync(path.join(assets,'manifest.json'),'utf8'));
+const manifest=JSON.parse(fs.readFileSync(path.join(review,'invoice-motifs.json'),'utf8'));
 assert.equal(manifest.length,12);
 const files=manifest.flatMap(m=>m.variants.map(v=>v.file));assert.equal(new Set(files).size,60);
 for(const m of manifest){assert.equal(m.variants.length,5);assert.equal(new Set(m.variants.map(v=>v.motifs[0])).size,5,`${m.month}: duplicate lead motif`);assert.equal(new Set(m.variants.map(v=>v.composition)).size,5);for(const v of m.variants){assert.ok(v.motifs.length>=5);const svg=fs.readFileSync(path.join(assets,v.file),'utf8');assert.ok(!/@(?:accent|light|deep|leaf|gold|paper)|undefined|NaN|<image\b/.test(svg));assert.ok((svg.match(/data-motif=/g)||[]).length>=13);}}

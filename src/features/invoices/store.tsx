@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { writeJson } from '../../lib/storage';
+import { getDataGeneration, isDatabaseMode, writeJson } from '../../lib/storage';
 import { createId } from '../../lib/files';
 import { logAudit } from '../../lib/audit';
 import { DocHistory } from '../../lib/history';
 import { todayIso } from '../../lib/dates';
+import { assertUniqueFirmTaxId, normalizeFirmTaxId, DEFAULT_FIRM, firmKey, readFirms } from '../../lib/firms';
+import { useFeedback } from '../../ui/Feedback';
+import { t } from '../../i18n';
 import { loadInvoiceStore, migrateLegacy, normalizeStore, STORE_KEY } from './migrate';
 import {
   createInvoice,
@@ -72,6 +75,9 @@ type ProviderProps = {
 export const announceReadOnly = () => window.dispatchEvent(new Event('read-only'));
 
 export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnly = false }: ProviderProps) => {
+  const { toast } = useFeedback();
+  const [generation] = useState(getDataGeneration);
+  const changed = useRef(false);
   const [{ initial, persist }] = useState(() => {
     const loaded = loadInvoiceStore(storageKey);
     return { initial: loaded.store, persist: loaded.persist };
@@ -93,22 +99,24 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnl
       firstRender.current = false;
       return;
     }
-    if (!persist) return;
+    if (!persist || generation !== getDataGeneration()) return;
+    changed.current = true;
+    if (isDatabaseMode()) { writeJson(storageKey, store); return; }
     const timer = setTimeout(() => writeJson(storageKey, store), 250);
     return () => clearTimeout(timer);
-  }, [store, persist, storageKey]);
+  }, [store, persist, storageKey, generation]);
 
   // Flush pending changes if the tab closes inside the debounce window.
   useEffect(() => {
     if (!persist) return;
-    const flush = () => writeJson(storageKey, storeRef.current);
+    const flush = () => changed.current && generation === getDataGeneration() && writeJson(storageKey, storeRef.current);
     window.addEventListener('beforeunload', flush);
     // Also when switching firms, which unmounts this provider.
     return () => {
       window.removeEventListener('beforeunload', flush);
       flush();
     };
-  }, [persist, storageKey]);
+  }, [persist, storageKey, generation]);
 
   const touch = (invoice: Invoice): Invoice => ({ ...invoice, updatedAt: new Date().toISOString() });
 
@@ -213,9 +221,18 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnl
   );
 
   const updateProfile = useCallback((update: Updater<BusinessProfile>) => {
+    if (readOnlyRef.current) return announceReadOnly();
+    const next = apply(storeRef.current.profile, update);
+    const firmId = readFirms().firms.find((firm) => firmKey('studio.invoices.v2', firm.id) === storageKey)?.id ?? DEFAULT_FIRM;
+    try {
+      if (normalizeFirmTaxId(next.party.taxId) !== normalizeFirmTaxId(storeRef.current.profile.party.taxId)) assertUniqueFirmTaxId(next.party.taxId, firmId);
+    } catch (error) {
+      toast(t(error instanceof Error ? error.message : 'Could not update firm.'), 'error');
+      return;
+    }
     logAudit('profile.edited', 'profile');
-    setStore((current) => ({ ...current, profile: apply(current.profile, update) }));
-  }, []);
+    setStore((current) => ({ ...current, profile: next }));
+  }, [storageKey, toast]);
 
   const rememberClient = useCallback((party: Party, currency: string, preferId?: string | null) => {
     if (!party.name.trim()) return null;
@@ -235,11 +252,13 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnl
   }, []);
 
   const deleteClient = useCallback((id: string) => {
-    setStore((current) => ({ ...current, clients: current.clients.filter((client) => client.id !== id) }));
+    setStore((current) => ({ ...current, clients: current.clients.filter((client) => client.id !== id),
+      invoices: current.invoices.map(invoice => invoice.clientId === id ? { ...invoice, clientId: null } : invoice) }));
   }, []);
 
   /** Merges a backup: never deletes or overwrites existing invoices. */
   const importBackup = useCallback((data: unknown): ImportSummary => {
+    if (readOnlyRef.current) throw new Error('This firm is read-only.');
     if (!data || typeof data !== 'object') throw new Error('This file is not an invoice backup.');
     const record = data as Record<string, unknown>;
     let incoming: InvoiceStore;
@@ -254,6 +273,11 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnl
     }
 
     const current = storeRef.current;
+    const profile = current.profile.party.name ? current.profile : incoming.profile;
+    if (normalizeFirmTaxId(profile.party.taxId) !== normalizeFirmTaxId(current.profile.party.taxId)) {
+      const firmId = readFirms().firms.find((firm) => firmKey('studio.invoices.v2', firm.id) === storageKey)?.id ?? DEFAULT_FIRM;
+      assertUniqueFirmTaxId(profile.party.taxId, firmId);
+    }
     const knownIds = new Set(current.invoices.map((invoice) => invoice.id));
     const fresh = incoming.invoices.filter((invoice) => !knownIds.has(invoice.id));
     const newClients = incoming.clients.filter(
@@ -261,13 +285,17 @@ export const InvoiceStoreProvider = ({ children, storageKey = STORE_KEY, readOnl
     );
     setStore({
       ...current,
-      invoices: [...fresh, ...current.invoices],
+      invoices: [...fresh.map(invoice => {
+        const importedClient = incoming.clients.find(client => client.id === invoice.clientId);
+        const existingClient = importedClient && current.clients.find(client => sameClient(client.party, importedClient.party));
+        return existingClient ? { ...invoice, clientId: existingClient.id } : invoice;
+      }), ...current.invoices],
       clients: [...current.clients, ...newClients],
-      profile: current.profile.party.name ? current.profile : incoming.profile
+      profile
     });
     if (fresh.length) logAudit('invoice.imported', String(fresh.length));
     return { added: fresh.length, skipped: incoming.invoices.length - fresh.length };
-  }, []);
+  }, [storageKey]);
 
   const runRecurring = useCallback(() => {
     if (readOnlyRef.current) return [];

@@ -40,7 +40,7 @@ See [docs/PRODUCTION.md](docs/PRODUCTION.md) for running it for customers.
 - **Six templates** (Modern, Classic/ATS, Minimal, Executive, Creative, Compact) with real multi-page pagination.
 - Ordered sections you can rename, hide and reorder; new resumes start from a well-written example or empty.
 - **ATS check:** an instant, offline score from 0 to 100 with prioritised findings. Paste a job ad to measure keyword coverage.
-- **Claude AI (optional, bring your own key):**
+- **Eden AI (optional, bring your own key):**
   - *Improve with AI to 95+* rewrites the headline, summary and bullet points, then re-scores until the target is reached.
   - *Fix step by step* lets you review every change with an editable before/after view.
   - *Import existing CV* reads a PDF, Word or text resume and rebuilds it in the editor.
@@ -49,16 +49,29 @@ See [docs/PRODUCTION.md](docs/PRODUCTION.md) for running it for customers.
 ### Export
 PDFs are produced by the browser's print engine (**Download PDF**, then choose **Save as PDF**). They contain real, selectable text that ATS parsers and accounting tools can read.
 
-## Using Claude AI
+## Using Eden AI
 
-1. Create an API key at [console.anthropic.com](https://console.anthropic.com/settings/keys).
+1. Create an API key at [app.edenai.run](https://app.edenai.run/settings/api-keys).
 2. Click **Connect AI** in the header and paste it.
 
-The key is stored only in your browser's local storage and sent only to `api.anthropic.com`. You are billed by Anthropic directly; a full resume optimisation typically costs a few cents. The app uses `claude-opus-5-5` with structured outputs and server-side refusal fallbacks.
+The key is stored only in your browser's local storage and sent only to `api.edenai.run`. Usage is billed to your Eden AI account. The app uses Eden AI V3 with schema-validated structured outputs; PDF CV import uses `ocr/resume_parser/affinda`, then `openai/gpt-latest` for faithful formatting.
 
 ## Your data
 
-Everything is saved in `localStorage` (`studio.invoices.v2`, `studio.kpo.v1`, `studio.resumes.v2`; further firms use `<key>@<firmId>`). A snapshot of all of it is kept in IndexedDB every day. Use **Backup** on the list pages to export JSON, and **Import** / **Restore backup** to bring it back; imports merge and never overwrite existing documents. Data from older versions of the app is migrated automatically, and the old keys are kept as a backup. If saved data is ever unreadable, a copy is stored under a `.backup.<date>` key before anything else happens.
+Without a configured database, documents are saved in `localStorage` (`studio.invoices.v2`, `studio.kpo.v1`, `studio.resumes.v2`; further firms use `<key>@<firmId>`). A snapshot of all of it is kept in IndexedDB every day. Use **Backup** on the list pages to export JSON, and **Import** / **Restore backup** to bring it back; imports merge and never overwrite existing documents. Data from older versions of the app is migrated automatically, and the old keys are kept as a backup. If saved data is ever unreadable, a copy is stored under a `.backup.<date>` key before anything else happens.
+
+With Supabase configured, the database is the source of truth. Business documents are loaded into memory before their stores render; old browser documents are not uploaded or migrated automatically. Choose existing firms with **Open a cloud firm**. Firm selection is saved to your account, so another browser can open the same firm. Refreshing never creates or imports additional firms. New firms require an explicit action and a unique PIB.
+
+Apply SQL migrations in order, including `20261007120000_firm_identity.sql`, `20261007140000_relational_documents.sql` and `20261007150000_remove_legacy_triggers.sql`, before running this application version. PIB protection blocks legacy clients from inserting new firms directly on refresh. The relational migration converts existing database documents, preserves company/document IDs and memberships, and removes the two old JSON document tables in one transaction. The final cleanup removes their unused trigger functions. Invalid foreign keys or unrecognized personal datasets abort conversion and retain the old data. Never run the migration with a client/browser key; use the Supabase SQL Editor or your linked CLI.
+
+Documents use typed relational columns: business profile/defaults, clients, invoices, invoice items, yearly taxes/paid months, KPO books/entries/settled invoices, audit entries, resumes/contacts/sections/entries/tags/languages/keywords, account selection and document revisions. Every child has a foreign key and firm/user scope. Invoice party/bank snapshots preserve issued documents when profiles change. JSON is only the API/backup transport format; no application table stores a JSON column. Saving or restoring documents runs in a database transaction; routine saves check the database revision to prevent stale overwrites.
+
+To import an old single-firm backup, sign in, explicitly open the destination firm, then use **Account & backup → Restore from file**. Its invoices, clients, profile, KPO and audit belong to that selected existing firm; CVs belong to the signed-in account. The confirmation identifies the destination and document counts, and the previous database documents are backed up first. No firms are created by restore. **Keep only this firm** backs up database documents and permanently deletes your other owned firms; deleting one firm also deletes its database row.
+
+Run `python supabase/tests/relational.test.py` with local Supabase running for an isolated PostgreSQL migration/RLS/foreign-key/restore/concurrency regression. Regenerate the relational SQL and the setup text with `python supabase/generate-relational.py` after changing the schema specification.
+
+After `npm run build`, set `RELATIONAL_TEST_DB` to the isolated database name printed by that test and run `node e2e/relational.cjs` for browser loading, saving, repeated refresh, permanent firm cleanup and legacy backup restore checks. The browser routes database requests to the isolated local database; hosted data is not used.
+
 
 ## Development
 
@@ -79,18 +92,18 @@ src/
   features/
     invoices/   model, numbering, migration, store, editor sections, templates, pages
     resumes/    model, migration, store, editor, paginator, templates, pages
-    ats/        ATS scoring engine, Claude prompts, wizard, import dialog
-    ai/         Claude client and API key settings
+    ats/        ATS scoring engine, Eden AI prompts, wizard, import dialog
+    ai/         Eden AI client and API key settings
     profile/    business profile page
   lib/          money, dates, storage, print-to-PDF, colours, files
   ui/           design-system primitives (buttons, fields, sections, dialogs)
 public/invoice-motifs/   SVG illustrations for the Seasonal invoice template
 scripts/                 generators and review tools for the motifs (use Playwright)
-docs/                    audit, redesign plan
+docs/                    production setup, database model and account flow plan
 ```
 
 Key design decisions:
 - **Money** (`src/lib/money.ts`): integer minor units, round half away from zero per line, VAT on the rounded subtotal. RSD uses ISO 4217's two decimals.
 - **Pagination** (`src/features/resumes/document/Paginator.tsx`): blocks are measured in a hidden copy and distributed across A4 pages; headings stay with their first entry.
-- **ATS score** (`src/features/ats/analyze.ts`): deterministic, so the score means the same thing before and after an AI pass. Claude fixes findings; it doesn't grade itself.
-- **AI code is lazy-loaded**, so the Anthropic SDK isn't part of the main bundle.
+- **ATS score** (`src/features/ats/analyze.ts`): deterministic, so the score means the same thing before and after an AI pass. Eden AI fixes findings; it doesn't grade itself.
+- **AI code is lazy-loaded**, so the Eden AI SDK isn't part of the main bundle.

@@ -34,7 +34,7 @@ export const useAts = (resumeId: string) => {
     [resumeId, updateResume]
   );
 
-  /** Refreshes Claude's keyword list when the job ad changed. Returns the updated resume. */
+  /** Refreshes Eden AI's keyword list when the job ad changed. Returns the updated resume. */
   const refreshKeywords = useCallback(
     async (resume: Resume, signal?: AbortSignal): Promise<Resume> => {
       if (!keywordsStale(resume)) return resume;
@@ -77,7 +77,7 @@ export const useAts = (resumeId: string) => {
         if (!resume) return [];
         setBusy({ label: t('Reading the job ad…') });
         resume = await refreshKeywords(resume, signal);
-        setBusy({ label: t('Claude is reviewing your resume…') });
+        setBusy({ label: t('Eden AI is reviewing your resume…') });
         const { suggestImprovements } = await loadAi();
         return suggestImprovements(resume, analyzeResume(resume), signal);
       }),
@@ -85,7 +85,7 @@ export const useAts = (resumeId: string) => {
   );
 
   /**
-   * Applies Claude's rewrites automatically, re-scores, and repeats until the
+   * Applies Eden AI's rewrites automatically, re-scores, and repeats until the
    * target is reached or nothing more can be improved without the user.
    * Returns what still needs the user: skills to confirm.
    */

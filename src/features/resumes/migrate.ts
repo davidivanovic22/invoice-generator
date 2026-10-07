@@ -1,5 +1,5 @@
 import { createId } from '../../lib/files';
-import { readJson, writeJson } from '../../lib/storage';
+import { isDatabaseMode, readJson, writeJson } from '../../lib/storage';
 import {
   createAts,
   createDesign,
@@ -199,6 +199,7 @@ export const loadResumeStore = (): { store: ResumeStore; persist: boolean } => {
   if (current.status === 'ok') return { store: normalizeResumeStore(current.value), persist: true };
   if (current.status === 'corrupt') return { store: { version: 2, resumes: [] }, persist: current.backupKey !== null };
 
+  if (isDatabaseMode()) return { store: normalizeResumeStore({}), persist: true };
   const legacy = readJson<{ resumes?: Loose[] }>(LEGACY_RESUME_KEY);
   if (legacy.status === 'ok' && Array.isArray(legacy.value.resumes)) {
     const store: ResumeStore = { version: 2, resumes: legacy.value.resumes.map(migrateLegacyResume) };

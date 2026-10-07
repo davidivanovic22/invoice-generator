@@ -6,7 +6,7 @@
 import { readLock } from '../features/account/lock';
 import { getCloudState } from './cloud';
 import { firmKey, readFirms } from './firms';
-import { writeJson } from './storage';
+import { readRaw, writeJson } from './storage';
 
 export type AuditAction =
   | 'invoice.created'
@@ -30,7 +30,7 @@ export const auditKey = (firmId = readFirms().activeId) => firmKey('studio.audit
 
 export const readAudit = (firmId?: string): AuditEntry[] => {
   try {
-    const value = JSON.parse(localStorage.getItem(auditKey(firmId)) ?? '[]');
+    const value = JSON.parse(readRaw(auditKey(firmId)) ?? '[]');
     return Array.isArray(value) ? (value as AuditEntry[]) : [];
   } catch {
     return [];

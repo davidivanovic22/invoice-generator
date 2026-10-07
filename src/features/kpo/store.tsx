@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { logAudit } from '../../lib/audit';
 import { formatDateNumeric } from '../../lib/dates';
-import { readJson, writeJson } from '../../lib/storage';
+import { getDataGeneration, isDatabaseMode, readJson, writeJson } from '../../lib/storage';
 import { useInvoiceStore } from '../invoices/store';
 import { createBook, createEntry, createHeader, DEFAULT_TEMPLATE, type KpoBook, type KpoEntry } from './model';
 
@@ -41,6 +41,7 @@ export const normalizeBook = (raw: unknown): KpoBook => {
 /** `storageKey` selects the firm; the provider is remounted when the firm changes. */
 export const KpoStoreProvider = ({ children, storageKey = KPO_KEY, readOnly = false }: { children: ReactNode; storageKey?: string; readOnly?: boolean }) => {
   const { store } = useInvoiceStore();
+  const [generation] = useState(getDataGeneration);
   const [initial] = useState<KpoBook>(() => {
     const saved = readJson<unknown>(storageKey);
     return saved.status === 'ok' ? normalizeBook(saved.value) : createBook(store.profile.party);
@@ -63,19 +64,21 @@ export const KpoStoreProvider = ({ children, storageKey = KPO_KEY, readOnly = fa
       first.current = false;
       return;
     }
+    if (generation !== getDataGeneration()) return;
     changed.current = true;
+    if (isDatabaseMode()) { writeJson(storageKey, book); return; }
     const timer = setTimeout(() => writeJson(storageKey, book), 250);
     return () => clearTimeout(timer);
-  }, [book, storageKey]);
+  }, [book, storageKey, generation]);
 
   useEffect(() => {
-    const flush = () => changed.current && writeJson(storageKey, bookRef.current);
+    const flush = () => changed.current && generation === getDataGeneration() && writeJson(storageKey, bookRef.current);
     window.addEventListener('beforeunload', flush);
     return () => {
       window.removeEventListener('beforeunload', flush);
       flush();
     };
-  }, [storageKey]);
+  }, [storageKey, generation]);
 
   const update = useCallback((patch: Partial<KpoBook> | ((book: KpoBook) => KpoBook)) => {
     if (readOnlyRef.current) window.dispatchEvent(new Event('read-only'));

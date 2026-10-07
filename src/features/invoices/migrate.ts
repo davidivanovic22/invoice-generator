@@ -1,4 +1,4 @@
-import { readJson, writeJson } from '../../lib/storage';
+import { isDatabaseMode, readJson, writeJson } from '../../lib/storage';
 import { createId } from '../../lib/files';
 import { todayIso } from '../../lib/dates';
 import {
@@ -227,6 +227,8 @@ export const loadInvoiceStore = (key = STORE_KEY): { store: InvoiceStore; persis
   const current = readJson<Partial<InvoiceStore>>(key);
   if (current.status === 'ok') return { store: normalizeStore(current.value), persist: true };
   if (current.status === 'corrupt') return { store: createEmptyStore(), persist: current.backupKey !== null };
+
+  if (isDatabaseMode()) return { store: createEmptyStore(), persist: true };
 
   // Only the first firm can have data from the old app.
   const legacy = key === STORE_KEY ? readJson<LegacyState>(LEGACY_KEY) : ({ status: 'empty' } as const);

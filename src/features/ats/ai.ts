@@ -1,4 +1,4 @@
-import type { BetaContentBlockParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
+import { parseWithAffinda } from '../ai/affinda';
 import { z } from 'zod';
 import { getLang, t } from '../../i18n';
 import { createId } from '../../lib/files';
@@ -307,13 +307,8 @@ const IMPORT_SYSTEM = `You convert resumes into structured data. Copy the conten
 export type ImportSource = { kind: 'pdf'; base64: string } | { kind: 'text'; text: string };
 
 export const importResume = async (source: ImportSource, signal?: AbortSignal): Promise<Resume> => {
-  const content: BetaContentBlockParam[] =
-    source.kind === 'pdf'
-      ? [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: source.base64 } },
-          { type: 'text', text: 'Convert this resume into the structured format.' }
-        ]
-      : [{ type: 'text', text: `<resume>\n${source.text}\n</resume>\nConvert this resume into the structured format.` }];
+  const extracted = source.kind === 'pdf' ? await parseWithAffinda(source, signal) : { resume_text: source.text };
+  const content: { type: 'text'; text: string }[] = [{ type: 'text', text: `Convert this resume extraction faithfully into the structured format:\n${JSON.stringify(extracted)}` }];
 
   const parsed = await callStructured({ schema: ImportSchema, effort: 'medium', system: IMPORT_SYSTEM, content, signal });
   const now = new Date().toISOString();

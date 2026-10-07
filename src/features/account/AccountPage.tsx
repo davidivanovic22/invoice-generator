@@ -23,6 +23,8 @@ import {
   type Snapshot
 } from '../../lib/backup';
 import { downloadJson } from '../../lib/files';
+import { readFirms, firmDisplayName } from '../../lib/firms';
+import { isDatabaseMode } from '../../lib/storage';
 import { Button } from '../../ui/Button';
 import { useFeedback } from '../../ui/Feedback';
 import { SelectField, TextField } from '../../ui/Field';
@@ -30,6 +32,7 @@ import { Icon } from '../../ui/Icon';
 import { Section } from '../../ui/Layout';
 import { useAccount } from './AccountGate';
 import { CloudSection } from './CloudSection';
+import { AccountProfileSection } from './AccountProfileSection';
 import { checkPassword, removeLock, setPassword, updateLockDetails } from './lock';
 
 const formatWhen = (iso: string) =>
@@ -49,9 +52,10 @@ export const AccountPage = () => {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
       <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('Account & backup')}</h1>
-      <p className="mt-1 text-sm text-slate-500">{t('Lock the app with a password and keep automatic backups of everything you make.')}</p>
+      <p className="mt-1 text-sm text-slate-500">{t(isDatabaseMode() ? 'Manage your account and document backups.' : 'Lock the app with a password and keep automatic backups of everything you make.')}</p>
       <div className="mt-6 space-y-4">
-        <LockSection />
+        {!isDatabaseMode() && <LockSection />}
+        {isDatabaseMode() && <AccountProfileSection />}
         <CloudSection />
         <BackupSection />
       </div>
@@ -278,16 +282,22 @@ const BackupSection = () => {
 
   const restore = async (data: Record<string, string>, when: string) => {
     const counts = summarize(data);
+    const registry = readFirms();
+    const target = registry.firms.find(firm => firm.id === registry.activeId);
+    const databaseMessage = isDatabaseMode()
+      ? `Uvoz u bazu: ${!data['studio.firms'] && target ? firmDisplayName(target) : 'postojeće firme povezane u backupu'}. ${counts.invoices} faktura, ${counts.kpo} KPO stavki, ${counts.resumes} CV. Postojeći dokumenti se zamenjuju; prethodno se čuva backup. Uvoz ne kreira firme.`
+      : null;
     const ok = await confirm({
       title: t('Restore the backup from {date}?', { date: when }),
-      message: t('Your data is replaced with this backup ({invoices} invoices, {resumes} resumes). A backup of what you have now is made first, so you can go back.', counts),
+      message: databaseMessage ?? t('Your data is replaced with this backup ({invoices} invoices, {resumes} resumes). A backup of what you have now is made first, so you can go back.', counts),
       confirmLabel: t('Restore')
     });
     if (!ok) return;
     try {
       await restoreData(data);
-    } catch {
-      toast(t('Could not back up the current data first, so nothing was changed.'), 'error');
+      toast(isDatabaseMode() ? 'Dokumenti su uvezeni u bazu.' : t('Restore'), 'success');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Uvoz nije završen. Proveri vezu sa bazom.', 'error');
     }
   };
 

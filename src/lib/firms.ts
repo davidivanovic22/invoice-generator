@@ -6,6 +6,7 @@
  * firms use `<key>@<firmId>`. Resumes are personal and not tied to a firm.
  */
 import { createId } from './files';
+import { readRaw, removeDocument } from './storage';
 
 export const FIRMS_KEY = 'studio.firms';
 export const DEFAULT_FIRM = 'default';
@@ -61,7 +62,29 @@ export const setActiveFirm = (id: string) => {
   if (registry.firms.some((firm) => firm.id === id)) writeFirms({ ...registry, activeId: id });
 };
 
-export const addFirm = (name: string): Firm => {
+/** PIB identity is independent of spaces, dots, hyphens and letter case. */
+export const normalizeFirmTaxId = (value: string) => value.trim().replace(/[\s.-]/g, '').toUpperCase();
+
+export const taxIdFromFirmData = (raw: string | null): string => {
+  try {
+    const value = JSON.parse(raw ?? 'null')?.profile?.party?.taxId;
+    return typeof value === 'string' ? normalizeFirmTaxId(value) : '';
+  } catch {
+    return '';
+  }
+};
+
+export const firmTaxId = (id: string) => taxIdFromFirmData(readRaw(firmKey('studio.invoices.v2', id)));
+
+export const assertUniqueFirmTaxId = (taxId: string, exceptId?: string) => {
+  const normalized = normalizeFirmTaxId(taxId);
+  if (normalized && readFirms().firms.some((firm) => firm.id !== exceptId && firmTaxId(firm.id) === normalized)) {
+    throw new Error('A firm with this PIB already exists. Open the existing firm.');
+  }
+};
+
+export const addFirm = (name: string, taxId = ''): Firm => {
+  assertUniqueFirmTaxId(taxId);
   const registry = readFirms();
   const firm: Firm = { id: createId().slice(0, 8), name: name.trim(), createdAt: new Date().toISOString() };
   writeFirms({ firms: [...registry.firms, firm], activeId: firm.id });
@@ -74,12 +97,12 @@ export const renameFirm = (id: string, name: string) => {
 };
 
 /** Removes a firm and its data (callers take a backup snapshot first). The default firm is kept. */
-export const removeFirm = (id: string) => {
-  if (id === DEFAULT_FIRM) return;
+export const removeFirm = (id: string, allowDefault = false) => {
+  if (id === DEFAULT_FIRM && !allowDefault) return;
   const registry = readFirms();
-  for (const base of FIRM_BASE_KEYS) localStorage.removeItem(firmKey(base, id));
+  for (const base of FIRM_BASE_KEYS) removeDocument(firmKey(base, id));
   const firms = registry.firms.filter((firm) => firm.id !== id);
-  writeFirms({ firms, activeId: registry.activeId === id ? firms[0].id : registry.activeId });
+  writeFirms(firms.length ? { firms, activeId: registry.activeId === id ? firms[0].id : registry.activeId } : defaultRegistry());
 };
 
 /** Connects a local firm to its cloud copy (or disconnects it with `cloudId: undefined`). */
@@ -91,6 +114,8 @@ export const linkFirm = (id: string, cloudId: string | undefined, role?: FirmRol
 /** Adds a firm someone shared with you, without switching to it. */
 export const addLinkedFirm = (name: string, cloudId: string, role: FirmRole): Firm => {
   const registry = readFirms();
+  const existing = registry.firms.find((firm) => firm.cloudId === cloudId);
+  if (existing) return existing;
   const firm: Firm = { id: createId().slice(0, 8), name: name.trim(), createdAt: new Date().toISOString(), cloudId, role };
   writeFirms({ ...registry, firms: [...registry.firms, firm] });
   return firm;
@@ -102,9 +127,24 @@ export const canEdit = (firm: Firm) => firm.role !== 'viewer';
 export const firmDisplayName = (firm: Firm) => {
   if (firm.name) return firm.name;
   try {
-    const store = JSON.parse(localStorage.getItem(firmKey('studio.invoices.v2', firm.id)) ?? 'null');
+    const store = JSON.parse(readRaw(firmKey('studio.invoices.v2', firm.id)) ?? 'null');
     return String(store?.profile?.party?.name ?? '').trim();
   } catch {
     return '';
   }
 };
+
+/** Explicit cleanup after a successful cloud deletion and a complete backup. */
+export const keepOnlyLocalFirm = (keepId: string) => {
+  const registry = readFirms();
+  const keep = registry.firms.find(firm => firm.id === keepId);
+  if (!keep) throw new Error('Firm not found.');
+  for (const firm of registry.firms) {
+    if (firm.id === keepId) continue;
+    for (const base of FIRM_BASE_KEYS) removeDocument(firmKey(base, firm.id));
+  }
+  writeFirms({ firms: [keep], activeId: keepId });
+};
+
+/** References validated against database memberships; this never creates a company. */
+export const replaceFirmRegistry = (registry: FirmRegistry) => writeFirms(registry);

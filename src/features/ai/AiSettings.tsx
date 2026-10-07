@@ -51,7 +51,7 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
           </span>
           <div>
             <h2 id="ai-settings-title" className="text-lg font-semibold text-slate-900">
-              {t('Connect Claude AI')}
+              {t('Connect Eden AI')}
             </h2>
             <p className="text-sm text-slate-500">{t('Powers the ATS analysis, rewriting and resume import.')}</p>
           </div>
@@ -62,28 +62,28 @@ const AiSettingsDialog = ({ onClose }: { onClose: () => void }) => {
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold">1</span>
             <span>
               {t('Open')}{' '}
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
-                console.anthropic.com
+              <a href="https://app.edenai.run/settings/api-keys" target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
+                app.edenai.run
               </a>{' '}
               {t('and sign in (or create a free account).')}
             </span>
           </li>
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold">2</span>
-            <span>{t('Click "Create Key", copy it, and paste it below. You pay Anthropic directly; a full resume optimisation costs a few cents.')}</span>
+            <span>{t('Create an API key in Eden AI, copy it, and paste it below. Usage is billed to your Eden AI account.')}</span>
           </li>
         </ol>
 
         <div className="mt-5">
           <TextField
-            label={t('Anthropic API key')}
+            label={t('Eden AI API key')}
             type="password"
             autoComplete="off"
             value={draft}
             onChange={setDraft}
-            placeholder={current ? t('Saved: {key}', { key: mask(current) }) : 'sk-ant-…'}
+            placeholder={current ? t('Saved: {key}', { key: mask(current) }) : 'Eden AI API key'}
             error={error || undefined}
-            hint={t('Stored only in this browser and sent only to Anthropic. Never share it.')}
+            hint={t('Stored only in this browser and sent only to Eden AI. Never share it.')}
             onKeyDown={(event) => event.key === 'Enter' && draft.trim() && save()}
           />
         </div>

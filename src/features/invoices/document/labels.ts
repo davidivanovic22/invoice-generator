@@ -24,7 +24,7 @@ const dictionary = {
   signature: ['Authorized signature', 'Potpis'],
   // PIB is a tax ID, not a VAT number: flat-rate businesses are outside the VAT system.
   taxId: ['Tax ID', 'PIB'],
-  regNo: ['Company reg. no.', 'Matični broj'],
+  regNo: ['Company registration number', 'Matični broj'],
   email: ['Email', 'Email'],
   paid: ['Paid', 'Plaćeno'],
   cancelled: ['Cancelled', 'Stornirano'],

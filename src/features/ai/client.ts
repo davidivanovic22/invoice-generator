@@ -1,93 +1,54 @@
-import type Anthropic from '@anthropic-ai/sdk';
 import { t } from '../../i18n';
 
-/**
- * Claude access for a backend-less app: the user brings their own API key,
- * which is stored only in this browser and sent only to api.anthropic.com.
- */
-
-export const AI_MODEL = 'claude-opus-5-5';
-const KEY_STORAGE = 'studio.ai.key';
-
-type Listener = () => void;
-const listeners = new Set<Listener>();
-
+export const AI_MODEL = 'openai/gpt-latest';
+const KEY_STORAGE = 'studio.ai.eden.key';
+const API_BASE = 'https://api.edenai.run/v3';
+let memoryKey: string | undefined;
+const listeners = new Set<() => void>();
 export const getApiKey = (): string => {
-  try {
-    return localStorage.getItem(KEY_STORAGE) ?? '';
-  } catch {
-    return '';
-  }
+  if (memoryKey !== undefined) return memoryKey;
+  try { return localStorage.getItem(KEY_STORAGE) ?? ''; } catch { return ''; }
 };
-
 export const setApiKey = (key: string) => {
+  memoryKey = key.trim();
   try {
-    if (key) localStorage.setItem(KEY_STORAGE, key.trim());
+    localStorage.removeItem('studio.ai.key');
+    if (memoryKey) localStorage.setItem(KEY_STORAGE, memoryKey);
     else localStorage.removeItem(KEY_STORAGE);
-  } catch {
-    // Private mode: the key lives only for this page view.
-  }
-  cachedClient = null;
-  listeners.forEach((listener) => listener());
+  } catch { /* Keep the manually entered key in memory if storage is unavailable. */ }
+  listeners.forEach(listener => listener());
 };
-
-export const onApiKeyChange = (listener: Listener) => {
+export const onApiKeyChange = (listener: () => void) => {
   listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return () => { listeners.delete(listener); };
 };
-
 export type AiErrorKind = 'no-key' | 'auth' | 'rate' | 'overloaded' | 'refusal' | 'network' | 'invalid' | 'other';
-
 export class AiError extends Error {
-  constructor(public kind: AiErrorKind, message: string) {
-    super(message);
-  }
+  constructor(public kind: AiErrorKind, message: string) { super(message); }
 }
-
-let cachedClient: { key: string; client: Anthropic } | null = null;
-let sdk: typeof import('@anthropic-ai/sdk') | null = null;
-
-export const getClient = async (): Promise<Anthropic> => {
-  const key = getApiKey();
-  if (!key) throw new AiError('no-key', t('Connect Claude first: add your Anthropic API key.'));
-  if (cachedClient?.key === key) return cachedClient.client;
-  sdk = sdk ?? (await import('@anthropic-ai/sdk'));
-  // The key belongs to the person using this browser; it never touches a server of ours.
-  const client = new sdk.default({ apiKey: key, dangerouslyAllowBrowser: true, maxRetries: 2 });
-  cachedClient = { key, client };
-  return client;
-};
-
-/** Maps SDK errors to messages a non-technical user can act on. */
 export const toAiError = (error: unknown): AiError => {
   if (error instanceof AiError) return error;
-  const Sdk = sdk?.default;
-  if (Sdk) {
-    if (error instanceof Sdk.APIUserAbortError) return new AiError('other', t('Cancelled.'));
-    if (error instanceof Sdk.AuthenticationError || error instanceof Sdk.PermissionDeniedError)
-      return new AiError('auth', t('Your Anthropic API key was rejected. Check it in AI settings.'));
-    if (error instanceof Sdk.RateLimitError) return new AiError('rate', t('Too many requests right now. Wait a minute and try again.'));
-    if (error instanceof Sdk.InternalServerError) return new AiError('overloaded', t('Claude is busy at the moment. Please try again shortly.'));
-    if (error instanceof Sdk.BadRequestError) {
-      const message = error.message.toLowerCase();
-      if (message.includes('credit') || message.includes('billing')) return new AiError('auth', t('Your Anthropic account has no credit left. Add credit in the Anthropic Console.'));
-      return new AiError('invalid', t('Claude could not process this request. Try again with less text.'));
-    }
-    if (error instanceof Sdk.APIConnectionError) return new AiError('network', t('Could not reach Claude. Check your internet connection.'));
-    if (error instanceof Sdk.APIError) return new AiError('other', t('Claude returned an error ({status}). Please try again.', { status: error.status ?? '?' }));
-  }
-  return new AiError('other', error instanceof Error ? error.message : t('Something went wrong with the AI request.'));
+  if (error instanceof Error && error.name === 'AbortError') return new AiError('other', t('Cancelled.'));
+  return new AiError('network', t('Could not reach Eden AI. Check your internet connection.'));
 };
-
-/** Checks a key with a tiny request. */
-export const testApiKey = async (key: string): Promise<void> => {
-  sdk = sdk ?? (await import('@anthropic-ai/sdk'));
-  const client = new sdk.default({ apiKey: key.trim(), dangerouslyAllowBrowser: true, maxRetries: 0 });
+export const edenRequest = async <T>(path: string, options: RequestInit = {}, key = getApiKey()): Promise<T> => {
+  if (!key.trim()) throw new AiError('no-key', t('Connect Eden AI first: add your Eden AI API key.'));
   try {
-    await client.models.retrieve(AI_MODEL);
-  } catch (error) {
-    throw toAiError(error);
-  }
+    const headers = new Headers(options.headers);
+    headers.set('Authorization', `Bearer ${key.trim()}`);
+    const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) throw new AiError('auth', t('Your Eden AI API key was rejected. Check it in AI settings.'));
+      if (response.status === 402) throw new AiError('auth', t('Your Eden AI account has no credit left. Add credit in Eden AI.'));
+      if (response.status === 429) throw new AiError('rate', t('Too many requests right now. Wait a minute and try again.'));
+      if (response.status >= 500) throw new AiError('overloaded', t('Eden AI is busy at the moment. Please try again shortly.'));
+      throw new AiError('invalid', t('Eden AI could not process this request. Try again with less text.'));
+    }
+    try { return await response.json() as T; }
+    catch { throw new AiError('invalid', t('Eden AI returned an unexpected answer. Please try again.')); }
+  } catch (error) { throw toAiError(error); }
+};
+/** Verify credentials through model discovery, without running a paid inference. */
+export const testApiKey = async (key: string): Promise<void> => {
+  await edenRequest('/info/ocr/resume_parser', {}, key);
 };

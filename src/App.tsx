@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { AccountGate, useAccount } from './features/account/AccountGate';
+import { LoginPage } from './features/account/LoginPage';
 import { AccountPage } from './features/account/AccountPage';
 import { AutoBackup } from './features/account/AutoBackup';
 import { CloudChoiceDialog, CloudDot, CloudNoticeBanner, statusLabel, useCloud } from './features/account/CloudSection';
-import { startCloud } from './lib/cloud';
+import { readCloudConfig, signOut, startCloud } from './lib/cloud';
+import { isDatabaseMode, replaceDatabaseData } from './lib/storage';
 import { AiProvider, useAi } from './features/ai/AiSettings';
 import { FirmProvider, useFirm } from './features/firms/FirmContext';
 import { FirmsPage } from './features/firms/FirmsPage';
@@ -40,8 +42,8 @@ const AiStatus = () => {
       type="button"
       onClick={openSettings}
       className="relative flex items-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100"
-      title={hasKey ? t('Claude AI is connected') : t('Connect Claude AI')}
-      aria-label={hasKey ? t('Claude AI is connected') : t('Connect Claude AI')}
+      title={hasKey ? t('Eden AI is connected') : t('Connect Eden AI')}
+      aria-label={hasKey ? t('Eden AI is connected') : t('Connect Eden AI')}
     >
       <Icon name="sparkle" />
       <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ring-2 ring-white ${hasKey ? 'bg-emerald-500' : 'bg-slate-300'}`} />
@@ -69,7 +71,37 @@ const LanguageSwitch = () => {
   );
 };
 
-/** Avatar menu: business profile, account & backup, lock. */
+const LogoutButton = ({ className, role, onClose }: { className: string; role?: 'menuitem'; onClose: () => void }) => {
+  const cloud = useCloud();
+  const navigate = useNavigate();
+  const { toast } = useFeedback();
+  const [busy, setBusy] = useState(false);
+  if (!cloud.email) return null;
+  return (
+    <button
+      type="button"
+      role={role}
+      className={className}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await signOut();
+          onClose();
+          navigate('/login', { replace: true });
+        } catch (error) {
+          toast((error as Error).message, 'error');
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Icon name="logout" className="h-4 w-4" /> {busy ? t('Please wait…') : t('Sign out')}
+    </button>
+  );
+};
+
+/** Avatar menu: business profile, account & backup, lock and sign out. */
 const AccountButton = () => {
   const { lock, lockNow } = useAccount();
   const cloud = useCloud();
@@ -141,6 +173,16 @@ const AccountButton = () => {
               >
                 <Icon name="lock" className="h-4 w-4 text-slate-400" /> {t('Lock now')}
               </button>
+            </>
+          )}
+          {cloud.email && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <LogoutButton
+                role="menuitem"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                onClose={() => setOpen(false)}
+              />
             </>
           )}
         </div>
@@ -254,6 +296,10 @@ const MobileTabBar = () => {
                 <Icon name="lock" /> {t('Lock now')}
               </button>
             )}
+            <LogoutButton
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] text-red-600 hover:bg-red-50 disabled:opacity-50"
+              onClose={close}
+            />
             <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-100 px-1 pt-3">
               <ThemeSwitch withLabel />
               <div className="flex items-center rounded-lg bg-slate-100 p-0.5 text-xs font-semibold" role="radiogroup" aria-label={t('Language')}>
@@ -384,10 +430,6 @@ const RecurringInvoices = () => {
 
 const Shell = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  // Optional cloud sync; does nothing until a Supabase project is connected.
-  useEffect(() => {
-    void startCloud();
-  }, []);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   useCommandShortcut(openSearch);
   return (
@@ -429,29 +471,50 @@ const Shell = () => {
 /** Invoice and KPO data belong to the active firm; switching firms remounts them with that firm's data. */
 const FirmStores = ({ children }: { children: ReactNode }) => {
   const { active, keyFor } = useFirm();
+  const cloud = useCloud();
+  const readOnly = active.role === 'viewer' || (isDatabaseMode() && (!cloud.dataReady || !cloud.email || !active.cloudId));
   return (
-    <InvoiceStoreProvider key={`invoices-${active.id}`} storageKey={keyFor('studio.invoices.v2')} readOnly={active.role === 'viewer'}>
-      <KpoStoreProvider key={`kpo-${active.id}`} storageKey={keyFor('studio.kpo.v1')} readOnly={active.role === 'viewer'}>
+    <InvoiceStoreProvider key={`invoices-${active.id}`} storageKey={keyFor('studio.invoices.v2')} readOnly={readOnly}>
+      <KpoStoreProvider key={`kpo-${active.id}`} storageKey={keyFor('studio.kpo.v1')} readOnly={readOnly}>
         {children}
       </KpoStoreProvider>
     </InvoiceStoreProvider>
   );
 };
 
+/** Mount document stores only after their database cache is loaded. */
+const DataProviders = () => {
+  const cloud = useCloud();
+  const [started, setStarted] = useState(false);
+  useState(() => { if (readCloudConfig() && !isDatabaseMode()) replaceDatabaseData({}); });
+  useEffect(() => { void startCloud().finally(() => setStarted(true)); }, []);
+  if (readCloudConfig() && !cloud.dataReady && (!started || cloud.status === 'syncing')) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">{t('Loading data from the database...')}</div>;
+  }
+  if (readCloudConfig() && !cloud.email) {
+    return <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+      <Route path="/terms" element={<LegalPage kind="terms" />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>;
+  }
+  return <FirmProvider key={cloud.dataRevision}>
+    <ResumeStoreProvider readOnly={isDatabaseMode() && (!cloud.dataReady || !cloud.email)}>
+      <FirmStores><Shell /></FirmStores>
+    </ResumeStoreProvider>
+  </FirmProvider>;
+};
+
 function App() {
+  useCloud(); // Re-evaluate the browser-lock bypass when database configuration changes.
   return (
     <LanguageProvider>
-      <AccountGate>
+      <AccountGate disabled={Boolean(readCloudConfig())}>
         <BrowserRouter>
           <FeedbackProvider>
             <AiProvider>
-              <FirmProvider>
-                <ResumeStoreProvider>
-                  <FirmStores>
-                    <Shell />
-                  </FirmStores>
-                </ResumeStoreProvider>
-              </FirmProvider>
+              <DataProviders />
             </AiProvider>
           </FeedbackProvider>
         </BrowserRouter>

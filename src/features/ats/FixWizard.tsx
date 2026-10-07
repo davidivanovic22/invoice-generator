@@ -31,7 +31,7 @@ export const buildSteps = (resume: Resume, suggestions: Suggestion[]): Step[] =>
   for (const issue of report.issues) {
     if (!issue.aiFixable && !HANDLED_ISSUES.has(issue.id) && issue.points > 0) steps.push({ kind: 'manual', id: issue.id, issue });
   }
-  // Last, because Claude's rewrites can add placeholders.
+  // Last, because Eden AI's rewrites can add placeholders.
   steps.push({ kind: 'placeholders', id: 'placeholders' });
   return steps;
 };
@@ -185,7 +185,7 @@ const SuggestionStep = ({ resume, suggestion, onApply, onSkip }: { resume: Resum
 
   return (
     <div>
-      <StepHeader eyebrow={t('Claude suggests')} title={label} reason={suggestion.reason} />
+      <StepHeader eyebrow={t('Eden AI suggests')} title={label} reason={suggestion.reason} />
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('Now')}</div>

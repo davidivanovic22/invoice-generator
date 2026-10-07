@@ -25,7 +25,7 @@ const readDocx = async (file: File) => {
   return result.value;
 };
 
-/** Upload an existing CV; Claude converts it, then the ATS wizard takes over. */
+/** Upload an existing CV; Eden AI converts it, then the ATS wizard takes over. */
 export const ImportDialog = ({ onClose, onImported }: Props) => {
   const { hasKey, openSettings } = useAi();
   const [mode, setMode] = useState<'file' | 'paste'>('file');
@@ -94,7 +94,7 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
         <h2 id="import-title" className="text-lg font-semibold text-slate-900">
           {t('Import your existing resume')}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">{t('Claude reads it, rebuilds it in an ATS-friendly template, and then guides you step by step through every improvement.')}</p>
+        <p className="mt-1 text-sm text-slate-500">{t('Eden AI reads it, rebuilds it in an ATS-friendly template, and then guides you step by step through every improvement.')}</p>
 
         <div className="mt-5">
           <Segmented
@@ -162,9 +162,9 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
         )}
         {!hasKey && (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
-            {t('Importing uses Claude AI.')}{' '}
+            {t('PDF import uses Affinda via Eden AI. Word and pasted text use Eden AI formatting.')}{' '}
             <button type="button" onClick={openSettings} className="font-semibold underline">
-              {t('Connect Claude')}
+              {t('Connect Eden AI')}
             </button>{' '}
             {t('first; it takes a minute.')}
           </p>
@@ -180,7 +180,7 @@ export const ImportDialog = ({ onClose, onImported }: Props) => {
             {t('Cancel')}
           </Button>
           <Button variant="accent" icon="sparkle" onClick={run} disabled={!ready || working}>
-            {working ? t('Claude is reading your resume…') : t('Import & analyse')}
+            {working ? t('Eden AI is reading your resume…') : t('Import & analyse')}
           </Button>
         </div>
       </div>

@@ -23,7 +23,7 @@ export const useAccount = () => {
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
 
 /** Shows the lock screen until the right password is entered, then renders the app. */
-export const AccountGate = ({ children }: { children: ReactNode }) => {
+export const AccountGate = ({ children, disabled = false }: { children: ReactNode; disabled?: boolean }) => {
   const [lock, setLock] = useState(readLock);
   const [unlocked, setUnlocked] = useState(() => !lock || isUnlocked());
 
@@ -36,7 +36,7 @@ export const AccountGate = ({ children }: { children: ReactNode }) => {
   // Lock after a quiet period, if the user asked for that.
   const minutes = lock?.autoLockMinutes ?? 0;
   useEffect(() => {
-    if (!lock || !unlocked || minutes <= 0) return;
+    if (disabled || !lock || !unlocked || minutes <= 0) return;
     let timer = window.setTimeout(lockNow, minutes * 60_000);
     const reset = () => {
       window.clearTimeout(timer);
@@ -47,11 +47,11 @@ export const AccountGate = ({ children }: { children: ReactNode }) => {
       window.clearTimeout(timer);
       ACTIVITY_EVENTS.forEach((name) => window.removeEventListener(name, reset));
     };
-  }, [lock, unlocked, minutes, lockNow]);
+  }, [disabled, lock, unlocked, minutes, lockNow]);
 
-  const value = useMemo(() => ({ lock, refresh, lockNow }), [lock, refresh, lockNow]);
+  const value = useMemo(() => ({ lock: disabled ? null : lock, refresh, lockNow }), [disabled, lock, refresh, lockNow]);
 
-  if (lock && !unlocked) {
+  if (!disabled && lock && !unlocked) {
     return (
       <LockScreen
         lock={lock}

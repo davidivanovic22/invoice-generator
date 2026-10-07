@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { t, uiLocale } from '../../../i18n';
+import { isDatabaseMode } from '../../../lib/storage';
 import { formatDate, todayIso } from '../../../lib/dates';
 import { downloadJson } from '../../../lib/files';
 import { formatAmount, formatMinor } from '../../../lib/money';
@@ -157,7 +158,7 @@ export const InvoiceListPage = () => {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('Invoices')}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t('Everything is saved in this browser. Download a backup now and then.')}</p>
+          <p className="mt-1 text-sm text-slate-500">{t(isDatabaseMode() ? 'Invoices and clients are loaded from your database.' : 'Everything is saved in this browser. Download a backup now and then.')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Menu

@@ -75,7 +75,7 @@ export const TailorDialog = ({ resume, onClose }: Props) => {
             <Icon name="sparkle" className="h-5 w-5 text-indigo-600" />
             {t('Tailor to a job ad')}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">{t('Claude makes a copy of "{name}" written for this job. Your original resume stays as it is.', { name: resume.name })}</p>
+          <p className="mt-1 text-sm text-slate-500">{t('Eden AI makes a copy of "{name}" written for this job. Your original resume stays as it is.', { name: resume.name })}</p>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
@@ -159,7 +159,7 @@ export const TailorDialog = ({ resume, onClose }: Props) => {
             <>
               <Button onClick={onClose}>{t('Cancel')}</Button>
               <Button variant="accent" icon="sparkle" onClick={run} disabled={jobAd.trim().length < 80}>
-                {hasKey ? t('Tailor my resume') : t('Connect Claude AI')}
+                {hasKey ? t('Tailor my resume') : t('Connect Eden AI')}
               </Button>
             </>
           )}

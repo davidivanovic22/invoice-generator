@@ -193,7 +193,7 @@ export const CloudSection = () => {
               {t('Sync now')}
             </Button>
           </div>
-          <p className="text-xs text-slate-500">{t('Invoices, resumes and the KPO book sync automatically a few seconds after each change, and when you come back to the app. Sign in with the same account on another device to see the same data.')}</p>
+          <p className="text-xs text-slate-500">{t('The database is the source of truth. Selected firms load their invoices, clients, business profile, KPO book and history from the database. Browser documents are not imported automatically.')}</p>
           <div className="flex flex-wrap items-end gap-2">
             <TextField
               wrapperClassName="min-w-[220px] flex-1"
@@ -211,7 +211,7 @@ export const CloudSection = () => {
           <Button
             variant="ghost"
             onClick={async () => {
-              if (await confirm({ title: t('Sign out?'), message: t('Your data stays in this browser; it just stops syncing.'), confirmLabel: t('Sign out') })) await signOut();
+              if (await confirm({ title: t('Sign out?'), message: t('Your data stays in the database. Loaded documents are cleared from this browser.'), confirmLabel: t('Sign out') })) await signOut();
             }}
           >
             {t('Sign out')}

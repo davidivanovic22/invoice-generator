@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { createId } from '../../lib/files';
 import { DocHistory } from '../../lib/history';
-import { writeJson } from '../../lib/storage';
+import { getDataGeneration, isDatabaseMode, writeJson } from '../../lib/storage';
 import { loadResumeStore, migrateLegacyResume, normalizeResumeStore, RESUME_STORE_KEY } from './migrate';
 import { createEmptyResume, createSampleResume, type Resume, type ResumeStore } from './model';
 
@@ -47,12 +47,20 @@ const cloneWithNewIds = (resume: Resume): Resume => ({
   })
 });
 
-export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
+export const ResumeStoreProvider = ({ children, readOnly = false }: { children: ReactNode; readOnly?: boolean }) => {
+  const [generation] = useState(getDataGeneration);
+  const changed = useRef(false);
   const [{ initial, persist }] = useState(() => {
     const loaded = loadResumeStore();
     return { initial: loaded.store, persist: loaded.persist };
   });
-  const [store, setStore] = useState(initial);
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
+  const [store, setStore] = useReducer(
+    (current: ResumeStore, update: ResumeStore | ((current: ResumeStore) => ResumeStore)) =>
+      readOnlyRef.current ? current : typeof update === 'function' ? update(current) : update,
+    initial
+  );
   const storeRef = useRef(store);
   storeRef.current = store;
 
@@ -62,17 +70,19 @@ export const ResumeStoreProvider = ({ children }: { children: ReactNode }) => {
       firstRender.current = false;
       return;
     }
-    if (!persist) return;
+    if (!persist || generation !== getDataGeneration()) return;
+    changed.current = true;
+    if (isDatabaseMode()) { writeJson(RESUME_STORE_KEY, store); return; }
     const timer = setTimeout(() => writeJson(RESUME_STORE_KEY, store), 250);
     return () => clearTimeout(timer);
-  }, [store, persist]);
+  }, [store, persist, generation]);
 
   useEffect(() => {
     if (!persist) return;
-    const flush = () => writeJson(RESUME_STORE_KEY, storeRef.current);
+    const flush = () => changed.current && generation === getDataGeneration() && writeJson(RESUME_STORE_KEY, storeRef.current);
     window.addEventListener('beforeunload', flush);
     return () => window.removeEventListener('beforeunload', flush);
-  }, [persist]);
+  }, [persist, generation]);
 
   const createResume = useCallback((kind: 'sample' | 'empty') => {
     const resume = kind === 'sample' ? createSampleResume() : createEmptyResume();

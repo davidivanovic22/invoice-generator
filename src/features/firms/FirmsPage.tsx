@@ -5,7 +5,7 @@ import { todayIso } from '../../lib/dates';
 import { takeSnapshot } from '../../lib/backup';
 import { DEFAULT_FIRM, firmDisplayName, firmKey } from '../../lib/firms';
 import { formatAmount } from '../../lib/money';
-import { writeJson } from '../../lib/storage';
+import { isDatabaseMode, readRaw, writeJson } from '../../lib/storage';
 import { Button, IconButton } from '../../ui/Button';
 import { useFeedback } from '../../ui/Feedback';
 import { TextField } from '../../ui/Field';
@@ -13,7 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { createEmptyStore } from '../invoices/model';
 import { useInvoiceStore } from '../invoices/store';
 import { useCloud } from '../account/CloudSection';
-import { syncNow } from '../../lib/cloud';
+import { availableCloudFirms, connectFirm, createDatabaseFirm, deleteDatabaseFirm, readCloudConfig, keepOnlyFirm, openCloudFirm } from '../../lib/cloud';
 import { useFirm } from './FirmContext';
 import { ShareDialog } from './ShareDialog';
 import { summarizeFirm, type FirmSummary } from './summary';
@@ -25,6 +25,7 @@ export const NewFirmDialog = ({ onClose }: { onClose: () => void }) => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [taxId, setTaxId] = useState('');
+  const { toast } = useFeedback();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
@@ -32,16 +33,21 @@ export const NewFirmDialog = ({ onClose }: { onClose: () => void }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const create = () => {
-    const firm = createFirm(name);
+  const create = async () => {
+    if (!name.trim()) return;
     const fresh = createEmptyStore();
     fresh.profile.party.name = name.trim();
     fresh.profile.party.taxId = taxId.trim();
     fresh.profile.defaults = { ...store.profile.defaults, numberPrefix: '' };
-    writeJson(firmKey('studio.invoices.v2', firm.id), fresh);
-    switchFirm(firm.id);
-    onClose();
-    navigate('/profile');
+    try {
+      const firm = readCloudConfig() ? await createDatabaseFirm(name, taxId, fresh) : createFirm(name, taxId);
+      if (!readCloudConfig()) writeJson(firmKey('studio.invoices.v2', firm.id), fresh);
+      switchFirm(firm.id);
+      onClose();
+      navigate('/profile');
+    } catch (error) {
+      toast(t(error instanceof Error ? error.message : 'Could not create firm.'), 'error');
+    }
   };
 
   return (
@@ -73,15 +79,17 @@ export const FirmsPage = () => {
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
   const [sharing, setSharing] = useState<string | null>(null);
+  const [cloudPicker, setCloudPicker] = useState<Awaited<ReturnType<typeof availableCloudFirms>> | null>(null);
+  const [busy, setBusy] = useState(false);
   const cloud = useCloud();
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
   const today = todayIso();
   const year = Number(today.slice(0, 4));
 
-  const rows = registry.firms.map((firm) => ({
+  const rows = registry.firms.filter(firm => !isDatabaseMode() || firm.cloudId).map((firm) => ({
     firm,
-    summary: summarizeFirm(localStorage.getItem(firmKey('studio.invoices.v2', firm.id)), localStorage.getItem(firmKey('studio.kpo.v1', firm.id)), year, today)
+    summary: summarizeFirm(readRaw(firmKey('studio.invoices.v2', firm.id)), readRaw(firmKey('studio.kpo.v1', firm.id)), year, today)
   }));
 
   const open = (id: string, to = '/overview') => {
@@ -98,9 +106,17 @@ export const FirmsPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('Firms')}</h1>
           <p className="mt-1 text-sm text-slate-500">{t('For accountants and owners of several businesses: every firm has its own invoices, KPO book and taxes.')}</p>
         </div>
-        <Button variant="primary" size="lg" icon="plus" onClick={() => setCreating(true)}>
-          {t('New firm')}
-        </Button>
+        <div className="flex gap-2">
+          {cloud.email && <Button disabled={busy} onClick={async () => {
+            setBusy(true);
+            try { setCloudPicker(await availableCloudFirms()); }
+            catch (error) { toast(t(error instanceof Error ? error.message : 'Could not connect firm.'), 'error'); }
+            finally { setBusy(false); }
+          }}>{t('Open a cloud firm')}</Button>}
+          <Button variant="primary" size="lg" icon="plus" onClick={() => setCreating(true)}>
+            {t('New firm')}
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -127,8 +143,7 @@ export const FirmsPage = () => {
                         autoFocus
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
-                            rename(firm.id, draftName);
-                            setRenaming(null);
+                            void rename(firm.id, draftName).then(() => setRenaming(null)).catch(error => toast(t(error.message), 'error'));
                           }
                           if (event.key === 'Escape') setRenaming(null);
                         }}
@@ -137,8 +152,7 @@ export const FirmsPage = () => {
                         icon="check"
                         label={t('Save')}
                         onClick={() => {
-                          rename(firm.id, draftName);
-                          setRenaming(null);
+                          void rename(firm.id, draftName).then(() => setRenaming(null)).catch(error => toast(t(error.message), 'error'));
                         }}
                       />
                     </div>
@@ -195,6 +209,17 @@ export const FirmsPage = () => {
                 </p>
               )}
 
+              {cloud.email && firm.cloudId && firm.role === 'owner' && (
+                <div className="mt-4 border-t border-slate-100 pt-3">
+                  <p className="mb-2 text-xs text-slate-500">{t('Keep this firm and permanently delete your other cloud firms. A full backup is saved first.')}</p>
+                  <Button variant="danger" size="sm" disabled={busy} onClick={async () => {
+                    setBusy(true);
+                    try { await keepOnlyFirm(firm.id); }
+                    catch (error) { toast(t(error instanceof Error ? error.message : 'Could not delete firms.'), 'error'); }
+                    finally { setBusy(false); }
+                  }}>{t('Keep only this firm')}</Button>
+                </div>
+              )}
               <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
                 <Button size="sm" variant={isActive ? 'secondary' : 'accent'} onClick={() => open(firm.id)}>
                   {t('Open')}
@@ -210,7 +235,15 @@ export const FirmsPage = () => {
                   <IconButton
                     icon="users"
                     label={firm.cloudId ? t('People and roles') : t('Share via the cloud')}
-                    onClick={() => (firm.cloudId ? setSharing(firm.id) : void syncNow())}
+                    onClick={async () => {
+                      if (firm.cloudId) return setSharing(firm.id);
+                      try {
+                        await connectFirm(firm.id);
+                        setSharing(firm.id);
+                      } catch (error) {
+                        toast(t(error instanceof Error ? error.message : 'Could not connect firm.'), 'error');
+                      }
+                    }}
                   />
                 )}
                 <IconButton
@@ -221,7 +254,7 @@ export const FirmsPage = () => {
                     setRenaming(firm.id);
                   }}
                 />
-                {firm.id !== DEFAULT_FIRM && (
+                {(isDatabaseMode() ? firm.role === 'owner' : firm.id !== DEFAULT_FIRM) && (
                   <IconButton
                     icon="trash"
                     tone="danger"
@@ -229,14 +262,15 @@ export const FirmsPage = () => {
                     onClick={async () => {
                       const ok = await confirm({
                         title: t('Delete "{name}"?', { name: label(firm, summary) }),
-                        message: t('All its invoices and the KPO book are removed from this browser. A backup is made first (Account & backup).'),
+                        message: t(isDatabaseMode() ? 'This permanently deletes the firm and its documents from the database. A full backup is saved first.' : 'All its invoices and the KPO book are removed from this browser. A backup is made first (Account & backup).'),
                         confirmLabel: t('Delete firm'),
                         tone: 'danger'
                       });
                       if (!ok) return;
-                      await takeSnapshot('before-restore').catch(() => null);
-                      remove(firm.id);
-                      toast(t('Firm deleted. It can be restored from Account & backup.'));
+                      try {
+                        if (isDatabaseMode()) await deleteDatabaseFirm(firm.id);
+                        else { await takeSnapshot('before-restore'); remove(firm.id); toast(t('Firm deleted. It can be restored from Account & backup.')); }
+                      } catch (error) { toast(t(error instanceof Error ? error.message : 'Could not delete firms.'), 'error'); }
                     }}
                   />
                 )}
@@ -257,6 +291,27 @@ export const FirmsPage = () => {
         <p className="mt-4 text-xs text-slate-500">
           {t('To work together with your accountant or clients, connect the cloud database and sign in under Account & backup.')}
         </p>
+      )}
+      {cloudPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="cloud-firm-picker" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="cloud-firm-picker" className="text-lg font-semibold">{t('Open a cloud firm')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('Cloud firms are added to this browser only when you choose one.')}</p>
+            <div className="mt-4 max-h-80 space-y-2 overflow-auto">
+              {cloudPicker.length === 0 && <p className="text-sm text-slate-500">{t('No cloud firms available.')}</p>}
+              {cloudPicker.map(item => <Button key={item.firm_id} className="w-full justify-start truncate" disabled={busy} onClick={async () => {
+                setBusy(true);
+                try {
+                  const firm = await openCloudFirm(item.firm_id);
+                  switchFirm(firm.id);
+                  setCloudPicker(null);
+                } catch (error) { toast(t(error instanceof Error ? error.message : 'Could not connect firm.'), 'error'); }
+                finally { setBusy(false); }
+              }}>{item.paperwork_firms?.name || t('Unnamed firm')}</Button>)}
+            </div>
+            <div className="mt-4 flex justify-end"><Button disabled={busy} onClick={() => setCloudPicker(null)}>{t('Close')}</Button></div>
+          </div>
+        </div>
       )}
       {creating && <NewFirmDialog onClose={() => setCreating(false)} />}
       {sharing &&

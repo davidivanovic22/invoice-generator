@@ -64,6 +64,8 @@ export type InvoiceDesign = {
   template: InvoiceTemplateId;
   accentColor: string;
   language: DocLanguage;
+  /** False hides the signature on this invoice while preserving the saved image. */
+  showSignature?: boolean;
   /** Seasonal template only: null follows the issue date's month. */
   seasonalMonth: MonthKey | null;
   /** Seasonal template only: null picks a variant from the year. */

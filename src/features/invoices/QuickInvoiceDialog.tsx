@@ -164,7 +164,7 @@ export const QuickInvoiceDialog = ({ onClose }: Props) => {
               }}
             />
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-xs text-indigo-900/60">{hasKey ? t('AI fills in the client, items and terms.') : t('Needs Claude AI (one-minute setup).')}</span>
+              <span className="text-xs text-indigo-900/60">{hasKey ? t('AI fills in the client, items and terms.') : t('Needs Eden AI (one-minute setup).')}</span>
               <Button variant="accent" icon="sparkle" onClick={createWithAi} disabled={!prompt.trim() || thinking}>
                 {thinking ? t('Creating…') : t('Create')}
               </Button>

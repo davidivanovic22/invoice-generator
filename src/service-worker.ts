@@ -4,7 +4,7 @@
 /**
  * Makes the app installable and usable offline: the built files are
  * precached, navigations fall back to index.html, and fonts/images are cached
- * as they are used. Network calls to APIs (Claude, NBS rates) are not cached.
+ * as they are used. Network calls to APIs (Eden AI, NBS rates) are not cached.
  * CRA builds this file with Workbox's InjectManifest.
  */
 import { clientsClaim } from 'workbox-core';

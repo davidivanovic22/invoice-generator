@@ -4,7 +4,7 @@ import { SECTION_KINDS, type EntriesSection, type Resume, type ResumeSection } f
 /**
  * Deterministic ATS score (0–100). It runs instantly, offline, and gives the
  * same answer every time, so "95+" means the same thing before and after an
- * AI pass. Claude's job is to fix what this finds, not to grade itself.
+ * AI pass. Eden AI's job is to fix what this finds, not to grade itself.
  */
 
 export type CategoryId = 'contact' | 'structure' | 'impact' | 'summary' | 'skills' | 'readability' | 'keywords';
@@ -18,7 +18,7 @@ export type AtsIssue = {
   detail: string;
   /** Where to fix it, so the UI can jump there. */
   target?: { sectionId?: string; itemId?: string; field?: 'personal' };
-  /** Claude can propose the fix (rewrites); otherwise only the user can (facts, numbers). */
+  /** Eden AI can propose the fix (rewrites); otherwise only the user can (facts, numbers). */
   aiFixable: boolean;
   /** Score points this issue costs. */
   points: number;
@@ -113,7 +113,7 @@ export const containsKeyword = (text: string, keyword: string) => {
   return new RegExp(`(^|[\\s/(-])${escaped}(s|es)?(?=$|[\\s/,.;:)-])`, 'u').test(haystack);
 };
 
-/** A rough keyword list from a job ad, used until Claude extracts a better one. */
+/** A rough keyword list from a job ad, used until Eden AI extracts a better one. */
 export const extractKeywordsHeuristic = (jobDescription: string, limit = 20): string[] => {
   const counts = new Map<string, { count: number; label: string }>();
   const bump = (label: string, weight = 1) => {

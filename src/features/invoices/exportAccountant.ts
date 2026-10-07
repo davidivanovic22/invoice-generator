@@ -20,7 +20,6 @@ export const accountantRows = (store: InvoiceStore, year: number) =>
       return {
         number: invoice.number,
         issueDate: invoice.issueDate,
-        serviceDate: invoice.serviceDate,
         dueDate: invoice.dueDate,
         client: invoice.client.name,
         clientTaxId: invoice.client.taxId,
@@ -54,7 +53,6 @@ export const exportForAccountant = async (store: InvoiceStore, year: number) => 
   const columns: Column[] = [
     { title: 'Broj', key: 'number', width: 13 },
     { title: 'Datum izdavanja', key: 'issueDate', width: 16, align: 'center' },
-    { title: 'Datum prometa', key: 'serviceDate', width: 16, align: 'center' },
     { title: 'Rok plaćanja', key: 'dueDate', width: 15, align: 'center' },
     { title: 'Klijent', key: 'client', width: 30 },
     { title: 'PIB klijenta', key: 'clientTaxId', width: 16 },
@@ -68,7 +66,7 @@ export const exportForAccountant = async (store: InvoiceStore, year: number) => 
   ];
   sheet.columns = columns.map((column) => ({ width: column.width }));
   const lastColumn = columns.length;
-  const dateKeys = new Set(['issueDate', 'serviceDate', 'dueDate', 'paidAt']);
+  const dateKeys = new Set(['issueDate', 'dueDate', 'paidAt']);
 
   // Title block
   sheet.mergeCells(1, 1, 1, lastColumn);

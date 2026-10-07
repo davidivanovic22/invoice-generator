@@ -30,7 +30,7 @@ const PRIVACY: Record<'sr' | 'en', Doc> = {
         title: 'Spoljni servisi',
         body: [
           'Kurs NBS se preuzima sa javnog servisa kurs.resenje.org (šalje se samo valuta i datum).',
-          'AI funkcije (ATS provera, prilagođavanje CV-a, propratno pismo) šalju tekst CV-a i oglasa servisu Anthropic (Claude), samo kad ih pokreneš i samo uz tvoj API ključ.',
+          'AI funkcije šalju tekst CV-a i oglasa servisu Eden AI i izabranom modelu (OpenAI). PDF uvoz šalje fajl Affinda parseru preko Eden AI. Pozivi se izvršavaju samo kad ih pokreneš, uz tvoj API ključ.',
           'Slanje mejla otvara tvoj Gmail ili mejl aplikaciju; aplikacija sama ne šalje mejlove.'
         ]
       },
@@ -68,7 +68,7 @@ const PRIVACY: Record<'sr' | 'en', Doc> = {
         title: 'Third-party services',
         body: [
           'NBS exchange rates come from the public kurs.resenje.org service (only currency and date are sent).',
-          'AI features (ATS check, tailoring, cover letters) send resume and job-ad text to Anthropic (Claude), only when you run them and only with your API key.',
+          'AI features send resume and job-ad text to Eden AI and its selected model provider (OpenAI). PDF resume import sends the file to Affinda through Eden AI. These requests run only when you start them, using your API key.',
           'Sending email opens your Gmail or mail app; the app itself does not send email.'
         ]
       },

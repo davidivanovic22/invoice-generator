@@ -50,7 +50,7 @@ export const CommandPalette = ({ open, onClose }: { open: boolean; onClose: () =
       { id: 'overview', group: t('Go to'), icon: 'cash', label: t('Overview'), run: go('/overview'), keywords: 'pregled zarada prihod limit pdv 6 miliona 8 miliona grafikon' },
       { id: 'kpo', group: t('Go to'), icon: 'list', label: t('KPO book'), run: go('/kpo'), keywords: 'kpo knjiga promet pausal pausalni porez' },
       { id: 'account', group: t('Go to'), icon: 'shield', label: t('Account & backup'), run: go('/account'), keywords: 'nalog lozinka sifra backup rezervna kopija vrati restore password lock' },
-      { id: 'ai', group: t('Settings'), icon: 'sparkle', label: t('Connect Claude AI'), run: openSettings, keywords: 'api key kljuc' },
+      { id: 'ai', group: t('Settings'), icon: 'sparkle', label: t('Connect Eden AI'), run: openSettings, keywords: 'api key kljuc' },
       {
         id: 'language',
         group: t('Settings'),

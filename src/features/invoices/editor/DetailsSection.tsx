@@ -18,7 +18,7 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
   const taken = isNumberTaken(invoices, invoice.number, invoice.id);
   const termDays = daysBetween(invoice.issueDate, invoice.dueDate);
   const currencies = CURRENCIES.includes(invoice.currency) ? CURRENCIES : [invoice.currency, ...CURRENCIES];
-  const customised = invoice.serviceDate !== invoice.issueDate || Boolean(invoice.note.trim()) || !isDefaultPeriod(invoice.billingPeriod, invoice.issueDate);
+  const customised = Boolean(invoice.note.trim()) || !isDefaultPeriod(invoice.billingPeriod, invoice.issueDate);
   const [more, setMore] = useState(customised);
   const due = termDays === 0 ? t('due on receipt') : t('due in {count} day|due in {count} days', { count: termDays });
 
@@ -50,7 +50,6 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
           onChange={(issueDate) => {
             if (!issueDate) return;
             const update: Partial<Invoice> = { issueDate, dueDate: addDaysIso(issueDate, Math.max(0, termDays)) };
-            if (invoice.serviceDate === invoice.issueDate) update.serviceDate = issueDate;
             if (isDefaultPeriod(invoice.billingPeriod, invoice.issueDate)) update.billingPeriod = periodLabel(issueDate, invoice.design.language);
             onChange(update);
           }}
@@ -90,18 +89,11 @@ export const DetailsSection = ({ invoice, invoices, numberPrefix, onChange }: Pr
           </span>
         </label>
         <div className="col-span-2">
-          <MoreToggle open={more} onToggle={() => setMore((value) => !value)} label={t('Service date, period and note')} />
+          <MoreToggle open={more} onToggle={() => setMore((value) => !value)} label={t('Billing period and note')} />
         </div>
         {more && (
           <>
-            <TextField
-              type="date"
-              label={t('Service date')}
-              hint={t('When the work was delivered')}
-              value={invoice.serviceDate}
-              onChange={(serviceDate) => serviceDate && onChange({ serviceDate })}
-            />
-            <TextField label={t('Billing period')} hint={t('Optional, e.g. September 2026')} value={invoice.billingPeriod} onChange={(billingPeriod) => onChange({ billingPeriod })} />
+            <TextField wrapperClassName="col-span-2" label={t('Billing period')} hint={t('Optional, e.g. September 2026')} value={invoice.billingPeriod} onChange={(billingPeriod) => onChange({ billingPeriod })} />
             <TextArea
               wrapperClassName="col-span-2"
               label={t('Note')}

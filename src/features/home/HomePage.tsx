@@ -53,7 +53,7 @@ export const HomePage = () => {
   const checklist = [
     { done: Boolean(profile.party.name && profile.bank.iban), label: t('Add your business details and bank account'), to: '/profile' },
     { done: Boolean(profile.logo || profile.signature), label: t('Add your logo or signature'), to: '/profile' },
-    { done: hasKey, label: t('Connect Claude AI (optional)'), action: openSettings },
+    { done: hasKey, label: t('Connect Eden AI (optional)'), action: openSettings },
     { done: invoices.invoices.length > 0 || resumes.resumes.length > 0, label: t('Create your first document'), action: () => setDialog('invoice') }
   ];
   const remaining = checklist.filter((item) => !item.done).length;

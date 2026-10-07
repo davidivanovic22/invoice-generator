@@ -1,42 +1,29 @@
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
-import type { BetaContentBlockParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { t } from '../../i18n';
-import { AI_MODEL, AiError, getClient, toAiError } from './client';
-
+import { AI_MODEL, AiError, edenRequest, toAiError } from './client';
 export type Effort = 'low' | 'medium' | 'high';
-
-/**
- * One schema-validated Claude call. `fallbacks: "default"` lets the API retry
- * on another model if a safety classifier declines, instead of failing.
- */
 export const callStructured = async <T extends z.ZodType>(options: {
-  schema: T;
-  system: string;
-  content: BetaContentBlockParam[];
-  effort: Effort;
-  maxTokens?: number;
-  signal?: AbortSignal;
+  schema: T; system: string; content: { type: 'text'; text: string }[];
+  effort: Effort; maxTokens?: number; signal?: AbortSignal;
 }): Promise<z.infer<T>> => {
-  const client = await getClient();
   try {
-    const response = await client.beta.messages.parse(
-      {
-        model: AI_MODEL,
-        max_tokens: options.maxTokens ?? 16000,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        system: options.system,
-        output_config: { effort: options.effort, format: betaZodOutputFormat(options.schema) },
-        messages: [{ role: 'user', content: options.content }]
-      },
-      { signal: options.signal }
-    );
-    if (response.stop_reason === 'refusal') throw new AiError('refusal', t('Claude declined this request. Try rephrasing the text.'));
-    if (response.stop_reason === 'max_tokens') throw new AiError('invalid', t('The text is too long to process in one go. Try shortening it.'));
-    if (!response.parsed_output) throw new AiError('invalid', t('Claude returned an unexpected answer. Please try again.'));
-    return response.parsed_output as z.infer<T>;
-  } catch (error) {
-    throw toAiError(error);
-  }
+    const response = await edenRequest<{ choices?: { finish_reason?: string; message?: { content?: string; refusal?: string } }[] }>('/chat/completions', {
+      method: 'POST', signal: options.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: options.maxTokens ?? 16000,
+        messages: [{ role: 'system', content: `${options.system}\nReturn only JSON matching the supplied schema.` },
+          { role: 'user', content: options.content.map(block => block.text).join('\n\n') }],
+        response_format: { type: 'json_schema', json_schema: { name: 'paperwork_result', strict: true, schema: z.toJSONSchema(options.schema) } }
+      })
+    });
+    const choice = response.choices?.[0];
+    if (choice?.message?.refusal || choice?.finish_reason === 'content_filter') throw new AiError('refusal', t('Eden AI declined this request. Try rephrasing the text.'));
+    if (choice?.finish_reason === 'length') throw new AiError('invalid', t('The text is too long to process in one go. Try shortening it.'));
+    let value: unknown;
+    try { value = JSON.parse(choice?.message?.content ?? ''); }
+    catch { throw new AiError('invalid', t('Eden AI returned an unexpected answer. Please try again.')); }
+    const parsed = options.schema.safeParse(value);
+    if (!parsed.success) throw new AiError('invalid', t('Eden AI returned an unexpected answer. Please try again.'));
+    return parsed.data;
+  } catch (error) { throw toAiError(error); }
 };

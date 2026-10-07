@@ -8,7 +8,7 @@
  *   user picked on disk, so it survives clearing the browser's data.
  */
 import { allFirmKeys, FIRMS_KEY, isFirmKey } from './firms';
-import { readRaw, suspendWrites } from './storage';
+import { isDatabaseMode, readRaw, suspendWrites } from './storage';
 
 const RESUMES_KEY = 'studio.resumes.v2';
 
@@ -149,8 +149,7 @@ const pruneSnapshots = async () => {
   if (doomed.length) await run(SNAPSHOTS, 'readwrite', (store) => doomed.forEach((id) => store.delete(id)));
 };
 
-export const takeSnapshot = async (reason: SnapshotReason): Promise<Snapshot | null> => {
-  const data = collectData();
+export const takeSnapshot = async (reason: SnapshotReason, data = collectData()): Promise<Snapshot | null> => {
   if (!hasData(data)) return null;
   const createdAt = new Date().toISOString();
   const snapshot: Snapshot = { id: `${createdAt}-${Math.random().toString(36).slice(2, 8)}`, createdAt, reason, data };
@@ -241,6 +240,10 @@ export const runDailyBackup = async () => {
 
 /** Replaces the saved data and reloads. The current data is snapshotted first, so a restore can be undone. */
 export const restoreData = async (data: Record<string, string>) => {
+  if (isDatabaseMode()) {
+    const { restoreDatabaseBackup } = await import('./cloud');
+    return restoreDatabaseBackup(data);
+  }
   await takeSnapshot('before-restore');
   suspendWrites();
   for (const [key, raw] of Object.entries(data)) {

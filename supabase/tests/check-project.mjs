@@ -30,7 +30,7 @@ const report = (ok, text) => {
 };
 
 console.log(`Project: ${url}`);
-for (const table of ['paperwork_data', 'paperwork_firms', 'paperwork_members', 'paperwork_invites', 'paperwork_firm_data']) {
+for (const table of ['paperwork_firms', 'paperwork_members', 'paperwork_invites', 'paperwork_invoice_settings', 'paperwork_clients', 'paperwork_invoices', 'paperwork_invoice_items', 'paperwork_yearly_taxes', 'paperwork_tax_paid_months', 'paperwork_kpo_books', 'paperwork_kpo_entries', 'paperwork_kpo_settled_invoices', 'paperwork_audit_entries', 'paperwork_resumes', 'paperwork_resume_contacts', 'paperwork_resume_sections', 'paperwork_resume_entries', 'paperwork_resume_tags', 'paperwork_resume_languages', 'paperwork_resume_keywords', 'paperwork_user_settings', 'paperwork_open_firms', 'paperwork_document_versions', 'paperwork_personal_versions']) {
   const { data, error } = await supabase.from(table).select('*').limit(1);
   if (error) report(false, `${table}: ${error.message}`);
   else report(data.length === 0, `${table} exists and a signed-out visitor reads ${data.length === 0 ? 'nothing' : 'ROWS (not protected!)'}`);
@@ -39,9 +39,9 @@ for (const table of ['paperwork_data', 'paperwork_firms', 'paperwork_members', '
 const id = crypto.randomUUID();
 const firm = await supabase.from('paperwork_firms').insert({ id, name: 'check' });
 report(Boolean(firm.error), `a signed-out visitor cannot create a firm${firm.error ? '' : ' — IT WAS CREATED'}`);
-const data = await supabase.from('paperwork_firm_data').insert({ firm_id: id, key: 'invoices', data: {} });
+const data = await supabase.rpc('paperwork_save_document', { p_firm_id: id, p_key: 'invoices', p_data: {} });
 report(Boolean(data.error), 'a signed-out visitor cannot write firm data');
-const personal = await supabase.from('paperwork_data').insert({ key: 'studio.resumes.v2', data: {} });
+const personal = await supabase.rpc('paperwork_save_document', { p_firm_id: null, p_key: 'studio.resumes.v2', p_data: {} });
 report(Boolean(personal.error), 'a signed-out visitor cannot write personal data');
 
 const invites = await supabase.rpc('paperwork_accept_invites');
