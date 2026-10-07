@@ -8,6 +8,8 @@ import {
   readCloudConfig,
   resolveChoice,
   saveCloudConfig,
+  sendSignInLink,
+  setCloudPassword,
   signIn,
   signOut,
   subscribeCloud,
@@ -41,6 +43,34 @@ export const CloudSection = () => {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [linkSentTo, setLinkSentTo] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  const sendLink = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await sendSignInLink(email);
+      setLinkSentTo(email.trim());
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const savePassword = async () => {
+    setBusy(true);
+    try {
+      await setCloudPassword(newPassword);
+      setNewPassword('');
+      toast(t('Password saved. You can now sign in with it on other devices.'), 'info');
+    } catch (caught) {
+      toast((caught as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const connect = async () => {
     // https everywhere; plain http only for a local Supabase.
@@ -126,9 +156,17 @@ export const CloudSection = () => {
             <TextField label={t('Password')} type="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} value={password} onChange={setPassword} />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {linkSentTo && (
+            <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-200">
+              {t('A sign-in link was sent to {email}. Open it in this browser and you are signed in.', { email: linkSentTo })}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button variant="accent" onClick={submit} disabled={busy || !email.trim() || password.length < 6}>
               {busy ? t('Please wait…') : mode === 'sign-in' ? t('Sign in') : t('Create account')}
+            </Button>
+            <Button icon="mail" onClick={sendLink} disabled={busy || !/^\S+@\S+\.\S+$/.test(email.trim())} title={t('No password needed')}>
+              {t('Email me a sign-in link')}
             </Button>
             {!cloudConfigFromEnv() && (
               <Button variant="ghost" onClick={() => void saveCloudConfig(null)}>
@@ -150,6 +188,20 @@ export const CloudSection = () => {
             </Button>
           </div>
           <p className="text-xs text-slate-500">{t('Invoices, resumes and the KPO book sync automatically a few seconds after each change, and when you come back to the app. Sign in with the same account on another device to see the same data.')}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <TextField
+              wrapperClassName="min-w-[220px] flex-1"
+              label={t('Set a password (to sign in on other devices)')}
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={setNewPassword}
+              placeholder={t('At least 6 characters')}
+            />
+            <Button onClick={savePassword} disabled={busy || newPassword.length < 6}>
+              {t('Save password')}
+            </Button>
+          </div>
           <Button
             variant="ghost"
             onClick={async () => {

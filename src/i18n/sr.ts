@@ -1078,5 +1078,14 @@ export const SR: Record<string, string> = {
 
   // PDF preview
   "Preview and download the PDF": "Pregledaj i preuzmi PDF",
-  "Yearly report {year}": "Godišnji pregled {year}."
+  "Yearly report {year}": "Godišnji pregled {year}.",
+
+  // Sign-in link
+  "Password saved. You can now sign in with it on other devices.": "Lozinka je sačuvana. Sada možeš njome da se prijaviš i na drugim uređajima.",
+  "A sign-in link was sent to {email}. Open it in this browser and you are signed in.": "Link za prijavu je poslat na {email}. Otvori ga u ovom pregledaču i prijavljen si.",
+  "No password needed": "Bez lozinke",
+  "Email me a sign-in link": "Pošalji mi link za prijavu",
+  "Set a password (to sign in on other devices)": "Postavi lozinku (za prijavu na drugim uređajima)",
+  "At least 6 characters": "Najmanje 6 znakova",
+  "Save password": "Sačuvaj lozinku"
 };

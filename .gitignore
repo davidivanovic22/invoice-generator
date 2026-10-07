@@ -34,3 +34,4 @@ yarn-error.log*
 
 # Real project values live in .env.local (your machine) and in the host build variables, never in the repository
 .env.production
+/build-local
