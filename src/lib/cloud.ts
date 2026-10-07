@@ -396,6 +396,25 @@ export const signIn = async (email: string, password: string, mode: 'sign-in' | 
   return 'signed-in' as const;
 };
 
+/**
+ * Emails a sign-in link: no password needed, and a new address gets an account. Opening the link in
+ * this browser signs in and starts syncing (the client reads the session from the URL on start).
+ */
+export const sendSignInLink = async (email: string) => {
+  const supabase = await getClient();
+  if (!supabase) throw new Error('Cloud is not set up.');
+  const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/account` } });
+  if (error) throw error;
+};
+
+/** Sets (or changes) the password of the signed-in account, e.g. after signing in by link. */
+export const setCloudPassword = async (password: string) => {
+  const supabase = await getClient();
+  if (!supabase) throw new Error('Cloud is not set up.');
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+};
+
 export const signOut = async () => {
   stopWatching?.();
   const supabase = await getClient();

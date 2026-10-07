@@ -45,7 +45,7 @@ Paperwork works in two modes:
 
 The app is deployed on **Cloudflare Workers** (static assets), connected to the GitHub repository: every push to `main` runs `npm run build` and then `npx wrangler deploy` on Cloudflare. `wrangler.jsonc` sets the single-page fallback; `public/_headers` sets caching and security headers.
 
-To connect the database, add two **build variables** in Cloudflare (Worker → Settings → Build → Variables and secrets) and redeploy:
+To connect the database, set two **build variables** in Cloudflare (Worker → Settings → Build → Variables and secrets) and redeploy:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
@@ -66,6 +66,7 @@ Other static hosts work too (`netlify.toml` and `vercel.json` are included). Req
 npm start                 # the app, local-only mode
 npm run db:start          # local Supabase in Docker (first run downloads images)
 npm run db:test           # row-level security checks against it
+npm run db:check          # safe check of the hosted project in .env.local (creates nothing)
 npm run build && npm run e2e            # end-to-end smoke test of the built app
 npm run e2e:sharing       # owner / accountant / viewer in three browsers (needs db:start)
 npm run db:stop
