@@ -87,7 +87,13 @@ export const CloudSection = () => {
       if (result === 'confirm-email') toast(t('Check your email and confirm the address, then sign in.'), 'info');
       setPassword('');
     } catch (caught) {
-      setError((caught as Error).message);
+      const message = (caught as Error).message;
+      // An account made by a sign-in link has no password yet; say so instead of the raw API text.
+      setError(
+        /invalid login credentials/i.test(message)
+          ? t('Wrong email or password. If you signed in by link before, you have no password yet: use "Email me a sign-in link", then set a password.')
+          : message
+      );
     } finally {
       setBusy(false);
     }

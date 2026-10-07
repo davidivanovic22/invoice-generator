@@ -1087,5 +1087,8 @@ export const SR: Record<string, string> = {
   "Email me a sign-in link": "Pošalji mi link za prijavu",
   "Set a password (to sign in on other devices)": "Postavi lozinku (za prijavu na drugim uređajima)",
   "At least 6 characters": "Najmanje 6 znakova",
-  "Save password": "Sačuvaj lozinku"
+  "Save password": "Sačuvaj lozinku",
+
+  // Sign-in hint
+  "Wrong email or password. If you signed in by link before, you have no password yet: use \"Email me a sign-in link\", then set a password.": "Pogrešan mejl ili lozinka. Ako si se ranije prijavio linkom, još nemaš lozinku: klikni „Pošalji mi link za prijavu“, pa posle prijave postavi lozinku."
 };
