@@ -46,7 +46,8 @@
     "db:stop": "supabase stop",
     "db:test": "node supabase/tests/rls.test.mjs",
     "e2e": "node e2e/smoke.cjs",
-    "e2e:sharing": "node e2e/sharing.cjs"
+    "e2e:sharing": "node e2e/sharing.cjs",
+    "db:check": "node supabase/tests/check-project.mjs"
   },
   "jest": {
     "moduleNameMapper": {
