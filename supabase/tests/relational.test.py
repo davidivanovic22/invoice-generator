@@ -23,6 +23,10 @@ def literal(value): return "'"+json.dumps(value,ensure_ascii=True).replace("'","
 
 docker('createdb','-U','postgres',database)
 auth = docker('pg_dump','-U','postgres','-d','postgres','--schema=auth','--schema-only','--no-owner','--no-acl')
+# This application trigger depends on a public function/table, absent in an
+# auth-only dump. Its own profile migration below recreates it and backfills
+# fixture users. Keep all native Auth objects/triggers from the dump unchanged.
+auth = auth.replace('CREATE TRIGGER paperwork_create_profile AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public._paperwork_create_profile();','')
 run(auth)
 for name in ['20261005120000_paperwork.sql','20261007120000_firm_identity.sql']:
     run((Path('supabase/migrations')/name).read_text(encoding='utf-8'))
@@ -55,7 +59,10 @@ run(claims(owner)+f"insert into paperwork_data(user_id,key,data) values('{owner}
 run((Path('supabase/migrations')/'20261007140000_relational_documents.sql').read_text(encoding='utf-8'))
 for name in ['20261007150000_remove_legacy_triggers.sql','20261007160000_invoice_signature_visibility.sql','20261007170000_account_profiles.sql']:
     run((Path('supabase/migrations')/name).read_text(encoding='utf-8'))
-run('grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid(),auth.jwt() to authenticated,anon; grant select on paperwork_members,paperwork_firms to authenticated,anon;')
+# The isolated database does not inherit Supabase's public default table grants.
+# Give authenticated callers SQL privileges so negative tests exercise RLS,
+# rather than passing accidentally because a table privilege is missing.
+run('grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid(),auth.jwt() to authenticated,anon; grant select,insert,update,delete on all tables in schema public to authenticated; grant select on paperwork_members,paperwork_firms,paperwork_invoices,paperwork_resumes to anon;')
 run(f"insert into paperwork_members(firm_id,user_id,role) values('{firm}','{viewer}','viewer'),('{firm}','{accountant}','accountant');")
 
 def as_user(user,sql): return run(claims(user)+'set role authenticated;'+sql)

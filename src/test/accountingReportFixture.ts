@@ -1,0 +1,8 @@
+import type { AccountingReport,ReportQuery } from '../domain/accounting/reports';
+export const reportId=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+export const reportQuery:ReportQuery={firmId:reportId(1),yearId:reportId(2),from:'2026-01-10',to:'2026-01-31'};
+const line=(journal:number,id:string,account:number,debit:string,credit:string)=>({journalId:reportId(journal),number:`2026/${journal}`,postingDate:journal===5?'2026-01-10':'2026-01-11',postedAt:`2026-01-${journal===5?'10':'11'}T12:00:00+00:00`,journalDescription:'=Literal description',reversalOf:null,reason:null,lineId:id,accountId:reportId(account),accountCode:account===3?'204':'614',accountName:account===3?'Receivable':'Income',partnerId:account===3?reportId(7):null,partnerName:account===3?'=Literal partner':null,description:'=SUM(1,2)',debit,credit});
+export const reportFixture:AccountingReport={...reportQuery,firmName:'Fixture firm',yearLabel:2026,yearStart:'2026-01-01',yearEnd:'2026-12-31',currency:'RSD',generatedAt:'2026-01-31T12:00:00+00:00',journalCount:'2',lineCount:'4',
+ lines:[line(5,'a',3,'10001','0'),line(5,'b',4,'0','10001'),line(6,'a',3,'0','1000'),line(6,'b',4,'1000','0')],
+ accounts:[{accountId:reportId(3),code:'204',name:'Receivable',openingDebit:'4001',openingCredit:'0',debit:'10001',credit:'1000',openingBalance:'4001',closingBalance:'13002'},{accountId:reportId(4),code:'614',name:'Income',openingDebit:'0',openingCredit:'4001',debit:'1000',credit:'10001',openingBalance:'-4001',closingBalance:'-13002'}],
+ totals:{openingDebit:'4001',openingCredit:'4001',debit:'11001',credit:'11001',openingBalanceDebit:'4001',openingBalanceCredit:'4001',closingBalanceDebit:'13002',closingBalanceCredit:'13002'}};

@@ -251,6 +251,11 @@ export const CloudDot = ({ status }: { status: CloudState['status'] }) => (
 export const CloudNoticeBanner = () => {
   const [notice, setNotice] = useState(takeCloudNotice);
   useEffect(() => {
+    const onConflict = () => setNotice('conflict');
+    window.addEventListener('cloud-conflict', onConflict);
+    return () => window.removeEventListener('cloud-conflict', onConflict);
+  }, []);
+  useEffect(() => {
     if (notice !== 'updated') return;
     const timer = window.setTimeout(() => setNotice(null), 6000);
     return () => window.clearTimeout(timer);

@@ -9,6 +9,7 @@
  */
 import { allFirmKeys, FIRMS_KEY, isFirmKey } from './firms';
 import { isDatabaseMode, readRaw, suspendWrites } from './storage';
+import { validBackupDocument } from './backupValidation';
 
 const RESUMES_KEY = 'studio.resumes.v2';
 
@@ -79,11 +80,18 @@ export const toBackupFile = (snapshot: Pick<Snapshot, 'createdAt' | 'data'>): Ba
 export const fromBackupFile = (value: unknown): Record<string, string> | null => {
   if (!value || typeof value !== 'object') return null;
   const file = value as Partial<BackupFile>;
-  if (file.app !== 'paperwork' || !file.data || typeof file.data !== 'object') return null;
+  if (file.app !== 'paperwork' || file.version !== 1 || !file.data || typeof file.data !== 'object' || Array.isArray(file.data)) return null;
+  if (typeof file.createdAt !== 'string' || Number.isNaN(Date.parse(file.createdAt))) return null;
   const data: Record<string, string> = {};
   for (const [key, entry] of Object.entries(file.data)) {
-    if (isBackupKey(key) && entry !== undefined) data[key] = typeof entry === 'string' ? entry : JSON.stringify(entry);
+    if (!isBackupKey(key)) continue;
+    let parsed: unknown;
+    try { parsed = typeof entry === 'string' ? JSON.parse(entry) : entry; } catch { return null; }
+    if (!validBackupDocument(key, parsed)) return null;
+    data[key] = typeof entry === 'string' ? entry : JSON.stringify(entry);
   }
+  const registry = data[FIRMS_KEY] ? JSON.parse(data[FIRMS_KEY]) as { firms: { id: string }[] } : null;
+  if (Object.keys(data).some(key => key.includes('@') && !registry?.firms.some(firm => key.slice(key.indexOf('@') + 1) === firm.id))) return null;
   return hasData(data) ? data : null;
 };
 
@@ -227,15 +235,27 @@ export const requestPersistentStorage = async () => {
   }
 };
 
-/** Takes today's snapshot if there is none yet, and refreshes today's file in the backup folder. */
-export const runDailyBackup = async () => {
+export type DailyBackupResult = {
+  snapshot: Snapshot | null;
+  snapshotError: boolean;
+  folderWritten: boolean;
+  folderError: boolean;
+};
+
+/** Each destination is attempted independently: a browser backup failure must not skip the disk copy. */
+export const runDailyBackup = async (operations = { listSnapshots, takeSnapshot, writeFolderBackup }): Promise<DailyBackupResult> => {
+  const result: DailyBackupResult = { snapshot: null, snapshotError: false, folderWritten: false, folderError: false };
   try {
-    const snapshot = needsDailySnapshot(await listSnapshots()) ? await takeSnapshot('daily') : null;
-    await writeFolderBackup(snapshot ?? undefined).catch(() => false);
-    return snapshot;
+    result.snapshot = needsDailySnapshot(await operations.listSnapshots()) ? await operations.takeSnapshot('daily') : null;
   } catch {
-    return null;
+    result.snapshotError = true;
   }
+  try {
+    result.folderWritten = await operations.writeFolderBackup(result.snapshot ?? undefined);
+  } catch {
+    result.folderError = true;
+  }
+  return result;
 };
 
 /** Replaces the saved data and reloads. The current data is snapshotted first, so a restore can be undone. */

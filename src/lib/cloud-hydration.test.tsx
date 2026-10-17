@@ -105,7 +105,7 @@ it('never reads obsolete browser documents in database mode, and keeps edits in 
 it('always takes database data on first load and conflicts, and pushes only edits based on its current version', () => {
   const remote = { key: 'invoices', data: { database: true }, updated_at: 'v2' };
   expect(decideDatabase('{"old":true}', remote, undefined)).toBe('pull');
-  expect(decideDatabase('{"edited":true}', remote, { syncedAt: 'v1', dirty: true })).toBe('pull');
+  expect(decideDatabase('{"edited":true}', remote, { syncedAt: 'v1', dirty: true })).toBe('conflict');
   expect(decideDatabase('{"edited":true}', remote, { syncedAt: 'v2', dirty: true })).toBe('push');
   expect(decideDatabase('{"old":true}', undefined, undefined)).toBe('clear');
 });

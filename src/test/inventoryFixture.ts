@@ -1,0 +1,6 @@
+import type { StockWorkspace,StockCommand } from '../domain/accounting/inventory';
+export const stockId=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+export const stockEmpty:StockWorkspace={firmId:stockId(1),items:[{id:stockId(2),sku:'A',name:'Article',warehouse:'MAIN',unit:'kom',accountId:stockId(3),revision:'1',quantity:'0',value:'0',externalMovements:false}],movements:[],cancellations:[],accounts:[{id:stockId(3),balance:'0'}]};
+export const stockMovement:StockWorkspace['movements'][number]={id:stockId(4),itemId:stockId(2),sequence:'2',kind:'receipt',quantity:'10000',value:'10000',previousQuantity:'0',previousValue:'0',counterAccountId:stockId(5),partnerId:stockId(6),externalId:'DOC-1/1',postingDate:'2026-01-01'};
+export const stockReceived:StockWorkspace={...stockEmpty,items:[{...stockEmpty.items[0],revision:'2',quantity:'10000',value:'10000'}],movements:[stockMovement],accounts:[{id:stockId(3),balance:'10000'}]};
+export const stockIssue:StockCommand={action:'issue',idempotencyKey:'stock-issue',data:{firmId:stockId(1),itemId:stockId(2),expectedRevision:'2',journalId:stockId(7),fiscalYearId:stockId(8),periodId:stockId(9),postingDate:'2026-01-02',quantity:'4000',counterAccountId:stockId(10),externalId:'ISSUE/1'}};

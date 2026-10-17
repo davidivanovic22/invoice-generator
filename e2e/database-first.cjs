@@ -13,6 +13,7 @@ const dbUrl = process.env.DATABASE_API_URL ?? 'http://127.0.0.1:54321';
 // Reuse the standard local demo key from the existing local security test, never a hosted key.
 const localKey = fs.readFileSync(path.join(__dirname, '../supabase/tests/rls.test.mjs'), 'utf8').match(/"(eyJ[^"\r\n]+)";/)[1];
 const buildDir = process.env.E2E_BUILD_DIR || path.resolve(__dirname, '..', process.env.BUILD_DIR || 'build-local');
+assert.ok(fs.existsSync(path.join(buildDir, 'index.html')), 'Finish the build before starting database-first browser tests.');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' };
 const server = http.createServer((request, response) => {
   let file = path.join(buildDir, decodeURIComponent(request.url.split('?')[0]));
@@ -53,7 +54,7 @@ const server = http.createServer((request, response) => {
   await select([keptId]);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ headless: true, channel: 'chrome' });
+  const browser = await chromium.launch({ headless: true, channel: process.env.PW_CHANNEL === 'chromium' ? undefined : process.env.PW_CHANNEL || 'chrome' });
   try {
     const context = await browser.newContext();
     if (process.env.DATABASE_API_URL) await context.route(/\/(auth|rest)\/v1\//, async route => {
@@ -159,7 +160,7 @@ const server = http.createServer((request, response) => {
     assert.equal(main.data[0].id, 'db-invoice');
     console.log('  ✓ cleanup preserves the chosen firm and its documents; 3 reloads recreate nothing');
     const restoredInvoice = { ...docs.invoices[0], id: 'restored-invoice', number: 'RESTORED-2026-01', clientId: 'restored-client' };
-    const backup = { app: 'paperwork', version: 1, data: {
+    const backup = { app: 'paperwork', version: 1, createdAt: '2026-10-07T10:00:00.000Z', data: {
       'studio.invoices.v2': { ...docs, invoices: [restoredInvoice], clients: [{ id: 'restored-client', party: restoredInvoice.client, currency: 'EUR', lastUsedAt: '' }] },
       'studio.kpo.v1': { version: 1, entries: [{ id: 'restored-kpo', date: '2026-09-01', description: 'RESTORED KPO ENTRY', services: 100, products: 0, source: 'invoice', invoiceId: 'restored-invoice' }] },
       'studio.resumes.v2': { version: 2, resumes: [{ id: 'restored-cv', name: 'Restored CV', personal: { fullName: 'Example Person' }, sections: [] }] }
@@ -168,7 +169,7 @@ const server = http.createServer((request, response) => {
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Restore from file', exact: true }).click();
     await (await chooserPromise).setFiles({ name: 'legacy-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
-    await page.getByRole('button', { name: 'Restore', exact: true }).last().click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
     await assertEventually(async () => {
       const clients = await db.from('paperwork_clients').select('id').eq('firm_id', keptId);
       return clients.data?.[0]?.id === 'restored-client';

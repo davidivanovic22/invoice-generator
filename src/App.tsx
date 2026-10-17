@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AccountGate, useAccount } from './features/account/AccountGate';
 import { LoginPage } from './features/account/LoginPage';
 import { AccountPage } from './features/account/AccountPage';
@@ -34,6 +34,15 @@ import { saveTheme } from './ui/theme';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
+
+const AccountingPage = lazy(() => import('./features/accounting/AccountingPage').then(module => ({ default: module.AccountingPage })));
+const AccountingShell = () => <div className="min-h-screen bg-slate-50">
+  <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-6 py-3">
+    <NavLink to="/" className="font-semibold">Paperwork</NavLink>
+    <nav className="flex gap-2"><NavLink to="/accounting" className={navClass}>{t('Accounting')}</NavLink><NavLink to="/invoices" className={navClass}>{t('Invoices')}</NavLink><NavLink to="/account" className={navClass}>{t('Account')}</NavLink></nav>
+  </header>
+  <main><ErrorBoundary><Suspense fallback={<p className="p-6">{t('Loading accounting...')}</p>}><AccountingPage /></Suspense></ErrorBoundary></main>
+</div>;
 
 const AiStatus = () => {
   const { hasKey, openSettings } = useAi();
@@ -262,6 +271,7 @@ const MobileTabBar = () => {
             <NavLink to="/firms" className={sheetLink} onClick={close}>
               <Icon name="list" /> {t('All firms')}
             </NavLink>
+            <NavLink to="/accounting" className={sheetLink} onClick={close}>{t('Accounting')}</NavLink>
             <NavLink to="/" className={sheetLink} onClick={close}>
               <Icon name="home" /> {t('Home')}
             </NavLink>
@@ -337,6 +347,7 @@ const Header = ({ onSearch }: { onSearch: () => void }) => (
         <FirmSwitcher />
       </div>
       <nav className="hidden items-center gap-1 lg:flex">
+        <NavLink to="/accounting" className={navClass}>{t('Accounting')}</NavLink>
         <NavLink to="/invoices" className={navClass}>
           {t('Invoices')}
         </NavLink>
@@ -485,6 +496,9 @@ const FirmStores = ({ children }: { children: ReactNode }) => {
 /** Mount document stores only after their database cache is loaded. */
 const DataProviders = () => {
   const cloud = useCloud();
+  const accountingActive = useLocation().pathname === '/accounting';
+  const [accountingVisited, setAccountingVisited] = useState(false);
+  useEffect(() => { if (accountingActive) setAccountingVisited(true); }, [accountingActive]);
   const [started, setStarted] = useState(false);
   useState(() => { if (readCloudConfig() && !isDatabaseMode()) replaceDatabaseData({}); });
   useEffect(() => { void startCloud().finally(() => setStarted(true)); }, []);
@@ -499,11 +513,16 @@ const DataProviders = () => {
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>;
   }
-  return <FirmProvider key={cloud.dataRevision}>
+  // Preserve the in-memory editor on browser Back/Forward. Its server commands
+  // remain authoritative; sign-out unmounts the workspace and clears its state.
+  return <>
+  {(accountingActive || accountingVisited) && <div key={cloud.email} hidden={!accountingActive}><AccountingShell /></div>}
+  {!accountingActive && <FirmProvider key={cloud.dataRevision}>
     <ResumeStoreProvider readOnly={isDatabaseMode() && (!cloud.dataReady || !cloud.email)}>
       <FirmStores><Shell /></FirmStores>
     </ResumeStoreProvider>
-  </FirmProvider>;
+  </FirmProvider>}
+  </>;
 };
 
 function App() {

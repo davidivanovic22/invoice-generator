@@ -7,6 +7,7 @@ const path = require('path');
 const assert = require('node:assert/strict');
 
 const database = process.env.RELATIONAL_TEST_DB;
+const accountingOnly = process.argv.includes('--accounting');
 assert.match(database ?? '', /^paperwork_relational_\d+$/);
 const config = JSON.parse(execFileSync('docker', ['inspect', 'supabase_rest_invoice-generator'], { encoding: 'utf8' }))[0];
 const network = Object.keys(config.NetworkSettings.Networks)[0];
@@ -19,7 +20,9 @@ const container = execFileSync('docker', args, { encoding: 'utf8' }).trim();
 const proxy = http.createServer((request, response) => {
   const rest = request.url.startsWith('/rest/v1/');
   const target = rest ? new URL(request.url.slice('/rest/v1'.length), 'http://127.0.0.1:54332') : new URL(request.url, 'http://127.0.0.1:54321');
-  const upstream = http.request(target, { method: request.method, headers: { ...request.headers, host: target.host } }, reply => {
+  // Use a fresh upstream socket for each isolated request. Node's pooled sockets
+  // can outlive the local PostgREST connection during long browser rehearsals.
+  const upstream = http.request(target, { method: request.method, agent: false, headers: { ...request.headers, host: target.host, connection: 'close' } }, reply => {
     response.writeHead(reply.statusCode, reply.headers); reply.pipe(response);
   });
   upstream.on('error', () => { response.writeHead(502); response.end(); });
@@ -40,10 +43,36 @@ const proxy = http.createServer((request, response) => {
   }
   const result = await new Promise(resolve => {
     const { spawn } = require('child_process');
-    const child = spawn(process.execPath, [path.join(__dirname, 'database-first.cjs')], { stdio: 'inherit', env: { ...process.env, DATABASE_API_URL: 'http://127.0.0.1:54331', E2E_BUILD_DIR: path.join(__dirname, '../build') } });
+    const child = spawn(process.execPath, [path.join(__dirname, accountingOnly ? 'accounting.cjs' : 'database-first.cjs')], { stdio: 'inherit', env: { ...process.env, DATABASE_API_URL: 'http://127.0.0.1:54331', E2E_BUILD_DIR: path.join(__dirname, '../build') } });
+    child.on('error', error => { console.error(error); resolve(1); });
     child.on('close', resolve);
   });
   process.exitCode = result;
+  if (result === 0 && !accountingOnly) {
+    const rls = await new Promise(resolve => {
+      const { spawn } = require('child_process');
+      const child = spawn(process.execPath, [path.join(__dirname, '../supabase/tests/rls.test.mjs')], { stdio: 'inherit', env: { ...process.env, SUPABASE_URL: 'http://127.0.0.1:54331' } });
+      child.on('error', error => { console.error(error); resolve(1); });
+      child.on('close', resolve);
+    });
+    if (rls !== 0) { process.exitCode = rls; return; }
+    const sharing = await new Promise(resolve => {
+      const { spawn } = require('child_process');
+      const child = spawn(process.execPath, [path.join(__dirname, 'sharing.cjs')], { stdio: 'inherit', env: { ...process.env, DATABASE_API_URL: 'http://127.0.0.1:54331' } });
+      child.on('error', error => { console.error(error); resolve(1); });
+      child.on('close', resolve);
+    });
+    process.exitCode = sharing;
+    if (sharing === 0) {
+      const accounting = await new Promise(resolve => {
+        const { spawn } = require('child_process');
+        const child = spawn(process.execPath, [path.join(__dirname, 'accounting.cjs')], { stdio: 'inherit', env: { ...process.env, DATABASE_API_URL: 'http://127.0.0.1:54331' } });
+        child.on('error', error => { console.error(error); resolve(1); });
+        child.on('close', resolve);
+      });
+      process.exitCode = accounting;
+    }
+  }
 })().catch(error => { console.error(error.message); process.exitCode = 1; }).finally(async () => {
   await new Promise(resolve => proxy.close(resolve));
   spawnSync('docker', ['stop', container], { stdio: 'ignore' });

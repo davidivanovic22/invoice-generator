@@ -2,8 +2,10 @@
 // Run: SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=... node supabase/tests/rls.test.mjs
 import { createClient } from '@supabase/supabase-js';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 
 const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+assert.ok(['127.0.0.1', 'localhost'].includes(new URL(url).hostname), 'RLS tests must use a local database, never hosted data.');
 // The well-known demo key of every local Supabase; never valid for a hosted project.
 const anonKey =
   process.env.SUPABASE_ANON_KEY ??
@@ -18,6 +20,13 @@ const account = async (name) => {
   const { data, error } = await supabase.auth.signUp({ email, password: 'Lozinka123!' });
   assert.ifError(error);
   assert.ok(data.session, 'Email confirmation must be off for the local test.');
+  if (process.env.RELATIONAL_TEST_DB) {
+    assert.match(process.env.RELATIONAL_TEST_DB, /^paperwork_relational_\d+$/);
+    assert.match(data.user.id, /^[0-9a-f-]{36}$/);
+    execFileSync('docker', ['exec', '-i', 'supabase_db_invoice-generator', 'psql', '-U', 'postgres', '-d', process.env.RELATIONAL_TEST_DB, '-v', 'ON_ERROR_STOP=1'], {
+      input: `insert into auth.users(id,email) values('${data.user.id}','${email}');`, stdio: ['pipe', 'ignore', 'pipe']
+    });
+  }
   return { supabase, email, id: data.user.id };
 };
 

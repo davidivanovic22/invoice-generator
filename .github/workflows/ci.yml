@@ -43,5 +43,36 @@ jobs:
           path: build
           retention-days: 7
 
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - name: Start disposable local Supabase
+        run: npm run db:start
+      - name: Build with local configuration only
+        run: CI=false npm run build
+        env:
+          REACT_APP_SUPABASE_URL: ''
+          REACT_APP_SUPABASE_ANON_KEY: ''
+          NEXT_PUBLIC_SUPABASE_URL: ''
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ''
+      - run: npx playwright install --with-deps chromium
+      - name: Isolated migration, RLS, database browser and sharing regressions
+        run: npm run e2e:relational
+        env:
+          PW_CHANNEL: chromium
+      - name: Stop local database
+        if: always()
+        run: npm run db:stop
+
 # Deploying is done by Cloudflare itself (Workers Builds, connected to this repository):
 # every push to main runs `npm run build` and `npx wrangler deploy` there. See wrangler.jsonc.

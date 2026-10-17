@@ -7,6 +7,9 @@
 
 # testing
 /coverage
+/.accounting-backups/
+/.accounting-backup-inputs/
+__pycache__/
 
 # production
 /build
