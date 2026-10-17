@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { t } from '../i18n';
-import { printToPdf } from '../lib/pdf';
+import { downloadPdf } from '../lib/pdf';
 import { A4Preview } from './A4Preview';
 import { Button } from './Button';
 import { useFeedback } from './Feedback';
@@ -10,12 +10,14 @@ type Props = {
   /** Suggested name of the saved file, without ".pdf". */
   fileName: string;
   onClose: () => void;
+  /** Called once the file has been saved. */
+  onDownloaded?: () => void;
   /** The pages to print: elements marked with `data-pdf-page`. */
   children: ReactNode;
 };
 
 /** Shows a document exactly as it will be saved, with the download button underneath. */
-export const PdfPreviewDialog = ({ title, fileName, onClose, children }: Props) => {
+export const PdfPreviewDialog = ({ title, fileName, onClose, onDownloaded, children }: Props) => {
   const { toast } = useFeedback();
   const pagesRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
@@ -29,9 +31,9 @@ export const PdfPreviewDialog = ({ title, fileName, onClose, children }: Props) 
   const download = async () => {
     if (!pagesRef.current) return;
     setSaving(true);
-    toast(t('In the window that opens, choose "Save as PDF".'), 'info');
     try {
-      await printToPdf(pagesRef.current, fileName);
+      await downloadPdf(pagesRef.current, fileName);
+      onDownloaded?.();
     } catch (error) {
       toast((error as Error).message || t('The PDF could not be created. Please try again.'), 'error');
     } finally {

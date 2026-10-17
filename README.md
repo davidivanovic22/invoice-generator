@@ -47,7 +47,9 @@ See [docs/PRODUCTION.md](docs/PRODUCTION.md) for running it for customers.
   - It never invents facts: unknown numbers become `[X%]` placeholders for you to fill in, and skills from the job ad must be confirmed by you.
 
 ### Export
-PDFs are produced by the browser's print engine (**Download PDF**, then choose **Save as PDF**). They contain real, selectable text that ATS parsers and accounting tools can read.
+Invoices, the KPO book, the year report and cover letters download straight to a PDF file (**Download PDF**), with a **Preview** first if you want one. The pages are rendered as A4 images (about 190 dpi), so the file looks exactly like the preview; long invoices continue on further pages, cut between rows.
+
+Resumes still go through the browser's print engine (**Download PDF**, then choose **Save as PDF**), because ATS parsers need the real, selectable text that produces.
 
 ## Using Eden AI
 

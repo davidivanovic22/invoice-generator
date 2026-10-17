@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { t } from '../../../i18n';
 import { safeFileName } from '../../../lib/files';
-import { printToPdf } from '../../../lib/pdf';
+import { downloadPdf } from '../../../lib/pdf';
 import { A4Preview } from '../../../ui/A4Preview';
 import { Button } from '../../../ui/Button';
 import { EditorToolbar, editTargetFrom, flash, MobileViewSwitch, PreviewHint, useUndoShortcuts } from '../../../ui/EditorChrome';
 import { useFeedback } from '../../../ui/Feedback';
 import { InlineEdit } from '../../../ui/InlineEdit';
 import { EmptyState } from '../../../ui/Layout';
+import { PdfPreviewDialog } from '../../../ui/PdfPreviewDialog';
 import { StatusMenu } from '../components/Status';
 import { InvoiceDocument } from '../document/InvoiceDocument';
 import { ClientSection } from '../editor/ClientSection';
@@ -19,6 +20,8 @@ import { FromSection } from '../editor/FromSection';
 import { ItemsSection } from '../editor/ItemsSection';
 import { isDefaultPeriod, isIssued, isNumberTaken, periodLabel, type Invoice } from '../model';
 import { useInvoiceStore } from '../store';
+
+const invoiceFileName = (invoice: Invoice) => safeFileName(`${invoice.design.language === 'en' ? 'Invoice' : 'Faktura'}-${invoice.number}`, 'invoice');
 
 const SECTION_IDS: Record<string, string> = { client: 'client', items: 'items', details: 'details', from: 'from', design: 'design' };
 
@@ -34,6 +37,7 @@ export const InvoiceEditorPage = () => {
   const [exporting, setExporting] = useState(false);
   const [openFromToken, setOpenFromToken] = useState(0);
   const [emailing, setEmailing] = useState<null | 'invoice' | 'reminder'>(null);
+  const [previewing, setPreviewing] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   const onChange = useCallback((update: Partial<Invoice>) => updateInvoice(id, update), [id, updateInvoice]);
@@ -62,29 +66,32 @@ export const InvoiceEditorPage = () => {
     }
   }, [id, profileParty, profileBank, updateInvoice]);
 
+  // A downloaded invoice has been issued: count it as sent, so totals and the year overview are right.
+  const markDownloaded = useCallback(() => {
+    const current = latest.current;
+    if (current?.status !== 'draft') return;
+    updateInvoice(current.id, { status: 'sent' }, { record: false });
+    toast(t('Marked as sent. Mark it paid when the money arrives.'), 'info');
+  }, [toast, updateInvoice]);
+
   const exportPdf = useCallback(async () => {
     const current = latest.current;
     const node = exportRef.current;
     if (!current || !node) return;
     saveClient();
     setExporting(true);
-    toast(t('In the window that opens, choose "Save as PDF".'), 'info');
     try {
-      await printToPdf(node, safeFileName(`${current.design.language === 'en' ? 'Invoice' : 'Faktura'}-${current.number}`, 'invoice'));
-      // A downloaded invoice has been issued: count it as sent, so totals and the year overview are right.
-      if (current.status === 'draft') {
-        updateInvoice(current.id, { status: 'sent' }, { record: false });
-        toast(t('Marked as sent. Mark it paid when the money arrives.'), 'info');
-      }
+      await downloadPdf(node, invoiceFileName(current));
+      markDownloaded();
     } catch (error) {
       console.error(error);
       toast(t('The PDF could not be created. Please try again.'), 'error');
     } finally {
       setExporting(false);
     }
-  }, [saveClient, toast, updateInvoice]);
+  }, [saveClient, markDownloaded, toast]);
 
-  // Arriving with ?print=1 (from "Create & download") opens the save dialog right away.
+  // Arriving with ?print=1 (from "Create & download") downloads the PDF right away.
   useEffect(() => {
     if (searchParams.get('print') !== '1' || !latest.current) return;
     setSearchParams({}, { replace: true });
@@ -187,6 +194,9 @@ export const InvoiceEditorPage = () => {
         <Button icon="mail" onClick={() => setEmailing('invoice')} title={t('Send by email')} aria-label={t('Send by email')}>
           <span className="hidden md:inline">{t('Send')}</span>
         </Button>
+        <Button icon="eye" onClick={() => setPreviewing(true)} title={t('Preview')} aria-label={t('Preview')}>
+          <span className="hidden md:inline">{t('Preview')}</span>
+        </Button>
         <Button variant="primary" icon="download" onClick={exportPdf} disabled={exporting}>
           <span className="hidden sm:inline">{t('Download PDF')}</span>
           <span className="sm:hidden">PDF</span>
@@ -230,6 +240,19 @@ export const InvoiceEditorPage = () => {
           </div>
         </div>
       </div>
+      {previewing && (
+        <PdfPreviewDialog
+          title={`${t('Invoice')} ${invoice.number}`}
+          fileName={invoiceFileName(invoice)}
+          onClose={() => setPreviewing(false)}
+          onDownloaded={() => {
+            saveClient();
+            markDownloaded();
+          }}
+        >
+          <InvoiceDocument invoice={invoice} profile={store.profile} />
+        </PdfPreviewDialog>
+      )}
       {emailing && (
         <EmailDialog
           invoice={invoice}
