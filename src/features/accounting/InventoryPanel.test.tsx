@@ -1,0 +1,18 @@
+import { act,fireEvent,render,screen,within } from '@testing-library/react';
+import { InventoryPanel } from './InventoryPanel';
+import { FeedbackProvider } from '../../ui/Feedback';
+import { AccountingError,type SupabaseAccountingRepository } from '../../infrastructure/accountingRepository';
+import type { AccountingWorkspace } from '../../domain/accounting/commands';
+import type { StockCommand } from '../../domain/accounting/inventory';
+import { stockReceived,stockId as id } from '../../test/inventoryFixture';
+const workspace:AccountingWorkspace={firmId:id(1),yearId:id(8),years:[],capabilities:['post_journal','reverse_journal'],periods:[{id:id(9),startsOn:'2026-01-01',endsOn:'2026-01-31',status:'open',revision:'1'}],accounts:[3,5,10].map(n=>({id:id(n),code:`${n}`,name:`${n}`,active:true,allowsPosting:true,requiresPartner:n===5,validFrom:'2026-01-01',validTo:null})),partners:[{id:id(6),name:'Supplier'}],drafts:[],journals:[]};
+const setup=(reader=false)=>{const repo={stockWorkspace:jest.fn(async()=>stockReceived),stockCommand:jest.fn(async(c:StockCommand)=>({itemId:c.data.itemId})),read:jest.fn(async()=>({draft:{lines:[{accountId:id(3),debit:'10000',credit:'0'},{accountId:id(5),partnerId:id(6),debit:'0',credit:'10000'}]}}))};const onState=jest.fn();render(<FeedbackProvider><InventoryPanel repo={repo as unknown as SupabaseAccountingRepository} workspace={reader?{...workspace,capabilities:[]}:workspace} disabled={false} onState={onState}/></FeedbackProvider>);return {repo,onState};};
+const change=(label:string,v:string)=>fireEvent.change(screen.getByLabelText(label),{target:{value:v}});
+const select=async()=>{await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Učitaj zalihe'})));change('Artikal zaliha',id(2));};
+it('shows the balanced weighted-average issue before confirmation and freezes an identical retry',async()=>{
+ const {repo,onState}=setup();repo.stockCommand.mockRejectedValueOnce(new AccountingError('unavailable'));await select();change('Količina zaliha','4');change('Protivkonto zaliha',id(10));change('ID dokumenta i stavke zaliha','ISSUE/1');fireEvent.click(screen.getByRole('button',{name:'Knjiži izlaz zaliha'}));const dialog=await screen.findByRole('alertdialog');expect(within(dialog).getByRole('table',{name:'Pregled naloga zaliha'})).toHaveTextContent('40.00');expect(repo.stockCommand).not.toHaveBeenCalled();
+ await act(async()=>fireEvent.click(within(dialog).getByRole('button',{name:'Potvrdi zalihe'})));expect(screen.getByRole('alert')).toHaveTextContent('Ishod je nepoznat');expect(screen.getByLabelText('Količina zaliha')).toBeDisabled();expect(onState).toHaveBeenLastCalledWith(true,true);
+ const c=repo.stockCommand.mock.calls[0][0];await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Ponovi isti zahtev zaliha'})));expect(repo.stockCommand.mock.calls[1][0]).toBe(c);
+});
+it('reads cards for viewers without commands',async()=>{setup(true);await select();expect(screen.getByRole('table',{name:'Kartica artikla'})).toHaveTextContent('DOC-1/1');expect(screen.queryByRole('button',{name:'Knjiži prijem zaliha'})).not.toBeInTheDocument();});
+it('uses immutable journal lines to preview the last movement reversal',async()=>{const {repo}=setup();await select();change('Razlog storna zaliha','Correction');fireEvent.click(screen.getByRole('button',{name:'Storniraj poslednji promet zaliha'}));const dialog=await screen.findByRole('alertdialog');expect(repo.read).toHaveBeenCalledWith(id(1),id(4));await act(async()=>fireEvent.click(within(dialog).getByRole('button',{name:'Potvrdi zalihe'})));expect(repo.stockCommand).toHaveBeenCalledWith(expect.objectContaining({action:'cancel',data:expect.objectContaining({targetId:id(4),expectedRevision:'2'})}));});

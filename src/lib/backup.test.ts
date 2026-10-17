@@ -1,6 +1,36 @@
-import { collectData, fromBackupFile, KEEP_NEWEST, needsDailySnapshot, snapshotsToPrune, summarize, toBackupFile } from './backup';
+import { collectData, fromBackupFile, KEEP_NEWEST, needsDailySnapshot, runDailyBackup, snapshotsToPrune, summarize, toBackupFile } from './backup';
 
 const daysAgo = (days: number, now: Date) => new Date(now.getTime() - days * 86_400_000).toISOString();
+
+describe('daily backup destination failures', () => {
+  const operations = () => ({
+    listSnapshots: jest.fn(async () => []),
+    takeSnapshot: jest.fn(async () => null),
+    writeFolderBackup: jest.fn(async () => true)
+  });
+
+  it('still writes to disk when browser snapshots are unavailable', async () => {
+    const deps = operations();
+    deps.listSnapshots.mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+    const result = await runDailyBackup(deps);
+    expect(result.snapshotError).toBe(true);
+    expect(result.folderWritten).toBe(true);
+    expect(deps.writeFolderBackup).toHaveBeenCalled();
+  });
+
+  it('reports a failed disk write and clears the failure after a successful retry', async () => {
+    const deps = operations();
+    deps.writeFolderBackup.mockRejectedValueOnce(new Error('Disk full'));
+    expect((await runDailyBackup(deps)).folderError).toBe(true);
+    expect(await runDailyBackup(deps)).toMatchObject({ folderWritten: true, folderError: false });
+  });
+
+  it('does not label an unconfigured or unapproved folder as a write error', async () => {
+    const deps = operations();
+    deps.writeFolderBackup.mockResolvedValueOnce(false);
+    expect(await runDailyBackup(deps)).toMatchObject({ folderWritten: false, folderError: false });
+  });
+});
 
 describe('snapshotsToPrune', () => {
   const now = new Date(2026, 9, 5, 12);
@@ -50,6 +80,26 @@ describe('backup files', () => {
     expect(fromBackupFile({ invoices: [] })).toBeNull();
     expect(fromBackupFile({ app: 'paperwork', version: 1, data: {} })).toBeNull();
     expect(fromBackupFile('nope')).toBeNull();
+  });
+
+  it('rejects unsupported versions, bad dates, wrong nested amounts and duplicate IDs', () => {
+    const file = toBackupFile({ createdAt: '2026-10-05T10:00:00.000Z', data });
+    expect(fromBackupFile({ ...file, version: 2 })).toBeNull();
+    expect(fromBackupFile({ ...file, createdAt: 'invalid' })).toBeNull();
+    const invalid = (invoices: unknown[]) => ({ ...file, data: { 'studio.invoices.v2': { version: 2, invoices } } });
+    expect(fromBackupFile(invalid([{ id: 'a', items: [{ id: 'x', quantity: 'oops' }] }]))).toBeNull();
+    expect(fromBackupFile(invalid([{ id: 'a' }, { id: 'a' }]))).toBeNull();
+    expect(fromBackupFile(invalid([{ id: 'a', issueDate: '2026-02-30' }]))).toBeNull();
+  });
+
+  it('rejects a mixed backup atomically if any recognized document is corrupt', () => {
+    const file = toBackupFile({ createdAt: '2026-10-05T10:00:00.000Z', data });
+    expect(fromBackupFile({ ...file, data: { ...file.data, 'studio.kpo.v1': { entries: 'wrong' } } })).toBeNull();
+  });
+
+  it('rejects documents assigned to a firm absent from the backup registry', () => {
+    const file = toBackupFile({ createdAt: '2026-10-05T10:00:00.000Z', data });
+    expect(fromBackupFile({ ...file, data: { 'studio.invoices.v2@missing': { invoices: [{ id: 'a' }] } } })).toBeNull();
   });
 
   it('collects only user data and counts it', () => {

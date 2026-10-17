@@ -273,7 +273,11 @@ const BackupSection = () => {
     try {
       const snapshot = await takeSnapshot('manual');
       if (!snapshot) return toast(t('There is nothing to back up yet.'), 'info');
-      await writeFolderBackup(snapshot).catch(() => false);
+      try {
+        await writeFolderBackup(snapshot);
+      } catch {
+        toast(t('The browser backup was saved, but the backup folder could not be updated. Try again.'), 'error');
+      }
       void reload();
     } catch {
       toast(t('The backup could not be saved.'), 'error');
@@ -371,10 +375,15 @@ const BackupSection = () => {
                       variant="accent"
                       icon="check"
                       onClick={async () => {
-                        if ((await allowFolder()) === 'granted') {
-                          await writeFolderBackup().catch(() => false);
+                        try {
+                          if ((await allowFolder()) === 'granted') {
+                            if (!(await writeFolderBackup())) toast(t('The backup could not be saved.'), 'error');
+                          }
+                        } catch {
+                          toast(t('The backup could not be saved.'), 'error');
+                        } finally {
+                          void reload();
                         }
-                        void reload();
                       }}
                     >
                       {t('Allow access')}

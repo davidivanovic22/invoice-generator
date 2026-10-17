@@ -153,11 +153,23 @@ export const decideFor = (target: Pick<Target, 'readOnly'>, local: string | null
 };
 
 /** Database is authoritative. Only edits made after loading it can be pushed. */
-export const decideDatabase = (local: string | null, remote: Row | undefined, meta: Meta[string] | undefined): 'push' | 'pull' | 'clear' | 'none' => {
-  if (!remote) return meta?.dirty && local !== null ? 'push' : local !== null ? 'clear' : 'none';
+export const decideDatabase = (local: string | null, remote: Row | undefined, meta: Meta[string] | undefined): 'push' | 'pull' | 'clear' | 'none' | 'conflict' => {
+  if (!remote) return meta?.dirty && local !== null ? meta.syncedAt ? 'conflict' : 'push' : local !== null ? 'clear' : 'none';
   if (local !== null && sameData(local, remote.data)) return 'none';
-  if (!meta?.dirty || meta.syncedAt !== remote.updated_at) return 'pull';
+  if (meta?.dirty && meta.syncedAt !== remote.updated_at) return 'conflict';
+  if (!meta?.dirty) return 'pull';
   return 'push';
+};
+
+/** A remote replacement cannot discard edits, even edits made while the backup is being written. */
+export const protectRemoteReplacement = async (expected: Record<string, string | null>, conflict: boolean) => {
+  if (conflict) {
+    const snapshot = await takeSnapshot('before-restore', collectData());
+    if (!snapshot) throw new Error('Conflict backup could not be saved. Your changes remain on this device. Export a backup before reloading.');
+  }
+  if (Object.entries(expected).some(([key, raw]) => readRaw(key) !== raw)) {
+    throw new Error('Your changes continued during sync. They were kept on this device; sync will retry.');
+  }
 };
 
 /* ---------- Client ---------- */
@@ -167,7 +179,7 @@ let stopWatching: (() => void) | null = null;
 let pushTimer: number | undefined;
 let pollTimer: number | undefined;
 
-const getClient = async () => {
+export const getClient = async () => {
   if (client) return client;
   const config = readCloudConfig();
   if (!config) return null;
@@ -481,25 +493,40 @@ export const syncNow = async () => {
     const rows = await fetchRows(supabase);
     const meta = readMeta();
     const updates: Record<string, string | null> = {};
+    const expected: Record<string, string | null> = {};
+    const nextMeta: Meta = {};
+    let conflict = false;
     for (const target of syncTargets()) {
       const local = readRaw(target.localKey);
       const remote = rows.get(rowId(target));
       let action = decideDatabase(local, remote, meta[target.localKey]);
-      if (target.readOnly && action === 'push') action = remote ? 'pull' : 'clear';
+      if (target.readOnly && (action === 'push' || action === 'conflict')) action = remote ? 'pull' : 'clear';
+      if (action === 'conflict') {
+        conflict = true;
+        action = remote ? 'pull' : 'clear';
+      }
       if (action === 'push') await push(supabase, target);
       if (action === 'pull') {
         updates[target.localKey] = JSON.stringify(remote!.data);
-        updateMeta(target.localKey, { syncedAt: remote!.updated_at, dirty: false });
+        expected[target.localKey] = local;
+        nextMeta[target.localKey] = { syncedAt: remote!.updated_at, dirty: false };
       }
       if (action === 'clear') {
         updates[target.localKey] = null;
-        updateMeta(target.localKey, { syncedAt: undefined, dirty: false });
+        expected[target.localKey] = local;
+        nextMeta[target.localKey] = { syncedAt: undefined, dirty: false };
       }
       if (action === 'none' && remote) updateMeta(target.localKey, { syncedAt: remote.updated_at, dirty: false });
     }
     if (Object.keys(updates).length) {
+      await protectRemoteReplacement(expected, conflict);
+      // No await between the final comparison and replacing data/revisions.
+      if (Object.entries(expected).some(([key, raw]) => readRaw(key) !== raw)) throw new Error('Your changes continued during sync. They were kept on this device; sync will retry.');
       patchDatabaseData(updates);
+      for (const [key, value] of Object.entries(nextMeta)) updateMeta(key, value);
+      if (conflict) { try { sessionStorage.setItem(NOTICE_KEY, 'conflict'); } catch { /* Live banner still reports the conflict. */ } }
       setState({ dataRevision: state.dataRevision + 1 });
+      if (conflict) window.dispatchEvent(new Event('cloud-conflict'));
     }
     const pending = syncTargets().some(target => !target.readOnly && readMeta()[target.localKey]?.dirty);
     setState({ status: pending ? 'syncing' : 'synced', lastSync: new Date().toISOString() });

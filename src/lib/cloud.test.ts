@@ -1,10 +1,47 @@
 import { addFirm, linkFirm, readFirms, removeFirm } from './firms';
 import { takeSnapshot } from './backup';
 
-jest.mock('./backup', () => ({ collectData: () => ({}), takeSnapshot: jest.fn(async (_reason, data) => ({ data })) }));
-import { decide, decideFor, firmHasContent, linkFirms, deleteOtherOwnedFirms } from './cloud';
+jest.mock('./backup', () => ({ collectData: () => jest.requireActual('./backup').collectData(), takeSnapshot: jest.fn(async (_reason, data) => ({ data })) }));
+import { decide, decideFor, decideDatabase, protectRemoteReplacement, firmHasContent, linkFirms, deleteOtherOwnedFirms } from './cloud';
+import { disableDatabaseMode, readRaw, replaceDatabaseData, writeJson } from './storage';
 
 const row = (data: unknown, updated_at = '2026-10-05T10:00:00Z') => ({ key: 'studio.invoices.v2', data, updated_at });
+
+describe('conflicting database edits', () => {
+  const key = 'studio.invoices.v2';
+  const backup = takeSnapshot as jest.Mock;
+  beforeEach(() => {
+    localStorage.clear();
+    replaceDatabaseData({ [key]: '{"local":true}' });
+    backup.mockReset();
+    backup.mockImplementation(async (_reason, data) => ({ data }));
+  });
+  afterEach(() => disableDatabaseMode());
+
+  it('identifies concurrent changes and deletion without resurrecting a deleted server document', () => {
+    const meta = { dirty: true, syncedAt: 'v1' };
+    expect(decideDatabase(readRaw(key), row({ remote: true }, 'v2'), meta)).toBe('conflict');
+    expect(decideDatabase(readRaw(key), undefined, meta)).toBe('conflict');
+  });
+
+  it('backs up current edits before permitting remote replacement', async () => {
+    await protectRemoteReplacement({ [key]: readRaw(key) }, true);
+    expect(backup).toHaveBeenCalledWith('before-restore', expect.objectContaining({ [key]: '{"local":true}' }));
+    expect(readRaw(key)).toBe('{"local":true}');
+  });
+
+  it('blocks replacement if the conflict backup fails', async () => {
+    backup.mockRejectedValueOnce(new Error('Quota exceeded'));
+    await expect(protectRemoteReplacement({ [key]: readRaw(key) }, true)).rejects.toThrow('Quota exceeded');
+    expect(readRaw(key)).toBe('{"local":true}');
+  });
+
+  it('keeps changes made while the conflict snapshot is being saved', async () => {
+    backup.mockImplementationOnce(async () => { writeJson(key, { newer: true }); return { data: {} }; });
+    await expect(protectRemoteReplacement({ [key]: readRaw(key) }, true)).rejects.toThrow('continued');
+    expect(readRaw(key)).toBe('{"newer":true}');
+  });
+});
 
 describe('cloud sync decisions', () => {
   it('pushes local data the cloud does not have yet', () => {

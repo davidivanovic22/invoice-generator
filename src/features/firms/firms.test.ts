@@ -21,8 +21,8 @@ describe('firms', () => {
 
   it('backs up and restores every firm, and never deletes the first one', () => {
     const firm = addFirm('Druga firma');
-    localStorage.setItem('studio.invoices.v2', JSON.stringify({ invoices: [{}, {}] }));
-    localStorage.setItem(`studio.invoices.v2@${firm.id}`, JSON.stringify({ invoices: [{}] }));
+    localStorage.setItem('studio.invoices.v2', JSON.stringify({ invoices: [{ id: 'first' }, { id: 'second' }] }));
+    localStorage.setItem(`studio.invoices.v2@${firm.id}`, JSON.stringify({ invoices: [{ id: 'third' }] }));
     const data = collectData();
     expect(summarize(data).invoices).toBe(3);
     expect(Object.keys(fromBackupFile(toBackupFile({ createdAt: new Date().toISOString(), data }))!)).toContain(`studio.invoices.v2@${firm.id}`);
